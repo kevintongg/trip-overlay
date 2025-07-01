@@ -1,21 +1,44 @@
 // --- CONFIGURATION ---
+// 🚶 VIENNA WALKING TEST SETUP:
+// 1. Replace YOUR_RTIRL_ID with the actual user ID you received
+// 2. WALKING_MODE is set to true - this adjusts speed limits and demo settings for walking
+// 3. To switch back to motorbike/vehicle mode, set WALKING_MODE = false
 
-const RTIRL_USER_ID = ''; // Find this in your rtirl.com profile
-// URL
-const TOTAL_DISTANCE_KM = 205.0; // The total distance of your trip from Google
-// Maps
+// Environment variable support (build-time replacement)
+// For regular HTML/JS projects, just set the user ID directly below
+// For build systems, you can replace this with environment variables
+const RTIRL_USER_ID = ''; // Replace this with the real user ID
+const TOTAL_DISTANCE_KM = 10.0; // Set to a reasonable walking distance for Vienna test
 
 // DEMO MODE: Set to true for testing without RTIRL (use ?demo=true in URL)
 const DEMO_MODE = false;
 
-// PERFORMANCE CONSTANTS
-const GPS_UPDATE_THROTTLE = 1000; // 1 second
+// --- WALKING MODE CONFIGURATION FOR VIENNA TEST ---
+const WALKING_MODE = true; // Set to true for walking, false for motorbike/vehicle
+const WALKING_MAX_SPEED_KMH = 15; // Maximum reasonable walking speed (15 km/h = very fast walk/jog)
+const VEHICLE_MAX_SPEED_KMH = 200; // Maximum reasonable vehicle speed
+
+// MOVEMENT THRESHOLDS (based on RealTimeIRL app settings)
+// These filter out GPS noise and small movements
+const WALKING_MIN_MOVEMENT_M = 1; // 1 meter minimum for walking (matches RTIRL walking setting)
+const BIKING_MIN_MOVEMENT_M = 10; // 10 meters minimum for biking
+const CURRENT_MIN_MOVEMENT_KM = WALKING_MODE
+  ? WALKING_MIN_MOVEMENT_M / 1000
+  : BIKING_MIN_MOVEMENT_M / 1000; // Convert to km
+
+// PERFORMANCE CONSTANTS (adjusted for walking mode)
+const GPS_UPDATE_THROTTLE = WALKING_MODE ? 2000 : 1000; // 2 seconds for walking, 1 second for vehicle
 const UI_UPDATE_DEBOUNCE = 100; // 100ms for smooth UI updates
 const MAX_RECONNECT_DELAY = 30000; // 30 seconds max
 const SAVE_DEBOUNCE_DELAY = 500; // 500ms for localStorage saves
 
 // PERSISTENCE: localStorage is domain/browser specific
 // For cross-device persistence, see README.md for cloud storage options
+
+// --- WALKING TEST CONFIGURATION FOR VIENNA ---
+// Set Vienna city center as start location
+const USE_AUTO_START = false; // Use manual start for consistent testing
+const MANUAL_START_LOCATION = { lat: 48.2082, lon: 16.3738 }; // Vienna city center
 
 // --- OPTIMIZED STATE MANAGEMENT ---
 const appState = {
@@ -154,17 +177,25 @@ function calculateReconnectDelay() {
 function connectToRtirl() {
   // Check for demo mode first
   if (isDemoMode()) {
-    console.log('🎭 Demo mode enabled - simulating GPS data');
-    showFeedback('🎭 Demo mode active - simulating trip', 'success');
+    const mode = WALKING_MODE ? 'walking' : 'vehicle';
+    console.log(`🎭 Demo mode enabled - simulating GPS data (${mode} mode)`);
+    showFeedback(`🎭 Demo mode active - ${mode} simulation`, 'success');
     startDemoMode();
     return;
   }
 
-  // Check if RTIRL_USER_ID is configured using ES13 features
-  if (RTIRL_USER_ID === 'YOUR_RTIRL_ID') {
-    console.warn(
-      '⚠️ RTIRL_USER_ID not configured. Please set your RTIRL user ID.'
-    );
+  // Debug: Show what user ID is being used
+  console.log(`🔑 Using RTIRL User ID: "${RTIRL_USER_ID}"`);
+
+  // Check if RTIRL_USER_ID is configured
+  if (
+    RTIRL_USER_ID === 'YOUR_RTIRL_ID' ||
+    !RTIRL_USER_ID ||
+    RTIRL_USER_ID.trim() === ''
+  ) {
+    console.error('❌ RTIRL_USER_ID not configured properly');
+    console.log('💡 Expected: A valid user ID from rtirl.com profile');
+    console.log('💡 Current value:', `"${RTIRL_USER_ID}"`);
     showFeedback(
       '⚠️ RTIRL not configured - update RTIRL_USER_ID',
       'warning',
@@ -172,6 +203,10 @@ function connectToRtirl() {
     );
     return;
   }
+
+  console.log(
+    `🌐 Attempting to connect to: wss://rtirl.com/ws/${RTIRL_USER_ID}`
+  );
 
   function connectWebSocket() {
     try {
@@ -190,7 +225,8 @@ function connectToRtirl() {
       );
 
       appState.connection.onopen = function () {
-        console.log('✅ Connected to RTIRL');
+        console.log('✅ Connected to RTIRL successfully');
+        console.log('💡 Connection established - waiting for GPS data...');
         showFeedback('✅ RTIRL connected', 'success');
         appState.reconnectAttempts = 0; // Reset on successful connection
       };
@@ -198,16 +234,36 @@ function connectToRtirl() {
       appState.connection.onmessage = function (event) {
         try {
           const data = JSON.parse(event.data);
+          console.log('📨 Raw RTIRL data received:', data);
           handleRtirtData(data);
         } catch (error) {
           console.error('❌ Failed to parse RTIRL data:', error);
+          console.log('🔍 Raw event data:', event.data);
         }
       };
 
-      appState.connection.onclose = function (_event) {
+      appState.connection.onclose = function (event) {
+        console.log('🔌 RTIRL connection closed');
+        console.log('🔍 Close event details:', {
+          code: event.code,
+          reason: event.reason,
+          wasClean: event.wasClean,
+        });
+
+        // Check for specific error codes that might indicate invalid user ID
+        if (event.code === 1000) {
+          console.log('💡 Normal closure - likely valid user ID');
+        } else if (event.code === 1006) {
+          console.warn(
+            '⚠️ Abnormal closure - possible invalid user ID or network issue'
+          );
+        } else if (event.code >= 4000) {
+          console.error('❌ Custom error code - likely invalid user ID');
+        }
+
         const delay = calculateReconnectDelay();
         console.log(
-          `🔌 RTIRL connection closed. Reconnecting in ${(delay / 1000).toFixed(1)}s...`
+          `🔄 Reconnecting in ${(delay / 1000).toFixed(1)}s... (attempt ${appState.reconnectAttempts + 1})`
         );
         showFeedback('🔌 RTIRL disconnected - reconnecting...', 'warning');
 
@@ -216,7 +272,11 @@ function connectToRtirl() {
       };
 
       appState.connection.onerror = function (error) {
-        console.error('❌ RTIRL connection error:', error);
+        console.error('❌ RTIRL WebSocket error:', error);
+        console.log('🔍 This might indicate:');
+        console.log('  • Invalid user ID');
+        console.log('  • Network connectivity issues');
+        console.log('  • RTIRL server issues');
         showFeedback('❌ RTIRL connection failed', 'error');
       };
     } catch (error) {
@@ -260,7 +320,15 @@ function handleRtirtData(data) {
   const currentLat = data?.latitude ?? data?.lat;
   const currentLon = data?.longitude ?? data?.lon;
 
+  console.log('🔍 GPS data extraction:', {
+    foundLat: currentLat,
+    foundLon: currentLon,
+    dataKeys: Object.keys(data || {}),
+  });
+
   if (!currentLat || !currentLon) {
+    console.warn('⚠️ No GPS coordinates found in RTIRL data');
+    console.log('💡 Expected: latitude/lat and longitude/lon properties');
     return; // No GPS data available
   }
 
@@ -291,13 +359,30 @@ function handleRtirtData(data) {
   if (startLocation && lastPosition) {
     const newDistance = calculateDistance(lastPosition, currentPosition);
 
-    // Sanity check: reject impossibly large distances (>200km/h = 55m/s)
+    // Minimum movement threshold: filter out GPS noise and small movements
+    if (newDistance < CURRENT_MIN_MOVEMENT_KM) {
+      const mode = WALKING_MODE ? 'walking' : 'vehicle';
+      const thresholdM = WALKING_MODE
+        ? WALKING_MIN_MOVEMENT_M
+        : BIKING_MIN_MOVEMENT_M;
+      console.log(
+        `📍 GPS movement below ${thresholdM}m threshold in ${mode} mode: ${(newDistance * 1000).toFixed(1)}m - ignoring to reduce noise`
+      );
+      return;
+    }
+
+    // Sanity check: reject impossibly large distances based on movement mode
     const timeDiff = Math.max(1, (now - previousUpdateTime) / 1000); // seconds (min 1s)
-    const maxReasonableDistance = timeDiff * 0.055; // 55 m/s = ~200 km/h
+    const maxSpeedKmh = WALKING_MODE
+      ? WALKING_MAX_SPEED_KMH
+      : VEHICLE_MAX_SPEED_KMH;
+    const maxSpeedMs = maxSpeedKmh / 3.6; // Convert km/h to m/s
+    const maxReasonableDistance = timeDiff * (maxSpeedMs / 1000); // Convert to km
 
     if (newDistance > maxReasonableDistance) {
+      const mode = WALKING_MODE ? 'walking' : 'vehicle';
       console.warn(
-        `⚠️ GPS jump detected: ${newDistance.toFixed(2)}km in ${timeDiff}s - ignoring`
+        `⚠️ GPS jump detected in ${mode} mode: ${newDistance.toFixed(2)}km in ${timeDiff}s (max: ${maxReasonableDistance.toFixed(3)}km) - ignoring`
       );
       return;
     }
@@ -357,11 +442,6 @@ function calculateDistance(pos1, pos2) {
 // Handles real-time distance tracking with robust error handling and persistence
 
 // START LOCATION OPTIONS - Choose your preferred method:
-const USE_AUTO_START = false; // Set to true for automatic start location
-// detection
-const MANUAL_START_LOCATION = { lat: 50.0755, lon: 14.4378 }; // GPS for Prague
-// (example)
-
 // This will be set automatically based on your choice above
 let startLocation = USE_AUTO_START ? null : MANUAL_START_LOCATION;
 
@@ -950,12 +1030,17 @@ document.addEventListener('keydown', function (event) {
 
 // Demo mode simulation
 function startDemoMode() {
-  const demoIncrement = 0.5; // 500m per update
-  const demoInterval = 2000; // Every 2 seconds
+  // Adjust demo settings based on movement mode
+  const demoIncrement = WALKING_MODE ? 0.05 : 0.5; // 50m for walking, 500m for vehicle
+  const demoInterval = WALKING_MODE ? 3000 : 2000; // 3 seconds for walking, 2 for vehicle
 
-  // Set a demo start location (Prague)
+  // Set demo start location (Vienna for walking mode, Prague for vehicle)
   if (!startLocation) {
-    startLocation = { lat: 50.0755, lon: 14.4378 };
+    if (WALKING_MODE) {
+      startLocation = { lat: 48.2082, lon: 16.3738 }; // Vienna city center for walking test
+    } else {
+      startLocation = { lat: 50.0755, lon: 14.4378 }; // Prague for vehicle
+    }
     lastPosition = startLocation;
   }
 
@@ -978,9 +1063,10 @@ function startDemoMode() {
     const unitSuffix = appState.useImperialUnits ? 'mi' : 'km';
     const currentTotal = (totalDistanceTraveled * unitMultiplier).toFixed(2);
     const currentTarget = (TOTAL_DISTANCE_KM * unitMultiplier).toFixed(2);
+    const mode = WALKING_MODE ? '🚶 Walking' : '🏍️ Vehicle';
 
     console.log(
-      `🎭 Demo: ${currentTotal}${unitSuffix} / ${currentTarget}${unitSuffix}`
+      `🎭 Demo (${mode}): ${currentTotal}${unitSuffix} / ${currentTarget}${unitSuffix}`
     );
 
     // Stop demo when trip is complete
@@ -1115,10 +1201,87 @@ function jumpToProgress(percent) {
   showFeedback(`${percent}% progress`, 'success');
 }
 
+// Status function for debugging connection and system state
+function getStatus() {
+  const connection = appState.connection;
+  const connectionStatus = connection
+    ? connection.readyState === WebSocket.OPEN
+      ? '✅ Connected'
+      : connection.readyState === WebSocket.CONNECTING
+        ? '🔄 Connecting'
+        : connection.readyState === WebSocket.CLOSING
+          ? '🔌 Closing'
+          : '❌ Disconnected'
+    : '❌ No connection';
+
+  const mode = WALKING_MODE ? '🚶 Walking' : '🏍️ Vehicle';
+  const units = appState.useImperialUnits ? 'miles' : 'km';
+  const kmToMiles = 0.621371;
+  const unitMultiplier = appState.useImperialUnits ? kmToMiles : 1;
+
+  console.log(`
+🔍 RTIRL OVERLAY STATUS:
+
+🔑 Configuration:
+   User ID: "${RTIRL_USER_ID}"
+   Mode: ${mode} (max speed: ${WALKING_MODE ? WALKING_MAX_SPEED_KMH : VEHICLE_MAX_SPEED_KMH}km/h)
+   Target: ${(TOTAL_DISTANCE_KM * unitMultiplier).toFixed(1)} ${units}
+   Start Location: ${startLocation ? `${startLocation.lat.toFixed(4)}, ${startLocation.lon.toFixed(4)}` : 'Not set'}
+
+🌐 Connection:
+   Status: ${connectionStatus}
+   WebSocket URL: wss://rtirl.com/ws/${RTIRL_USER_ID}
+   Reconnect attempts: ${appState.reconnectAttempts}
+   Demo mode: ${isDemoMode() ? '✅ Active' : '❌ Disabled'}
+
+📍 GPS Data:
+   Last position: ${lastPosition ? `${lastPosition.lat.toFixed(4)}, ${lastPosition.lon.toFixed(4)}` : 'None'}
+   Last update: ${lastUpdateTime ? new Date(lastUpdateTime).toLocaleTimeString() : 'Never'}
+   Time since update: ${lastUpdateTime ? `${Math.round(Date.now() - lastUpdateTime / 1000)}s ago` : 'N/A'}
+
+📊 Progress:
+   Total: ${(totalDistanceTraveled * unitMultiplier).toFixed(2)} ${units}
+   Today: ${(todayDistanceTraveled * unitMultiplier).toFixed(2)} ${units}
+   Remaining: ${(Math.max(0, TOTAL_DISTANCE_KM - totalDistanceTraveled) * unitMultiplier).toFixed(2)} ${units}
+   Progress: ${((totalDistanceTraveled / TOTAL_DISTANCE_KM) * 100).toFixed(1)}%
+
+⚙️ Settings:
+   Units: ${units}
+   GPS Update Throttle: ${GPS_UPDATE_THROTTLE}ms
+   Auto-start: ${USE_AUTO_START ? 'Enabled' : 'Disabled'}
+  `);
+
+  // Additional diagnostics
+  if (connection && connection.readyState !== WebSocket.OPEN) {
+    console.log('💡 Connection troubleshooting:');
+    console.log('  1. Check user ID is correct');
+    console.log('  2. Verify RTIRL app is broadcasting GPS');
+    console.log('  3. Check network connectivity');
+  }
+
+  if (lastUpdateTime && Date.now() - lastUpdateTime > 30000) {
+    console.log('⚠️ No GPS updates for >30 seconds - check RTIRL app');
+  }
+
+  return {
+    userID: RTIRL_USER_ID,
+    connected: connection?.readyState === WebSocket.OPEN,
+    totalDistance: totalDistanceTraveled,
+    todayDistance: todayDistanceTraveled,
+    progress: (totalDistanceTraveled / TOTAL_DISTANCE_KM) * 100,
+    lastUpdate: lastUpdateTime,
+    mode: WALKING_MODE ? 'walking' : 'vehicle',
+  };
+}
+
 // Helper function to show all available console commands
 function showConsoleCommands() {
   console.log(`
 🎮 TRIP OVERLAY CONSOLE COMMANDS:
+
+🔍 DEBUGGING:
+• getStatus() - Show complete system status and diagnostics
+• showConsoleCommands() - Show this help
 
 📏 DISTANCE MANIPULATION:
 • addDistance(km) - Add/subtract distance (use negative to subtract)
@@ -1153,6 +1316,7 @@ Type any function name to use it. Current trip: ${totalDistanceTraveled.toFixed(
 }
 
 // Make functions globally available for console access
+window.getStatus = getStatus;
 window.addDistance = addDistance;
 window.setDistance = setDistance;
 window.convertToMiles = convertToMiles;
@@ -1164,6 +1328,13 @@ window.showConsoleCommands = showConsoleCommands;
 console.log(
   '🎮 Type showConsoleCommands() to see all available demo functions'
 );
+
+// Debug: Verify functions are properly attached
+console.log('🔧 Console functions loaded:', {
+  getStatus: typeof window.getStatus,
+  showConsoleCommands: typeof window.showConsoleCommands,
+  addDistance: typeof window.addDistance,
+});
 
 // Cleanup on page unload
 window.addEventListener('beforeunload', () => {
