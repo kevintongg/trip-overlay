@@ -1,6 +1,6 @@
 // --- CONFIGURATION ---
 
-const RTIRL_USER_ID = 'YOUR_RTIRL_ID'; // Find this in your rtirl.com profile
+const RTIRL_USER_ID = ''; // Find this in your rtirl.com profile
 // URL
 const TOTAL_DISTANCE_KM = 205.0; // The total distance of your trip from Google
 // Maps
