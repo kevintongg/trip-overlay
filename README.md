@@ -5,7 +5,7 @@ A professional real-time GPS tracking overlay for live streaming motorbike trips
 ## **🔍 Quick Navigation**
 
 **🖥️ Local OBS Users:** This README has everything you need  
-**☁️ IRLToolkit Cloud Users:** Jump to [IRLTOOLKIT-GUIDE.md](./IRLTOOLKIT-GUIDE.md) ⚠️ *Limited backup restore*  
+**☁️ IRLToolkit Cloud Users:** Jump to [IRLTOOLKIT-GUIDE.md](./IRLTOOLKIT-GUIDE.md) ⚠️ _Limited backup restore_  
 **💾 Backup/Restore Help:** See [BACKUP-GUIDE.md](./BACKUP-GUIDE.md)  
 **🔧 Feature Comparison:** See [COMPATIBILITY.md](./COMPATIBILITY.md)
 
@@ -262,6 +262,7 @@ Your trip progress is automatically saved and restored across stream sessions:
 ### 💾 Manual Backup/Restore
 
 **When you need this:**
+
 - Switching hosting methods (local → cloud)
 - Moving between computers or browsers
 - Setting up overlay on new device
@@ -272,13 +273,15 @@ Your trip progress is automatically saved and restored across stream sessions:
 #### Quick Commands
 
 **Backup your progress:**
+
 ```javascript
-exportTripData()  // Downloads backup file to Downloads folder
+exportTripData(); // Downloads backup file to Downloads folder
 ```
 
 **Restore your progress:**
+
 ```javascript
-easyImport()  // Shows dialog to paste backup data
+easyImport(); // Shows dialog to paste backup data
 ```
 
 **IRLToolkit users:** Use URL parameter `?export=true` for backup
@@ -665,7 +668,7 @@ body {
 ### **📋 Documentation Overview**
 
 - **[API.md](./API.md)** - Complete console functions & URL parameters reference
-- **[BACKUP-GUIDE.md](./BACKUP-GUIDE.md)** - Step-by-step backup & restore instructions  
+- **[BACKUP-GUIDE.md](./BACKUP-GUIDE.md)** - Step-by-step backup & restore instructions
 - **[CONTRIBUTING.md](./CONTRIBUTING.md)** - Comprehensive developer guide & setup instructions
 - **[COMPATIBILITY.md](./COMPATIBILITY.md)** - Feature matrix across different environments
 

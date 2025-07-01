@@ -24,5 +24,8 @@
     "travel"
   ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@rtirl/api": "^1.2.1"
+  }
 }

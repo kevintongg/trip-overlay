@@ -27,6 +27,7 @@ export default [
         URLSearchParams: 'readonly',
         confirm: 'readonly',
         WebSocket: 'readonly',
+        RealtimeIRL: 'readonly',
 
         // Custom globals
         resetTripProgress: 'readonly',

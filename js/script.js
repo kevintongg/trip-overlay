@@ -4,6 +4,16 @@
 // 2. WALKING_MODE is set to true - this adjusts speed limits and demo settings for walking
 // 3. To switch back to motorbike/vehicle mode, set WALKING_MODE = false
 
+// RTIRL API is loaded via CDN and available as global RealtimeIRL object
+//
+// Available API functions we could use for enhanced features:
+// • RealtimeIRL.addSpeedListener() - Get speed data directly
+// • RealtimeIRL.addHeadingListener() - Get direction/compass data
+// • RealtimeIRL.addAltitudeListener() - Get elevation data
+// • RealtimeIRL.addSessionIdListener() - Track streaming sessions
+//
+// These eliminate the need for manual calculation/parsing of raw GPS data
+
 // Environment variable support (build-time replacement)
 // For regular HTML/JS projects, just set the user ID directly below
 // For build systems, you can replace this with environment variables
@@ -29,7 +39,6 @@ const CURRENT_MIN_MOVEMENT_KM = WALKING_MODE
 // PERFORMANCE CONSTANTS (adjusted for walking mode)
 const GPS_UPDATE_THROTTLE = WALKING_MODE ? 2000 : 1000; // 2 seconds for walking, 1 second for vehicle
 const UI_UPDATE_DEBOUNCE = 100; // 100ms for smooth UI updates
-const MAX_RECONNECT_DELAY = 30000; // 30 seconds max
 const SAVE_DEBOUNCE_DELAY = 500; // 500ms for localStorage saves
 
 // PERSISTENCE: localStorage is domain/browser specific
@@ -42,11 +51,11 @@ const MANUAL_START_LOCATION = { lat: 48.2082, lon: 16.3738 }; // Vienna city cen
 
 // --- OPTIMIZED STATE MANAGEMENT ---
 const appState = {
-  reconnectAttempts: 0,
   lastSaveTime: 0,
   uiUpdateScheduled: false,
   uiUpdateTimeout: null,
-  connection: null,
+  rtirtLocationListener: null, // Function to unsubscribe from location updates
+  isConnected: false, // Track connection state (simplified with API)
   useImperialUnits: false, // false = km, true = miles
   originalTotalDistance: 205.0, // Store original for unit conversion
 };
@@ -164,15 +173,7 @@ function updateDisplayElements() {
   }, UI_UPDATE_DEBOUNCE);
 }
 
-// Exponential backoff for reconnection attempts
-function calculateReconnectDelay() {
-  const baseDelay = 1000; // 1 second
-  const delay = Math.min(
-    baseDelay * Math.pow(2, appState.reconnectAttempts),
-    MAX_RECONNECT_DELAY
-  );
-  return delay + Math.random() * 1000; // Add jitter
-}
+// Note: Reconnection is now handled automatically by the @rtirl/api client
 
 function connectToRtirl() {
   // Check for demo mode first
@@ -185,7 +186,7 @@ function connectToRtirl() {
   }
 
   // Debug: Show what user ID is being used
-  console.log(`🔑 Using RTIRL User ID: "${RTIRL_USER_ID}"`);
+  console.log(`🔑 Using RTIRL User ID: '${RTIRL_USER_ID}'`);
 
   // Check if RTIRL_USER_ID is configured
   if (
@@ -195,7 +196,7 @@ function connectToRtirl() {
   ) {
     console.error('❌ RTIRL_USER_ID not configured properly');
     console.log('💡 Expected: A valid user ID from rtirl.com profile');
-    console.log('💡 Current value:', `"${RTIRL_USER_ID}"`);
+    console.log('💡 Current value:', `'${RTIRL_USER_ID}'`);
     showFeedback(
       '⚠️ RTIRL not configured - update RTIRL_USER_ID',
       'warning',
@@ -204,93 +205,41 @@ function connectToRtirl() {
     return;
   }
 
-  console.log(
-    `🌐 Attempting to connect to: wss://rtirl.com/ws/${RTIRL_USER_ID}`
-  );
+  console.log(`🌐 Creating RTIRL API client for user: ${RTIRL_USER_ID}`);
 
-  function connectWebSocket() {
-    try {
-      console.log(
-        `🔗 Connecting to RTIRL... (attempt ${appState.reconnectAttempts + 1})`
-      );
-
-      // Clean up existing connection
-      if (appState.connection?.readyState === WebSocket.OPEN) {
-        appState.connection.close();
-      }
-
-      // RTIRL WebSocket API endpoint
-      appState.connection = new WebSocket(
-        `wss://rtirl.com/ws/${RTIRL_USER_ID}`
-      );
-
-      appState.connection.onopen = function () {
-        console.log('✅ Connected to RTIRL successfully');
-        console.log('💡 Connection established - waiting for GPS data...');
-        showFeedback('✅ RTIRL connected', 'success');
-        appState.reconnectAttempts = 0; // Reset on successful connection
-      };
-
-      appState.connection.onmessage = function (event) {
-        try {
-          const data = JSON.parse(event.data);
-          console.log('📨 Raw RTIRL data received:', data);
-          handleRtirtData(data);
-        } catch (error) {
-          console.error('❌ Failed to parse RTIRL data:', error);
-          console.log('🔍 Raw event data:', event.data);
-        }
-      };
-
-      appState.connection.onclose = function (event) {
-        console.log('🔌 RTIRL connection closed');
-        console.log('🔍 Close event details:', {
-          code: event.code,
-          reason: event.reason,
-          wasClean: event.wasClean,
-        });
-
-        // Check for specific error codes that might indicate invalid user ID
-        if (event.code === 1000) {
-          console.log('💡 Normal closure - likely valid user ID');
-        } else if (event.code === 1006) {
-          console.warn(
-            '⚠️ Abnormal closure - possible invalid user ID or network issue'
-          );
-        } else if (event.code >= 4000) {
-          console.error('❌ Custom error code - likely invalid user ID');
-        }
-
-        const delay = calculateReconnectDelay();
-        console.log(
-          `🔄 Reconnecting in ${(delay / 1000).toFixed(1)}s... (attempt ${appState.reconnectAttempts + 1})`
-        );
-        showFeedback('🔌 RTIRL disconnected - reconnecting...', 'warning');
-
-        appState.reconnectAttempts++;
-        setTimeout(connectWebSocket, delay);
-      };
-
-      appState.connection.onerror = function (error) {
-        console.error('❌ RTIRL WebSocket error:', error);
-        console.log('🔍 This might indicate:');
-        console.log('  • Invalid user ID');
-        console.log('  • Network connectivity issues');
-        console.log('  • RTIRL server issues');
-        showFeedback('❌ RTIRL connection failed', 'error');
-      };
-    } catch (error) {
-      console.error('❌ Failed to connect to RTIRL:', error);
-      showFeedback('❌ RTIRL connection failed', 'error');
-
-      const delay = calculateReconnectDelay();
-      appState.reconnectAttempts++;
-      setTimeout(connectWebSocket, delay);
+  try {
+    // Clean up existing listener if it exists
+    if (appState.rtirtLocationListener) {
+      appState.rtirtLocationListener();
+      appState.rtirtLocationListener = null;
     }
-  }
 
-  // Start connection
-  connectWebSocket();
+    // Create RTIRL API streamer listener
+    // Using 'twitch' as provider since your user ID format suggests Twitch
+    console.log('🔗 Setting up RTIRL API listener...');
+    appState.isConnected = true;
+    showFeedback('✅ RTIRL connected', 'success');
+
+    // Set up location listener using the API - much simpler than manual WebSocket handling
+    appState.rtirtLocationListener = RealtimeIRL.forStreamer(
+      'twitch',
+      RTIRL_USER_ID
+    ).addLocationListener(locationData => {
+      if (locationData) {
+        // API provides clean data - no conversion needed
+        handleRtirtData(locationData);
+      } else {
+        console.log('📍 Location is hidden or streamer is offline');
+        appState.isConnected = false;
+        showFeedback('🔌 RTIRL location hidden', 'warning');
+      }
+    });
+
+    console.log('✅ RTIRL API listener setup complete');
+  } catch (error) {
+    console.error('❌ Failed to create RTIRL API client:', error);
+    showFeedback('❌ RTIRL client creation failed', 'error');
+  }
 }
 
 // Debounced save function to reduce localStorage writes
@@ -316,23 +265,13 @@ function handleRtirtData(data) {
   const previousUpdateTime = lastUpdateTime;
   lastUpdateTime = now;
 
-  // Extract GPS coordinates using modern ES13 features
-  const currentLat = data?.latitude ?? data?.lat;
-  const currentLon = data?.longitude ?? data?.lon;
+  // API already provides clean latitude/longitude - no extraction needed
+  const currentPosition = { lat: data.latitude, lon: data.longitude };
 
-  console.log('🔍 GPS data extraction:', {
-    foundLat: currentLat,
-    foundLon: currentLon,
-    dataKeys: Object.keys(data || {}),
+  console.log('📨 Clean RTIRL API data:', {
+    lat: data.latitude,
+    lon: data.longitude,
   });
-
-  if (!currentLat || !currentLon) {
-    console.warn('⚠️ No GPS coordinates found in RTIRL data');
-    console.log('💡 Expected: latitude/lat and longitude/lon properties');
-    return; // No GPS data available
-  }
-
-  const currentPosition = { lat: currentLat, lon: currentLon };
 
   // Validate GPS coordinates
   if (!validateCoordinates(currentPosition)) {
@@ -343,7 +282,7 @@ function handleRtirtData(data) {
   // Handle auto-start location detection
   if (USE_AUTO_START && !startLocation) {
     // Reject suspicious coordinates (like 0,0)
-    if (currentLat === 0 && currentLon === 0) {
+    if (data.latitude === 0 && data.longitude === 0) {
       console.warn('⚠️ Rejecting suspicious 0,0 coordinates for auto-start');
       return;
     }
@@ -366,7 +305,9 @@ function handleRtirtData(data) {
         ? WALKING_MIN_MOVEMENT_M
         : BIKING_MIN_MOVEMENT_M;
       console.log(
-        `📍 GPS movement below ${thresholdM}m threshold in ${mode} mode: ${(newDistance * 1000).toFixed(1)}m - ignoring to reduce noise`
+        `📍 GPS movement below ${thresholdM}m threshold in ${mode} mode: ${(
+          newDistance * 1000
+        ).toFixed(1)}m - ignoring to reduce noise`
       );
       return;
     }
@@ -377,12 +318,16 @@ function handleRtirtData(data) {
       ? WALKING_MAX_SPEED_KMH
       : VEHICLE_MAX_SPEED_KMH;
     const maxSpeedMs = maxSpeedKmh / 3.6; // Convert km/h to m/s
-    const maxReasonableDistance = timeDiff * (maxSpeedMs / 1000); // Convert to km
+    const maxReasonableDistance = (timeDiff * maxSpeedMs) / 1000; // Convert to km
 
     if (newDistance > maxReasonableDistance) {
       const mode = WALKING_MODE ? 'walking' : 'vehicle';
       console.warn(
-        `⚠️ GPS jump detected in ${mode} mode: ${newDistance.toFixed(2)}km in ${timeDiff}s (max: ${maxReasonableDistance.toFixed(3)}km) - ignoring`
+        `⚠️ GPS jump detected in ${mode} mode: ${newDistance.toFixed(
+          2
+        )}km in ${timeDiff}s (max: ${maxReasonableDistance.toFixed(
+          3
+        )}km) - ignoring`
       );
       return;
     }
@@ -398,7 +343,9 @@ function handleRtirtData(data) {
     debouncedSave();
 
     console.log(
-      `📍 GPS Update: +${newDistance.toFixed(3)}km (Total: ${totalDistanceTraveled.toFixed(2)}km)`
+      `📍 GPS Update: +${newDistance.toFixed(
+        3
+      )}km (Total: ${totalDistanceTraveled.toFixed(2)}km)`
     );
   }
 
@@ -410,7 +357,9 @@ function handleRtirtData(data) {
 const distanceCache = new Map();
 function calculateDistance(pos1, pos2) {
   // Cache key with reasonable precision to avoid redundant calculations
-  const key = `${pos1.lat.toFixed(6)},${pos1.lon.toFixed(6)}-${pos2.lat.toFixed(6)},${pos2.lon.toFixed(6)}`;
+  const key = `${pos1.lat.toFixed(6)},${pos1.lon.toFixed(6)}-${pos2.lat.toFixed(
+    6
+  )},${pos2.lon.toFixed(6)}`;
 
   if (distanceCache.has(key)) {
     return distanceCache.get(key);
@@ -504,7 +453,7 @@ function shouldResetTodayDistance(savedDate, lastActiveTime) {
     return false;
   }
 
-  // Check if enough time has passed to consider it a "new day"
+  // Check if enough time has passed to consider it a 'new day'
   // Don't reset if it's just past midnight but we were recently active
   if (lastActiveTime) {
     const lastActive = new Date(lastActiveTime);
@@ -534,7 +483,7 @@ function loadPersistedData() {
 
       totalDistanceTraveled = validatedTotal;
 
-      // Check if it's the same day for "today" distance
+      // Check if it's the same day for 'today' distance
       // Use more intelligent day detection that accounts for streaming/travel
       const shouldResetToday = shouldResetTodayDistance(
         data.date,
@@ -777,7 +726,7 @@ function easyImport() {
   }
 }
 
-// Check for special "smart streaming" mode
+// Check for special 'smart streaming' mode
 function checkURLParameters() {
   // Check for reset command
   const resetParam = getURLParam('reset');
@@ -923,7 +872,7 @@ function checkURLParameters() {
     }
   }
 
-  // Check for special "smart streaming" mode
+  // Check for special 'smart streaming' mode
   if (getURLParam('stream') === 'true') {
     // DON'T show controls by default (stream-friendly)
     // Instead, enable hotkey support and show helpful message
@@ -1102,7 +1051,11 @@ function addDistance(km) {
   const action = km >= 0 ? 'Added' : 'Subtracted';
   const amount = Math.abs(km);
   console.log(
-    `✅ ${action} ${amount.toFixed(2)}km (${previousTotal.toFixed(2)}km → ${totalDistanceTraveled.toFixed(2)}km)`
+    `✅ ${action} ${amount.toFixed(
+      2
+    )}km (${previousTotal.toFixed(2)}km → ${totalDistanceTraveled.toFixed(
+      2
+    )}km)`
   );
   showFeedback(`${action} ${amount.toFixed(2)}km`, 'success');
 }
@@ -1121,7 +1074,9 @@ function setDistance(km) {
   debouncedSave();
 
   console.log(
-    `✅ Set distance: ${previousTotal.toFixed(2)}km → ${totalDistanceTraveled.toFixed(2)}km`
+    `✅ Set distance: ${previousTotal.toFixed(
+      2
+    )}km → ${totalDistanceTraveled.toFixed(2)}km`
   );
   showFeedback(`Set to ${km.toFixed(2)}km`, 'success');
 }
@@ -1170,7 +1125,9 @@ function setTotalDistance(km) {
   updateDisplayElements();
 
   console.log(
-    `✅ Set total trip distance: ${previousTotal.toFixed(2)}km → ${km.toFixed(2)}km`
+    `✅ Set total trip distance: ${previousTotal.toFixed(2)}km → ${km.toFixed(
+      2
+    )}km`
   );
   showFeedback(`Trip distance: ${km.toFixed(2)}km`, 'success');
 }
@@ -1196,23 +1153,21 @@ function jumpToProgress(percent) {
   debouncedSave();
 
   console.log(
-    `✅ Jumped to ${percent}% progress (${previousTotal.toFixed(2)}km → ${targetDistance.toFixed(2)}km)`
+    `✅ Jumped to ${percent}% progress (${previousTotal.toFixed(
+      2
+    )}km → ${targetDistance.toFixed(2)}km)`
   );
   showFeedback(`${percent}% progress`, 'success');
 }
 
 // Status function for debugging connection and system state
 function getStatus() {
-  const connection = appState.connection;
-  const connectionStatus = connection
-    ? connection.readyState === WebSocket.OPEN
+  const listener = appState.rtirtLocationListener;
+  const connectionStatus = listener
+    ? appState.isConnected
       ? '✅ Connected'
-      : connection.readyState === WebSocket.CONNECTING
-        ? '🔄 Connecting'
-        : connection.readyState === WebSocket.CLOSING
-          ? '🔌 Closing'
-          : '❌ Disconnected'
-    : '❌ No connection';
+      : '❌ Disconnected'
+    : '❌ No listener';
 
   const mode = WALKING_MODE ? '🚶 Walking' : '🏍️ Vehicle';
   const units = appState.useImperialUnits ? 'miles' : 'km';
@@ -1223,26 +1178,44 @@ function getStatus() {
 🔍 RTIRL OVERLAY STATUS:
 
 🔑 Configuration:
-   User ID: "${RTIRL_USER_ID}"
-   Mode: ${mode} (max speed: ${WALKING_MODE ? WALKING_MAX_SPEED_KMH : VEHICLE_MAX_SPEED_KMH}km/h)
+   User ID: '${RTIRL_USER_ID}'
+   Mode: ${mode} (max speed: ${
+     WALKING_MODE ? WALKING_MAX_SPEED_KMH : VEHICLE_MAX_SPEED_KMH
+   }km/h)
    Target: ${(TOTAL_DISTANCE_KM * unitMultiplier).toFixed(1)} ${units}
-   Start Location: ${startLocation ? `${startLocation.lat.toFixed(4)}, ${startLocation.lon.toFixed(4)}` : 'Not set'}
+   Start Location: ${
+     startLocation
+       ? `${startLocation.lat.toFixed(4)}, ${startLocation.lon.toFixed(4)}`
+       : 'Not set'
+   }
 
 🌐 Connection:
    Status: ${connectionStatus}
-   WebSocket URL: wss://rtirl.com/ws/${RTIRL_USER_ID}
-   Reconnect attempts: ${appState.reconnectAttempts}
+   API: @rtirl/api v1.2.1 (handles reconnection automatically)
+   User ID: ${RTIRL_USER_ID}
    Demo mode: ${isDemoMode() ? '✅ Active' : '❌ Disabled'}
 
 📍 GPS Data:
-   Last position: ${lastPosition ? `${lastPosition.lat.toFixed(4)}, ${lastPosition.lon.toFixed(4)}` : 'None'}
-   Last update: ${lastUpdateTime ? new Date(lastUpdateTime).toLocaleTimeString() : 'Never'}
-   Time since update: ${lastUpdateTime ? `${Math.round(Date.now() - lastUpdateTime / 1000)}s ago` : 'N/A'}
+   Last position: ${
+     lastPosition
+       ? `${lastPosition.lat.toFixed(4)}, ${lastPosition.lon.toFixed(4)}`
+       : 'None'
+   }
+   Last update: ${
+     lastUpdateTime ? new Date(lastUpdateTime).toLocaleTimeString() : 'Never'
+   }
+   Time since update: ${
+     lastUpdateTime
+       ? `${Math.round((Date.now() - lastUpdateTime) / 1000)}s ago`
+       : 'N/A'
+   }
 
 📊 Progress:
    Total: ${(totalDistanceTraveled * unitMultiplier).toFixed(2)} ${units}
    Today: ${(todayDistanceTraveled * unitMultiplier).toFixed(2)} ${units}
-   Remaining: ${(Math.max(0, TOTAL_DISTANCE_KM - totalDistanceTraveled) * unitMultiplier).toFixed(2)} ${units}
+   Remaining: ${(
+     Math.max(0, TOTAL_DISTANCE_KM - totalDistanceTraveled) * unitMultiplier
+   ).toFixed(2)} ${units}
    Progress: ${((totalDistanceTraveled / TOTAL_DISTANCE_KM) * 100).toFixed(1)}%
 
 ⚙️ Settings:
@@ -1252,7 +1225,7 @@ function getStatus() {
   `);
 
   // Additional diagnostics
-  if (connection && connection.readyState !== WebSocket.OPEN) {
+  if (listener && !appState.isConnected) {
     console.log('💡 Connection troubleshooting:');
     console.log('  1. Check user ID is correct');
     console.log('  2. Verify RTIRL app is broadcasting GPS');
@@ -1265,7 +1238,7 @@ function getStatus() {
 
   return {
     userID: RTIRL_USER_ID,
-    connected: connection?.readyState === WebSocket.OPEN,
+    connected: appState.isConnected,
     totalDistance: totalDistanceTraveled,
     todayDistance: todayDistanceTraveled,
     progress: (totalDistanceTraveled / TOTAL_DISTANCE_KM) * 100,
@@ -1311,7 +1284,9 @@ function showConsoleCommands() {
 • easyImport() - Import backup with simple dialog (recommended)
 • importTripData(jsonString) - Import backup manually
 
-Type any function name to use it. Current trip: ${totalDistanceTraveled.toFixed(2)}/${TOTAL_DISTANCE_KM}km
+Type any function name to use it. Current trip: ${totalDistanceTraveled.toFixed(
+    2
+  )}/${TOTAL_DISTANCE_KM}km
   `);
 }
 
@@ -1338,8 +1313,8 @@ console.log('🔧 Console functions loaded:', {
 
 // Cleanup on page unload
 window.addEventListener('beforeunload', () => {
-  if (appState.connection?.readyState === WebSocket.OPEN) {
-    appState.connection.close();
+  if (appState.rtirtLocationListener) {
+    appState.rtirtLocationListener();
   }
   if (appState.demoTimer) {
     clearInterval(appState.demoTimer);

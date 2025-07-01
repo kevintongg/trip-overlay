@@ -151,27 +151,30 @@ Planning: Test everything locally first, then deploy to cloud
 
 ## **Backup & Restore Capability Comparison**
 
-| Feature                    | Local OBS                    | IRLToolkit Cloud            |
-|----------------------------|------------------------------|----------------------------|
-| **Create Backup**          | ✅ `exportTripData()`        | ✅ `?export=true`           |
+| Feature                    | Local OBS                     | IRLToolkit Cloud             |
+| -------------------------- | ----------------------------- | ---------------------------- |
+| **Create Backup**          | ✅ `exportTripData()`         | ✅ `?export=true`            |
 | **Download Backup File**   | ✅ Direct to Downloads folder | ✅ To IRLToolkit file system |
-| **Restore Full Backup**    | ✅ `easyImport()` + dialog    | ❌ **NOT POSSIBLE**         |
-| **Manual Restore**         | ✅ `importTripData(json)`     | ❌ **NOT POSSIBLE**         |
-| **Basic Progress Setting** | ✅ Console + URL parameters   | ✅ URL parameters only      |
-| **Complex Data Restore**   | ✅ All data preserved         | ❌ **MAJOR LIMITATION**     |
+| **Restore Full Backup**    | ✅ `easyImport()` + dialog    | ❌ **NOT POSSIBLE**          |
+| **Manual Restore**         | ✅ `importTripData(json)`     | ❌ **NOT POSSIBLE**          |
+| **Basic Progress Setting** | ✅ Console + URL parameters   | ✅ URL parameters only       |
+| **Complex Data Restore**   | ✅ All data preserved         | ❌ **MAJOR LIMITATION**      |
 
 ### **What "Complex Data" Includes:**
+
 - Auto-detected start location coordinates
 - Precise timestamp data for intelligent daily resets
 - Activity tracking for travel session continuity
 - Unit preference with trip state
 
 ### **IRLToolkit Workarounds:**
+
 - **Basic recovery:** Use `?setDistance=X&units=km` to manually recreate progress
 - **Documentation only:** Treat backups as records, not restoration tools
 - **Local restoration:** Temporarily set up locally to restore, then note values for manual recreation
 
 ### **Critical Decision Point:**
+
 **For trips where backup/restore is essential → Use Local OBS**  
 **For casual streaming with acceptable loss risk → IRLToolkit is fine**
 
