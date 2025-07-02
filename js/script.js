@@ -168,7 +168,9 @@ function connectToRtirl() {
   console.log(`🌐 Creating RTIRL API client for user: ${RTIRL_USER_ID}`);
 
   try {
-    if (appState.rtirtLocationListener) appState.rtirtLocationListener();
+    if (appState.rtirtLocationListener) {
+      appState.rtirtLocationListener();
+    }
 
     const streamer = RealtimeIRL.forStreamer('twitch', RTIRL_USER_ID);
 
@@ -196,7 +198,9 @@ const debouncedSave = (() => {
 })();
 
 function handleSpeedData(speedData) {
-  if (!speedData || typeof speedData.kmh === 'undefined') return;
+  if (!speedData || typeof speedData.kmh === 'undefined') {
+    return;
+  }
 
   const speed = speedData.kmh;
   let newMode = 'STATIONARY';
@@ -239,7 +243,9 @@ function handleSpeedData(speedData) {
 }
 
 function setMovementMode(mode) {
-  if (appState.currentMode === mode) return;
+  if (appState.currentMode === mode) {
+    return;
+  }
 
   // Log mode change
   console.log(`MODE CHANGE: ${appState.currentMode} → ${mode}`);
@@ -250,11 +256,11 @@ function setMovementMode(mode) {
   if (domElements.avatar) {
     // Compare only the path/filename, not the full URL
     const currentAvatar = domElements.avatar.src.split('/').slice(-2).join('/');
-    const newAvatar = MOVEMENT_MODES[mode].avatar;
+    const newAvatar = modeConfig.avatar;
     if (currentAvatar !== newAvatar) {
       domElements.avatar.src = newAvatar;
       console.log(
-        `AVATAR UPDATE: Set to ${mode} avatar (${MOVEMENT_MODES[mode].avatar})`
+        `AVATAR UPDATE: Set to ${mode} avatar (${modeConfig.avatar})`
       );
     }
   }
@@ -361,13 +367,14 @@ function handleRtirtData(data) {
     // Update avatar to match usedMode if different from current
     if (domElements.avatar) {
       // Compare only the path/filename, not the full URL
-      const currentAvatar = domElements.avatar.src.split('/').slice(-2).join('/');
+      const currentAvatar = domElements.avatar.src
+        .split('/')
+        .slice(-2)
+        .join('/');
       const newAvatar = MOVEMENT_MODES[usedMode].avatar;
       if (currentAvatar !== newAvatar) {
         domElements.avatar.src = newAvatar;
-        console.log(
-          `AVATAR UPDATE: Set to ${usedMode} avatar (${newAvatar})`
-        );
+        console.log(`AVATAR UPDATE: Set to ${usedMode} avatar (${newAvatar})`);
       }
     }
 
@@ -390,7 +397,9 @@ function calculateDistance(pos1, pos2) {
   const key = `${pos1.lat.toFixed(6)},${pos1.lon.toFixed(6)}-${pos2.lat.toFixed(
     6
   )},${pos2.lon.toFixed(6)}`;
-  if (distanceCache.has(key)) return distanceCache.get(key);
+  if (distanceCache.has(key)) {
+    return distanceCache.get(key);
+  }
 
   const R = 6371;
   const dLat = ((pos2.lat - pos1.lat) * Math.PI) / 180;
@@ -436,10 +445,14 @@ function sanitizeUIValue(v) {
 
 function shouldResetTodayDistance(savedDate, lastActiveTime) {
   const now = new Date();
-  if (!savedDate || savedDate === now.toDateString()) return false;
+  if (!savedDate || savedDate === now.toDateString()) {
+    return false;
+  }
   if (lastActiveTime) {
     const hoursSinceLastActive = (now - new Date(lastActiveTime)) / 36e5;
-    if (hoursSinceLastActive < 6) return false;
+    if (hoursSinceLastActive < 6) {
+      return false;
+    }
   }
   return true;
 }
@@ -447,7 +460,9 @@ function shouldResetTodayDistance(savedDate, lastActiveTime) {
 function loadPersistedData() {
   try {
     const saved = localStorage.getItem('trip-overlay-data');
-    if (!saved) return;
+    if (!saved) {
+      return;
+    }
     const data = JSON.parse(saved);
     appState.totalDistanceTraveled = validateDistance(
       data.totalDistanceTraveled
@@ -557,6 +572,7 @@ function exportTripData() {
     link.click();
     showFeedback('✅ Backup downloaded!', 'success');
   } catch (e) {
+    console.error('❌ Backup failed:', e);
     showFeedback('❌ Backup failed', 'error');
   }
 }
@@ -581,8 +597,8 @@ function importTripData(jsonString) {
     showFeedback('✅ Data imported successfully!', 'success');
     console.log('CONSOLE: Trip data imported.');
   } catch (e) {
-    showFeedback('❌ Failed to import data', 'error');
     console.error('CONSOLE: Failed to parse or apply import data:', e);
+    showFeedback('❌ Failed to import data', 'error');
   }
 }
 
@@ -603,7 +619,9 @@ function checkURLParameters() {
       if (value === 'true') {
         const panel =
           domElements.controlPanel || document.getElementById('control-panel');
-        if (panel) panel.style.display = 'flex';
+        if (panel) {
+          panel.style.display = 'flex';
+        }
       }
     },
     reset: value => {
@@ -705,8 +723,9 @@ function setupHotkeys() {
       e.preventDefault();
       const panel =
         domElements.controlPanel || document.getElementById('control-panel');
-      if (panel)
+      if (panel) {
         panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
+      }
     }
   });
 }
@@ -965,7 +984,13 @@ function startDemoMode() {
 }
 
 window.addEventListener('beforeunload', () => {
-  if (appState.rtirtLocationListener) appState.rtirtLocationListener();
-  if (appState.demoTimer) clearInterval(appState.demoTimer);
-  if (appState.uiUpdateTimeout) clearTimeout(appState.uiUpdateTimeout);
+  if (appState.rtirtLocationListener) {
+    appState.rtirtLocationListener();
+  }
+  if (appState.demoTimer) {
+    clearInterval(appState.demoTimer);
+  }
+  if (appState.uiUpdateTimeout) {
+    clearTimeout(appState.uiUpdateTimeout);
+  }
 });
