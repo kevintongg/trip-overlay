@@ -444,7 +444,7 @@ function resetTodayDistance() {
   appState.todayDistanceTraveled = 0;
   updateDisplayElements();
   savePersistedData();
-  showFeedback("✅ Today's distance reset", 'success');
+  showFeedback('✅ Today\'s distance reset', 'success');
 }
 
 function exportTripData() {
