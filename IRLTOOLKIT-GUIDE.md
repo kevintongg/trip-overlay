@@ -141,7 +141,7 @@ New:    https://your-username.github.io/trip-overlay/?export=true&reset=trip
 - ✅ **Export backup** - run `exportTripData()` in local console
 - ✅ **Verify GitHub Pages** - ensure overlay loads correctly
 - ✅ **Check IRLToolkit** - confirm browser source working
-- ✅ **Plan route** - set correct total distance in config
+- ✅ **Plan route** - set correct total distance in config or via URL parameter
 
 ### **During Stream Management**
 

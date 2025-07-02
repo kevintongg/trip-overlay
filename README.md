@@ -114,27 +114,11 @@ Edit `js/script.js` and update these values:
 ```javascript
 const RTIRL_USER_ID = 'your_rtirl_user_id'; // Your RTIRL profile ID
 const TOTAL_DISTANCE_KM = 205.0; // Total trip distance in km
-
-// Choose your start location method:
-const USE_AUTO_START = false; // Set to true for automatic detection
-const MANUAL_START_LOCATION = { lat: 50.0755, lon: 14.4378 }; // Starting coordinates (Prague example)
 ```
 
-#### Start Location Options:
+The new script is designed to be "smart" and requires minimal configuration. The start location is detected automatically, and the movement type (walking, cycling, vehicle) is determined by your speed.
 
-**Manual Start Location** (`USE_AUTO_START = false`):
-
-- ✅ Shows true trip progress from planned starting point
-- ✅ Works even if you start streaming mid-journey
-- ✅ Consistent results across multiple streams
-- ❌ Requires GPS coordinates for each new trip
-
-**Auto-Detect Start** (`USE_AUTO_START = true`):
-
-- ✅ Zero configuration - works anywhere instantly
-- ✅ Perfect for spontaneous trips
-- ❌ "Total distance" becomes "distance since stream started"
-- ❌ Resets if you restart the stream
+For more advanced configurations, such as setting a different total distance on the fly, you can use URL parameters. For example, to set the total distance to 500km, you would add `?totalDistance=500` to your URL.
 
 ### 3. Choose Your Hosting Method
 
@@ -200,15 +184,26 @@ body {
 ### Distance Settings
 
 - **TOTAL_DISTANCE_KM**: Your planned trip distance (measure with Google Maps)
-- **USE_AUTO_START**: Choose between automatic start detection or manual coordinates
-- **MANUAL_START_LOCATION**: GPS coordinates of your starting point (when not using auto-start)
 
 ### GPS Drift Protection
 
 The overlay includes smart filtering to prevent GPS drift from inflating your distances:
 
 ```javascript
-const MIN_MOVEMENT_METERS = 10; // Only count movements over 10 meters
+const MOVEMENT_MODES = {
+  STATIONARY: {
+    minMovementM: 1,
+  },
+  WALKING: {
+    minMovementM: 1,
+  },
+  CYCLING: {
+    minMovementM: 5,
+  },
+  VEHICLE: {
+    minMovementM: 10,
+  },
+};
 ```
 
 **What this means:**
@@ -281,7 +276,7 @@ exportTripData(); // Downloads backup file to Downloads folder
 **Restore your progress:**
 
 ```javascript
-easyImport(); // Shows dialog to paste backup data
+importTripData(jsonString); // Shows dialog to paste backup data
 ```
 
 **IRLToolkit users:** Use URL parameter `?export=true` for backup
@@ -398,15 +393,6 @@ exportTripData(); // Download backup file
 importTripData(jsonString); // Import backup data
 ```
 
-**✅ Keyboard Hotkeys (Local OBS Only):**
-
-```
-Ctrl+H         - Toggle control panel (auto-hides after 15 seconds)
-Ctrl+Shift+R   - Quick daily distance reset
-Ctrl+Shift+B   - Quick backup export
-Ctrl+Shift+T   - Reset entire trip (with confirmation)
-```
-
 **✅ URL Parameters:**
 
 ```
@@ -429,7 +415,7 @@ _Shows clickable buttons - use in separate browser window_
 
 ```
 Stream URL: https://yourdomain.com/trip-overlay/?stream=true
-Quick actions: Use Ctrl+Shift+R for daily resets
+Quick actions: Use console commands for daily resets
 Emergency: F12 console + exportTripData() + resetTripProgress()
 ```
 
@@ -1076,6 +1062,6 @@ https://yourusername.github.io/trip-overlay/?controls=true
 
 **☁️ IRLToolkit Cloud Users:** See **[IRLTOOLKIT-GUIDE.md](./IRLTOOLKIT-GUIDE.md)** - only URL parameters work in cloud
 
-**🔧 Feature Comparison:** See **[COMPATIBILITY.md](./COMPATIBILITY.md)** - detailed breakdown of what works where
+**🔧 Feature Compatibility:** See **[COMPATIBILITY.md](./COMPATIBILITY.md)** - detailed breakdown of what works where
 
 ---

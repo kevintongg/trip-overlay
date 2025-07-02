@@ -22,10 +22,6 @@ const RTIRL_USER_ID = 'YOUR_ACTUAL_RTIRL_ID';
 
 // Total distance of your planned trip (in kilometers)
 const TOTAL_DISTANCE_KM = 205.0; // Change this to your trip distance
-
-// Choose start location method:
-const USE_AUTO_START = false; // Set to true for automatic detection
-const MANUAL_START_LOCATION = { lat: 50.0755, lon: 14.4378 }; // Your start coordinates
 ```
 
 ### 3. **Add to OBS Studio**
@@ -43,14 +39,11 @@ const MANUAL_START_LOCATION = { lat: 50.0755, lon: 14.4378 }; // Your start coor
    - Resize as needed
    - Set blend mode to "Normal"
 
-### 4. **Stream Controls (Hidden from Viewers)**
+### 4. **Stream Controls**
 
-While streaming, use these hotkeys:
+While streaming, you can use URL parameters to control the overlay. For example, to reset the daily distance, you would add `?reset=today` to the URL in your OBS browser source.
 
-- **Ctrl + H**: Toggle control panel (auto-hides after 15s)
-- **Ctrl + Shift + R**: Reset today's distance
-- **Ctrl + Shift + B**: Download backup
-- **Ctrl + Shift + T**: Reset entire trip (with confirmation)
+For a full list of commands, see the [API.md](./API.md) file.
 
 ### 5. **URL Parameters for Stream Management**
 
@@ -87,7 +80,6 @@ Example: `file:///path/to/index.html?stream=true&controls=false`
 
 - The overlay automatically filters GPS jumps >200km/h
 - Check console for "GPS jump detected" warnings
-- Consider using manual start location in areas with poor GPS
 
 ### Performance Issues
 
@@ -110,32 +102,15 @@ Example: `file:///path/to/index.html?stream=true&controls=false`
 const TOTAL_DISTANCE_KM = 1500.0; // e.g., for a cross-country trip
 ```
 
-### Auto-Start vs Manual Start
+Or, you can use the `totalDistance` URL parameter:
 
-```javascript
-// AUTO: Detects start location from first GPS reading
-const USE_AUTO_START = true;
-
-// MANUAL: Set exact start coordinates
-const USE_AUTO_START = false;
-const MANUAL_START_LOCATION = { lat: 52.52, lon: 13.405 }; // Berlin
-```
-
-### Performance Tuning
-
-```javascript
-// Adjust these constants in script.js for different update rates
-const GPS_UPDATE_THROTTLE = 1000; // GPS update frequency (ms)
-const UI_UPDATE_DEBOUNCE = 100; // UI smoothness (ms)
-const SAVE_DEBOUNCE_DELAY = 500; // Save frequency (ms)
-```
+`?totalDistance=1500`
 
 ## 📊 Data Persistence
 
 ### Backup Your Progress
 
-- Use **Ctrl + Shift + B** to download JSON backup
-- Store backups before switching streaming setups
+- Use the `exportTripData()` console command to download a JSON backup.
 
 ### Restore Progress
 
