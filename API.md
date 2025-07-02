@@ -14,7 +14,7 @@ Access these functions via your browser's developer console (F12 in Chrome/Firef
 
 Adds or subtracts distance from the current trip total.
 
--   **`km`** (number): The distance to add in kilometers. Use a negative value to subtract.
+- **`km`** (number): The distance to add in kilometers. Use a negative value to subtract.
 
 **Example:** `addDistance(10.5)` or `addDistance(-5)`
 
@@ -24,7 +24,7 @@ Adds or subtracts distance from the current trip total.
 
 Sets the total distance traveled to a specific value.
 
--   **`km`** (number): The target distance in kilometers (must be ≥ 0).
+- **`km`** (number): The target distance in kilometers (must be ≥ 0).
 
 **Example:** `setDistance(100)`
 
@@ -34,7 +34,7 @@ Sets the total distance traveled to a specific value.
 
 Jumps to a specific percentage of the trip's completion.
 
--   **`percent`** (number): The target percentage (0-100).
+- **`percent`** (number): The target percentage (0-100).
 
 **Example:** `jumpToProgress(50)`
 
@@ -44,7 +44,7 @@ Jumps to a specific percentage of the trip's completion.
 
 Changes the total trip distance target.
 
--   **`km`** (number): The new total trip distance in kilometers (must be > 0).
+- **`km`** (number): The new total trip distance in kilometers (must be > 0).
 
 **Example:** `setTotalDistance(500)`
 
@@ -90,7 +90,7 @@ Downloads a backup file of the current trip progress.
 
 Restores trip progress from a backup file's JSON content.
 
--   **`jsonString`** (string): The JSON content from a backup file.
+- **`jsonString`** (string): The JSON content from a backup file.
 
 ### Help
 
@@ -106,32 +106,32 @@ URL parameters are the most flexible way to control the overlay, especially in c
 
 ### Core Configuration
 
--   `?totalDistance=X`: Sets the total trip distance. (e.g., `500`)
--   `?units=miles` or `?units=km`: Sets the display units.
+- `?totalDistance=X`: Sets the total trip distance. (e.g., `500`)
+- `?units=miles` or `?units=km`: Sets the display units.
 
 ### Live Adjustments
 
--   `?addDistance=X`: Adds or subtracts kilometers. (e.g., `10.5` or `-5`)
--   `?setDistance=X`: Sets the current traveled distance. (e.g., `100`)
--   `?jumpTo=X`: Jumps to a percentage of completion. (e.g., `50`)
+- `?addDistance=X`: Adds or subtracts kilometers. (e.g., `10.5` or `-5`)
+- `?setDistance=X`: Sets the current traveled distance. (e.g., `100`)
+- `?jumpTo=X`: Jumps to a percentage of completion. (e.g., `50`)
 
 ### Resets
 
--   `?reset=trip`: Resets all progress.
--   `?reset=today`: Resets today's distance.
--   `?reset=location`: Resets the start location.
--   `?resets=type1,type2`: Performs multiple resets. (e.g., `today,location`)
+- `?reset=trip`: Resets all progress.
+- `?reset=today`: Resets today's distance.
+- `?reset=location`: Resets the start location.
+- `?resets=type1,type2`: Performs multiple resets. (e.g., `today,location`)
 
 ### Data Management
 
--   `?export=true`: Triggers a backup download.
--   `?import=...`: Imports data from a URL-encoded JSON string.
+- `?export=true`: Triggers a backup download.
+- `?import=...`: Imports data from a URL-encoded JSON string.
 
 ### UI and Controls
 
--   `?controls=true`: Shows the on-screen control panel.
--   `?stream=true`: Enables stream mode with hidden hotkey controls (`Ctrl+H`).
+- `?controls=true`: Shows the on-screen control panel.
+- `?stream=true`: Enables stream mode with hidden hotkey controls (`Ctrl+H`).
 
 ### Testing
 
--   `?demo=true`: Enables demo mode for testing without a live RTIRL feed.
+- `?demo=true`: Enables demo mode for testing without a live RTIRL feed.
