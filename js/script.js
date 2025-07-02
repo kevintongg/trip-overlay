@@ -9,31 +9,40 @@ const TOTAL_DISTANCE_KM = 2.0; // distance from vienna to zagreb is ~371km
 // DEMO MODE: Set to true for testing without RTIRL (use ?demo=true in URL)
 const DEMO_MODE = false;
 
+const stationaryAvatar =
+  'https://raw.githubusercontent.com/kevintongg/trip-overlay/refs/heads/main/assets/stationary.png';
+const walkingAvatar =
+  'https://raw.githubusercontent.com/kevintongg/trip-overlay/refs/heads/main/assets/walking.gif';
+const cyclingAvatar =
+  'https://raw.githubusercontent.com/kevintongg/trip-overlay/refs/heads/main/assets/cycling.gif';
+const motorbikeAvatar =
+  'https://raw.githubusercontent.com/kevintongg/trip-overlay/refs/heads/main/assets/motorbike.gif';
+
 // --- SMART MOVEMENT CONFIGURATION ---
 const MOVEMENT_MODES = {
   STATIONARY: {
     maxSpeed: 2,
     minMovementM: 1,
     gpsThrottle: 5000, // Check less often when still
-    avatar: 'assets/stationary.png', // Default avatar
+    avatar: stationaryAvatar, // Default avatar
   },
   WALKING: {
     maxSpeed: 10, // Up to 10 km/h
     minMovementM: 1,
     gpsThrottle: 2000,
-    avatar: 'assets/walking.gif', // Walking avatar
+    avatar: walkingAvatar, // Walking avatar,
   },
   CYCLING: {
     maxSpeed: 35, // Up to 35 km/h
     minMovementM: 5,
     gpsThrottle: 1500,
-    avatar: 'assets/cycling.gif', // Bicycle avatar
+    avatar: cyclingAvatar, // Bicycle avatar
   },
   VEHICLE: {
     maxSpeed: 200, // Up to 200 km/h
     minMovementM: 10,
     gpsThrottle: 1000,
-    avatar: 'assets/motorbike.gif', // Motorbike avatar
+    avatar: motorbikeAvatar, // Motorbike avatar
   },
 };
 
