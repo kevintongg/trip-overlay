@@ -4,7 +4,7 @@
 // No manual configuration (like WALKING_MODE) is needed.
 
 const RTIRL_USER_ID = '41908566'; // Replace with your real user ID
-const TOTAL_DISTANCE_KM = 1.0;
+const TOTAL_DISTANCE_KM = 1.0; // distance from vienna to zagreb is ~371km
 
 // DEMO MODE: Set to true for testing without RTIRL (use ?demo=true in URL)
 const DEMO_MODE = false;
@@ -21,19 +21,19 @@ const MOVEMENT_MODES = {
     maxSpeed: 10, // Up to 10 km/h
     minMovementM: 1,
     gpsThrottle: 2000,
-    avatar: 'assets/walking.gif', // TODO: Add a walking avatar
+    avatar: 'assets/walking.gif', // Walking avatar
   },
   CYCLING: {
     maxSpeed: 35, // Up to 35 km/h
     minMovementM: 5,
     gpsThrottle: 1500,
-    avatar: 'assets/cycling.gif', // TODO: Add a cycling avatar
+    avatar: 'assets/cycling.gif', // Bicycle avatar
   },
   VEHICLE: {
     maxSpeed: 200, // Up to 200 km/h
     minMovementM: 10,
     gpsThrottle: 1000,
-    avatar: 'assets/motorbike.gif',
+    avatar: 'assets/motorbike.gif', // Motorbike avatar
   },
 };
 
@@ -248,9 +248,11 @@ function setMovementMode(mode) {
   const modeConfig = MOVEMENT_MODES[mode];
 
   if (domElements.avatar) {
-    const newAvatarUrl = location.origin + '/' + MOVEMENT_MODES[mode].avatar;
-    if (domElements.avatar.src !== newAvatarUrl) {
-      domElements.avatar.src = MOVEMENT_MODES[mode].avatar;
+    // Compare only the path/filename, not the full URL
+    const currentAvatar = domElements.avatar.src.split('/').slice(-2).join('/');
+    const newAvatar = MOVEMENT_MODES[mode].avatar;
+    if (currentAvatar !== newAvatar) {
+      domElements.avatar.src = newAvatar;
       console.log(
         `AVATAR UPDATE: Set to ${mode} avatar (${MOVEMENT_MODES[mode].avatar})`
       );
@@ -358,11 +360,13 @@ function handleRtirtData(data) {
 
     // Update avatar to match usedMode if different from current
     if (domElements.avatar) {
-      const newAvatarUrl = location.origin + '/' + MOVEMENT_MODES[usedMode].avatar;
-      if (domElements.avatar.src !== newAvatarUrl) {
-        domElements.avatar.src = MOVEMENT_MODES[usedMode].avatar;
+      // Compare only the path/filename, not the full URL
+      const currentAvatar = domElements.avatar.src.split('/').slice(-2).join('/');
+      const newAvatar = MOVEMENT_MODES[usedMode].avatar;
+      if (currentAvatar !== newAvatar) {
+        domElements.avatar.src = newAvatar;
         console.log(
-          `AVATAR UPDATE: Set to ${usedMode} avatar (${MOVEMENT_MODES[usedMode].avatar})`
+          `AVATAR UPDATE: Set to ${usedMode} avatar (${newAvatar})`
         );
       }
     }
