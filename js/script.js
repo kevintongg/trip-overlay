@@ -15,7 +15,7 @@ const MOVEMENT_MODES = {
     maxSpeed: 2,
     minMovementM: 1,
     gpsThrottle: 5000, // Check less often when still
-    avatar: 'assets/peeguu.png', // Default avatar
+    avatar: 'assets/stationary.png', // Default avatar
   },
   WALKING: {
     maxSpeed: 10, // Up to 10 km/h
