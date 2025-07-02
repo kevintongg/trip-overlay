@@ -9,14 +9,14 @@ const TOTAL_DISTANCE_KM = 2.0; // distance from vienna to zagreb is ~371km
 // DEMO MODE: Set to true for testing without RTIRL (use ?demo=true in URL)
 const DEMO_MODE = false;
 
-const stationaryAvatar =
-  'https://raw.githubusercontent.com/kevintongg/trip-overlay/refs/heads/main/assets/stationary.png';
-const walkingAvatar =
-  'https://raw.githubusercontent.com/kevintongg/trip-overlay/refs/heads/main/assets/walking.gif';
-const cyclingAvatar =
-  'https://raw.githubusercontent.com/kevintongg/trip-overlay/refs/heads/main/assets/cycling.gif';
-const motorbikeAvatar =
-  'https://raw.githubusercontent.com/kevintongg/trip-overlay/refs/heads/main/assets/motorbike.gif';
+// const stationaryAvatar =
+//   'https://raw.githubusercontent.com/kevintongg/trip-overlay/refs/heads/main/assets/stationary.png';
+// const walkingAvatar =
+//   'https://raw.githubusercontent.com/kevintongg/trip-overlay/refs/heads/main/assets/walking.gif';
+// const cyclingAvatar =
+//   'https://raw.githubusercontent.com/kevintongg/trip-overlay/refs/heads/main/assets/cycling.gif';
+// const motorbikeAvatar =
+//   'https://raw.githubusercontent.com/kevintongg/trip-overlay/refs/heads/main/assets/motorbike.gif';
 
 // --- SMART MOVEMENT CONFIGURATION ---
 const MOVEMENT_MODES = {
@@ -24,25 +24,25 @@ const MOVEMENT_MODES = {
     maxSpeed: 2,
     minMovementM: 1,
     gpsThrottle: 5000, // Check less often when still
-    avatar: stationaryAvatar, // Default avatar
+    avatar: 'assets/stationary.png', // Default avatar
   },
   WALKING: {
     maxSpeed: 10, // Up to 10 km/h
     minMovementM: 1,
     gpsThrottle: 2000,
-    avatar: walkingAvatar, // Walking avatar,
+    avatar: 'assets/walking.gif', // Walking avatar,
   },
   CYCLING: {
     maxSpeed: 35, // Up to 35 km/h
     minMovementM: 5,
     gpsThrottle: 1500,
-    avatar: cyclingAvatar, // Bicycle avatar
+    avatar: 'assets/cycling.gif', // Bicycle avatar
   },
   VEHICLE: {
     maxSpeed: 200, // Up to 200 km/h
     minMovementM: 10,
     gpsThrottle: 1000,
-    avatar: motorbikeAvatar, // Motorbike avatar
+    avatar: 'assets/motorbike.gif', // Motorbike avatar
   },
 };
 
