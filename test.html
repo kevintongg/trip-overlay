@@ -1,0 +1,78 @@
+<!--
+  TODO: If this test is successful, refactor the smart detection logic 
+  from js/smart_script.js into the main js/script.js file and update index.html.
+-->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Smart Detection Test - Trip Overlay</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <!-- Use CDN version to avoid complex module resolution -->
+    <script src="https://cdn.jsdelivr.net/npm/@rtirl/api@latest/lib/index.min.js"></script>
+  </head>
+  <body>
+    <div id="overlay-container">
+      <div id="progress-bar">
+        <div id="progress-bar-traveled"></div>
+        <img id="avatar" src="assets/motorbike.gif" alt="motorbike" />
+      </div>
+
+      <div id="data-container">
+        <div class="data-box">
+          <span id="distance-traveled">0.00 km</span>
+          <div class="label">traveled</div>
+        </div>
+        <div class="data-box today">
+          <span id="distance-today">0.0 km</span>
+          <div class="label">today</div>
+        </div>
+        <div class="data-box">
+          <span id="distance-remaining">205.00 km</span>
+          <div class="label">remaining</div>
+        </div>
+      </div>
+
+      <!-- Enhanced control panel for IRLToolkit/cloud environments -->
+      <div id="control-panel" style="display: none">
+        <div class="control-header">Stream Controls</div>
+        <div class="control-row">
+          <button
+            id="reset-today-btn"
+            onclick="resetTodayDistance()"
+            title="Reset today's distance - most common for daily tours"
+          >
+            🔄 Reset Today
+          </button>
+          <button
+            id="export-btn"
+            onclick="exportTripData()"
+            title="Download backup file"
+          >
+            💾 Backup
+          </button>
+        </div>
+        <div class="control-row secondary">
+          <button
+            id="reset-location-btn"
+            onclick="resetAutoStartLocation()"
+            title="Re-detect start location"
+          >
+            📍 Fix Start
+          </button>
+          <button
+            id="reset-all-btn"
+            onclick="resetTripProgress()"
+            title="⚠️ Reset entire trip - use carefully!"
+            class="danger"
+          >
+            🗑️ Reset All
+          </button>
+        </div>
+        <div id="action-feedback" class="feedback"></div>
+      </div>
+    </div>
+
+    <script src="js/smart_script.js"></script>
+  </body>
+</html>

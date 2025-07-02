@@ -1,0 +1,667 @@
+// --- CONFIGURATION ---
+// SMART MOVEMENT DETECTION:
+// This script automatically detects movement type based on speed.
+// No manual configuration (like WALKING_MODE) is needed.
+
+const RTIRL_USER_ID = ''; // Replace with your real user ID
+const TOTAL_DISTANCE_KM = 205.0;
+
+// DEMO MODE: Set to true for testing without RTIRL (use ?demo=true in URL)
+const DEMO_MODE = false;
+
+// --- SMART MOVEMENT CONFIGURATION ---
+const MOVEMENT_MODES = {
+  STATIONARY: {
+    maxSpeed: 2,
+    minMovementM: 1,
+    gpsThrottle: 5000, // Check less often when still
+    avatar: 'assets/motorbike.gif', // Default avatar
+  },
+  WALKING: {
+    maxSpeed: 10, // Up to 10 km/h
+    minMovementM: 1,
+    gpsThrottle: 2000,
+    avatar: 'assets/walking.gif', // TODO: Add a walking avatar
+  },
+  CYCLING: {
+    maxSpeed: 35, // Up to 35 km/h
+    minMovementM: 5,
+    gpsThrottle: 1500,
+    avatar: 'assets/cycling.gif', // TODO: Add a cycling avatar
+  },
+  VEHICLE: {
+    maxSpeed: 200, // Up to 200 km/h
+    minMovementM: 10,
+    gpsThrottle: 1000,
+    avatar: 'assets/motorbike.gif',
+  },
+};
+
+// Time (in ms) to wait before switching to a slower mode (e.g., from vehicle to walking)
+const MODE_SWITCH_DELAY = 10000; // 10 seconds
+
+// --- PERFORMANCE & PERSISTENCE ---
+const UI_UPDATE_DEBOUNCE = 100;
+const SAVE_DEBOUNCE_DELAY = 500;
+
+// --- LOCATION & STATE ---
+const USE_AUTO_START = true;
+const MANUAL_START_LOCATION = { lat: 48.2082, lon: 16.3738 }; // Vienna
+
+const appState = {
+  lastSaveTime: 0,
+  uiUpdateScheduled: false,
+  uiUpdateTimeout: null,
+  rtirtLocationListener: null,
+  rtirtSpeedListener: null,
+  isConnected: false,
+  useImperialUnits: false,
+  originalTotalDistance: TOTAL_DISTANCE_KM,
+  currentMode: 'STATIONARY',
+  modeSwitchTimeout: null,
+  demoTimer: null,
+  totalDistanceTraveled: 0,
+  todayDistanceTraveled: 0,
+  lastPosition: null,
+  lastUpdateTime: 0,
+  startLocation: USE_AUTO_START ? null : MANUAL_START_LOCATION,
+};
+
+const urlParams = new URLSearchParams(window.location.search);
+function getURLParam(key) {
+  return urlParams.get(key);
+}
+function isDemoMode() {
+  return DEMO_MODE || getURLParam('demo') === 'true';
+}
+
+const domElements = {
+  traveled: null,
+  remaining: null,
+  today: null,
+  progressBar: null,
+  avatar: null,
+  controlPanel: null,
+  feedback: null,
+};
+
+function initializeDOMCache() {
+  domElements.traveled = document.getElementById('distance-traveled');
+  domElements.remaining = document.getElementById('distance-remaining');
+  domElements.today = document.getElementById('distance-today');
+  domElements.progressBar = document.getElementById('progress-bar-traveled');
+  domElements.avatar = document.getElementById('avatar');
+  domElements.controlPanel = document.getElementById('control-panel');
+  domElements.feedback = document.getElementById('action-feedback');
+}
+
+function updateDisplayElements() {
+  if (appState.uiUpdateTimeout) {
+    clearTimeout(appState.uiUpdateTimeout);
+  }
+
+  appState.uiUpdateTimeout = setTimeout(() => {
+    if (appState.uiUpdateScheduled) {
+      return;
+    }
+
+    appState.uiUpdateScheduled = true;
+    requestAnimationFrame(() => {
+      const distanceRemaining = Math.max(
+        0,
+        TOTAL_DISTANCE_KM - appState.totalDistanceTraveled
+      );
+      const progressPercent = Math.min(
+        100,
+        (appState.totalDistanceTraveled / TOTAL_DISTANCE_KM) * 100
+      );
+
+      const kmToMiles = 0.621371;
+      const unitMultiplier = appState.useImperialUnits ? kmToMiles : 1;
+      const unitSuffix = appState.useImperialUnits ? ' mi' : ' km';
+
+      if (domElements.traveled) {
+        domElements.traveled.textContent =
+          (sanitizeUIValue(appState.totalDistanceTraveled) * unitMultiplier).toFixed(2) +
+          unitSuffix;
+      }
+      if (domElements.remaining) {
+        domElements.remaining.textContent =
+          (sanitizeUIValue(distanceRemaining) * unitMultiplier).toFixed(2) +
+          unitSuffix;
+      }
+      if (domElements.today) {
+        domElements.today.textContent =
+          (sanitizeUIValue(appState.todayDistanceTraveled) * unitMultiplier).toFixed(2) +
+          unitSuffix;
+      }
+      if (domElements.progressBar) {
+        domElements.progressBar.style.width = `${progressPercent}%`;
+      }
+      if (domElements.avatar) {
+        domElements.avatar.style.left = `${progressPercent}%`;
+      }
+
+      appState.uiUpdateScheduled = false;
+      appState.uiUpdateTimeout = null;
+    });
+  }, UI_UPDATE_DEBOUNCE);
+}
+
+function connectToRtirl() {
+  if (isDemoMode()) {
+    console.log('🎭 Demo mode enabled - simulating GPS and speed data');
+    showFeedback('🎭 Demo mode active', 'success');
+    startDemoMode();
+    return;
+  }
+
+  if (!RTIRL_USER_ID || RTIRL_USER_ID.trim() === '') {
+    console.error('❌ RTIRL_USER_ID not configured.');
+    showFeedback('⚠️ RTIRL not configured', 'warning', 5000);
+    return;
+  }
+
+  console.log(`🌐 Creating RTIRL API client for user: ${RTIRL_USER_ID}`);
+
+  try {
+    if (appState.rtirtLocationListener) appState.rtirtLocationListener();
+    if (appState.rtirtSpeedListener) appState.rtirtSpeedListener();
+
+    const streamer = RealtimeIRL.forStreamer('twitch', RTIRL_USER_ID);
+
+    appState.rtirtLocationListener = streamer.addLocationListener(
+      handleRtirtData
+    );
+    appState.rtirtSpeedListener = streamer.addSpeedListener(handleSpeedData);
+
+    appState.isConnected = true;
+    showFeedback('✅ RTIRL connected', 'success');
+    console.log('✅ RTIRL API listeners for location and speed are setup');
+  } catch (error) {
+    console.error('❌ Failed to create RTIRL API client:', error);
+    showFeedback('❌ RTIRL client creation failed', 'error');
+  }
+}
+
+const debouncedSave = (() => {
+  let timeoutId;
+  return function () {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => {
+      savePersistedData();
+      appState.lastSaveTime = Date.now();
+    }, SAVE_DEBOUNCE_DELAY);
+  };
+})();
+
+function handleSpeedData(speedData) {
+  if (!speedData || typeof speedData.kmh === 'undefined') return;
+
+  const speed = speedData.kmh;
+  let newMode = 'STATIONARY';
+
+  if (speed > MOVEMENT_MODES.CYCLING.maxSpeed) {
+    newMode = 'VEHICLE';
+  } else if (speed > MOVEMENT_MODES.WALKING.maxSpeed) {
+    newMode = 'CYCLING';
+  } else if (speed > MOVEMENT_MODES.STATIONARY.maxSpeed) {
+    newMode = 'WALKING';
+  }
+
+  if (newMode !== appState.currentMode) {
+    // If moving to a slower mode, wait a bit to confirm
+    const isSlowingDown =
+      Object.keys(MOVEMENT_MODES).indexOf(newMode) <
+      Object.keys(MOVEMENT_MODES).indexOf(appState.currentMode);
+
+    if (isSlowingDown) {
+      if (!appState.modeSwitchTimeout) {
+        appState.modeSwitchTimeout = setTimeout(() => {
+          setMovementMode(newMode);
+          appState.modeSwitchTimeout = null;
+        }, MODE_SWITCH_DELAY);
+      }
+    } else {
+      // If speeding up, switch immediately
+      clearTimeout(appState.modeSwitchTimeout);
+      appState.modeSwitchTimeout = null;
+      setMovementMode(newMode);
+    }
+  } else {
+    // If mode is the same, cancel any pending switch
+    clearTimeout(appState.modeSwitchTimeout);
+    appState.modeSwitchTimeout = null;
+  }
+}
+
+function setMovementMode(mode) {
+  if (appState.currentMode === mode) return;
+
+  appState.currentMode = mode;
+  const modeConfig = MOVEMENT_MODES[mode];
+
+  if (domElements.avatar) {
+    domElements.avatar.src = modeConfig.avatar;
+  }
+
+  console.log(`🏃‍♂️ Movement mode changed to: ${mode}`);
+  showFeedback(`Mode: ${mode}`, 'info', 2000);
+}
+
+function handleRtirtData(data) {
+  const now = Date.now();
+  const modeConfig = MOVEMENT_MODES[appState.currentMode];
+
+  if (now - appState.lastUpdateTime < modeConfig.gpsThrottle) {
+    return;
+  }
+
+  const previousUpdateTime = appState.lastUpdateTime;
+  appState.lastUpdateTime = now;
+
+  if (!data) {
+    console.log('📍 Location is hidden or streamer is offline');
+    appState.isConnected = false;
+    showFeedback('🔌 RTIRL location hidden', 'warning');
+    return;
+  }
+
+  const currentPosition = { lat: data.latitude, lon: data.longitude };
+
+  if (!validateCoordinates(currentPosition)) {
+    console.warn('⚠️ Invalid GPS coordinates received:', currentPosition);
+    return;
+  }
+
+  if (USE_AUTO_START && !appState.startLocation) {
+    if (data.latitude === 0 && data.longitude === 0) {
+      console.warn('⚠️ Rejecting suspicious 0,0 coordinates for auto-start');
+      return;
+    }
+    appState.startLocation = currentPosition;
+    appState.lastPosition = currentPosition;
+    console.log('✅ Auto-detected start location:', appState.startLocation);
+    debouncedSave();
+    return;
+  }
+
+  if (appState.startLocation && appState.lastPosition) {
+    const newDistance = calculateDistance(appState.lastPosition, currentPosition);
+    const minMovementKm = modeConfig.minMovementM / 1000;
+
+    if (newDistance < minMovementKm) {
+      return; // Ignore noise
+    }
+
+    const timeDiff = Math.max(1, (now - previousUpdateTime) / 1000);
+    const maxSpeedMs = modeConfig.maxSpeed / 3.6;
+    const maxReasonableDistance = (timeDiff * maxSpeedMs) / 1000;
+
+    if (newDistance > maxReasonableDistance * 1.5) { // Add 50% buffer
+      console.warn(
+        `⚠️ GPS jump detected in ${appState.currentMode} mode: ${newDistance.toFixed(2)}km - ignoring`
+      );
+      return;
+    }
+
+    appState.totalDistanceTraveled += newDistance;
+    appState.todayDistanceTraveled += newDistance;
+
+    updateDisplayElements();
+    debouncedSave();
+  }
+
+  appState.lastPosition = currentPosition;
+}
+
+const distanceCache = new Map();
+function calculateDistance(pos1, pos2) {
+  const key = `${pos1.lat.toFixed(6)},${pos1.lon.toFixed(6)}-${pos2.lat.toFixed(
+    6
+  )},${pos2.lon.toFixed(6)}`;
+  if (distanceCache.has(key)) return distanceCache.get(key);
+
+  const R = 6371;
+  const dLat = ((pos2.lat - pos1.lat) * Math.PI) / 180;
+  const dLon = ((pos2.lon - pos1.lon) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((pos1.lat * Math.PI) / 180) *
+      Math.cos((pos2.lat * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const distance = Math.max(0, R * c);
+
+  if (distanceCache.size > 100) {
+    distanceCache.delete(distanceCache.keys().next().value);
+  }
+  distanceCache.set(key, distance);
+  return distance;
+}
+
+// --- VALIDATION & PERSISTENCE ---
+function validateDistance(d) {
+  return typeof d === 'number' && isFinite(d) && d >= 0 ? Math.min(d, 50000) : 0;
+}
+function validateCoordinates(c) {
+  return c && typeof c.lat === 'number' && typeof c.lon === 'number' &&
+         isFinite(c.lat) && isFinite(c.lon) &&
+         c.lat >= -90 && c.lat <= 90 && c.lon >= -180 && c.lon <= 180;
+}
+function sanitizeUIValue(v) {
+  return !isFinite(v) || v < 0 ? 0 : Math.min(v, 999999);
+}
+
+function shouldResetTodayDistance(savedDate, lastActiveTime) {
+    const now = new Date();
+    if (!savedDate || savedDate === now.toDateString()) return false;
+    if (lastActiveTime) {
+        const hoursSinceLastActive = (now - new Date(lastActiveTime)) / 36e5;
+        if (hoursSinceLastActive < 6) return false;
+    }
+    return true;
+}
+
+function loadPersistedData() {
+  try {
+    const saved = localStorage.getItem('trip-overlay-data');
+    if (!saved) return;
+    const data = JSON.parse(saved);
+    appState.totalDistanceTraveled = validateDistance(data.totalDistanceTraveled);
+    if (!shouldResetTodayDistance(data.date, data.lastActiveTime)) {
+      appState.todayDistanceTraveled = validateDistance(data.todayDistanceTraveled);
+    } else {
+      appState.todayDistanceTraveled = 0;
+      console.log('Daily distance reset - new travel day detected');
+    }
+    if (USE_AUTO_START && validateCoordinates(data.autoStartLocation)) {
+      appState.startLocation = data.autoStartLocation;
+    }
+    if (typeof data.useImperialUnits !== 'undefined') {
+      appState.useImperialUnits = data.useImperialUnits;
+    }
+  } catch (e) {
+    console.error('Failed to load persisted data:', e);
+  }
+}
+
+function savePersistedData() {
+  try {
+    const data = {
+      totalDistanceTraveled: appState.totalDistanceTraveled,
+      todayDistanceTraveled: appState.todayDistanceTraveled,
+      date: new Date().toDateString(),
+      lastActiveTime: new Date().toISOString(),
+      autoStartLocation: USE_AUTO_START && validateCoordinates(appState.startLocation) ? appState.startLocation : null,
+      useImperialUnits: appState.useImperialUnits,
+    };
+    localStorage.setItem('trip-overlay-data', JSON.stringify(data));
+  } catch (e) {
+    console.error('Failed to save trip data:', e);
+  }
+}
+
+function showFeedback(message, type = 'success', duration = 3000) {
+  const feedback = domElements.feedback || document.getElementById('action-feedback');
+  if (feedback) {
+    feedback.textContent = message;
+    feedback.className = `feedback ${type}`;
+    setTimeout(() => {
+      feedback.textContent = '';
+      feedback.className = 'feedback';
+    }, duration);
+  }
+}
+
+// --- CONTROLS ---
+function resetTripProgress() {
+  localStorage.removeItem('trip-overlay-data');
+  appState.totalDistanceTraveled = 0;
+  appState.todayDistanceTraveled = 0;
+  appState.startLocation = USE_AUTO_START ? null : MANUAL_START_LOCATION;
+  appState.lastPosition = null;
+  appState.lastUpdateTime = 0;
+  appState.useImperialUnits = false;
+  if (isDemoMode() && appState.demoTimer) {
+    clearInterval(appState.demoTimer);
+    appState.demoTimer = null;
+    startDemoMode();
+  }
+  updateDisplayElements();
+  showFeedback('✅ Trip reset complete!', 'success');
+}
+
+function resetAutoStartLocation() {
+  appState.startLocation = null;
+  appState.lastPosition = null;
+  savePersistedData();
+  showFeedback('✅ Start location will re-detect', 'success');
+}
+
+function resetTodayDistance() {
+  appState.todayDistanceTraveled = 0;
+  updateDisplayElements();
+  savePersistedData();
+  showFeedback('✅ Today's distance reset', 'success');
+}
+
+function exportTripData() {
+    try {
+        const data = {
+            totalDistanceTraveled: appState.totalDistanceTraveled, todayDistanceTraveled: appState.todayDistanceTraveled,
+            date: new Date().toDateString(), lastActiveTime: new Date().toISOString(),
+            autoStartLocation: (USE_AUTO_START && validateCoordinates(appState.startLocation)) ? appState.startLocation : null,
+            useImperialUnits: appState.useImperialUnits
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `trip-backup-${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+        showFeedback('✅ Backup downloaded!', 'success');
+    } catch (e) {
+        showFeedback('❌ Backup failed', 'error');
+    }
+}
+
+// --- INITIALIZATION ---
+document.addEventListener('DOMContentLoaded', () => {
+  initializeDOMCache();
+  checkURLParameters();
+  loadPersistedData();
+  updateDisplayElements();
+  connectToRtirl();
+  setupHotkeys();
+});
+
+function checkURLParameters() {
+  const paramHandlers = {
+    controls: (value) => {
+      if (value === 'true') {
+        const panel = domElements.controlPanel || document.getElementById('control-panel');
+        if (panel) panel.style.display = 'flex';
+      }
+    },
+    reset: (value) => {
+      console.log('URL parameter triggered: reset =', value);
+      switch (value) {
+        case 'trip':
+          resetTripProgress();
+          break;
+        case 'today':
+          resetTodayDistance();
+          break;
+        case 'location':
+          resetAutoStartLocation();
+          break;
+        default:
+          console.warn('Unknown reset parameter:', value);
+      }
+    },
+    resets: (value) => {
+      const resetTypes = value.split(',');
+      console.log('URL parameter triggered: multiple resets =', resetTypes);
+      resetTypes.forEach((type) => {
+        switch (type.trim()) {
+          case 'trip':
+            resetTripProgress();
+            break;
+          case 'today':
+            resetTodayDistance();
+            break;
+          case 'location':
+            resetAutoStartLocation();
+            break;
+          default:
+            console.warn('Unknown reset type in multiple resets:', type);
+        }
+      });
+    },
+    export: (value) => {
+      if (value === 'true') {
+        console.log('URL parameter triggered: exportTripData()');
+        setTimeout(exportTripData, 1000);
+      }
+    },
+    import: (value) => {
+      try {
+        const decodedData = decodeURIComponent(value);
+        console.log('URL parameter triggered: importTripData()');
+        importTripData(decodedData);
+      } catch (error) {
+        console.error('Failed to import data from URL parameter:', error);
+      }
+    },
+    units: (value) => {
+      if (value === 'miles' && !appState.useImperialUnits) {
+        appState.useImperialUnits = true;
+        updateDisplayElements();
+        console.log('URL parameter: Switched to miles');
+        showFeedback('Units: Kilometers → Miles', 'success');
+      } else if (value === 'km' && appState.useImperialUnits) {
+        appState.useImperialUnits = false;
+        updateDisplayElements();
+        console.log('URL parameter: Switched to kilometers');
+        showFeedback('Units: Miles → Kilometers', 'success');
+      }
+    },
+    totalDistance: (value) => {
+      const newTotal = parseFloat(value);
+      if (newTotal > 0 && isFinite(newTotal)) {
+        window.TOTAL_DISTANCE_KM = newTotal; // Still need to update global for now
+        appState.originalTotalDistance = newTotal;
+        updateDisplayElements();
+        console.log(`URL parameter: Set total distance to ${newTotal}km`);
+        showFeedback(`Trip distance: ${newTotal}km`, 'success');
+      }
+    },
+    addDistance: (value) => {
+      const distance = parseFloat(value);
+      if (isFinite(distance)) {
+        appState.totalDistanceTraveled = Math.max(0, appState.totalDistanceTraveled + distance);
+        appState.todayDistanceTraveled = Math.max(0, appState.todayDistanceTraveled + distance);
+        updateDisplayElements();
+        debouncedSave();
+        const action = distance >= 0 ? 'Added' : 'Adjusted';
+        console.log(`URL parameter: ${action} ${Math.abs(distance)}km`);
+        showFeedback(`${action} ${Math.abs(distance).toFixed(1)}km`, 'success');
+      }
+    },
+    setDistance: (value) => {
+      const distance = parseFloat(value);
+      if (distance >= 0 && isFinite(distance)) {
+        appState.totalDistanceTraveled = distance;
+        appState.todayDistanceTraveled = distance;
+        updateDisplayElements();
+        debouncedSave();
+        console.log(`URL parameter: Set distance to ${distance}km`);
+        showFeedback(`Set to ${distance.toFixed(1)}km`, 'success');
+      }
+    },
+    jumpTo: (value) => {
+      const percent = parseFloat(value);
+      if (percent >= 0 && percent <= 100 && isFinite(percent)) {
+        const targetDistance = (percent / 100) * TOTAL_DISTANCE_KM;
+        appState.totalDistanceTraveled = targetDistance;
+        appState.todayDistanceTraveled = targetDistance;
+        updateDisplayElements();
+        debouncedSave();
+        console.log(
+          `URL parameter: Jumped to ${percent}% (${targetDistance.toFixed(1)}km)`
+        );
+        showFeedback(`${percent}% progress`, 'success');
+      }
+    },
+    stream: (value) => {
+      if (value === 'true') {
+        setTimeout(() => {
+          showFeedback(
+            '🏍️ Stream Mode: Press Ctrl+H for controls | Ctrl+Shift+R for daily reset',
+            'success',
+            6000
+          );
+        }, 2000);
+        console.log('🎥 Stream Mode enabled - controls available via Ctrl+H hotkey');
+      }
+    },
+  };
+
+  for (const [key, handler] of Object.entries(paramHandlers)) {
+    const value = getURLParam(key);
+    if (value !== null) {
+      handler(value);
+    }
+  }
+}
+
+function setupHotkeys() {
+    document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.key === 'h') {
+            e.preventDefault();
+            const panel = domElements.controlPanel || document.getElementById('control-panel');
+            if(panel) panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
+        }
+    });
+}
+
+// --- DEMO MODE ---
+function startDemoMode() {
+  let currentSpeed = 0;
+  let distanceIncrement = 0;
+
+  appState.demoTimer = setInterval(() => {
+    // Simulate speed changes to test mode switching
+    const randomFactor = Math.random();
+    if (randomFactor > 0.95) currentSpeed = 40; // Vehicle
+    else if (randomFactor > 0.85) currentSpeed = 15; // Cycling
+    else if (randomFactor > 0.2) currentSpeed = 5; // Walking
+    else currentSpeed = 1; // Stationary
+
+    handleSpeedData({ kmh: currentSpeed });
+
+    const modeConfig = MOVEMENT_MODES[appState.currentMode];
+    distanceIncrement = (currentSpeed * (1000 / 3600)); // distance in meters per second
+
+    if (currentSpeed > MOVEMENT_MODES.STATIONARY.maxSpeed) {
+        appState.totalDistanceTraveled += distanceIncrement / 1000; // convert to km
+        appState.todayDistanceTraveled += distanceIncrement / 1000;
+    }
+
+    updateDisplayElements();
+    debouncedSave();
+
+    if (appState.totalDistanceTraveled >= TOTAL_DISTANCE_KM) {
+      clearInterval(appState.demoTimer);
+      showFeedback('🎯 Demo trip completed!', 'success');
+    }
+  }, 1000);
+}
+
+window.addEventListener('beforeunload', () => {
+  if (appState.rtirtLocationListener) appState.rtirtLocationListener();
+  if (appState.rtirtSpeedListener) appState.rtirtSpeedListener();
+  if (appState.demoTimer) clearInterval(appState.demoTimer);
+  if (appState.uiUpdateTimeout) clearTimeout(appState.uiUpdateTimeout);
+});
