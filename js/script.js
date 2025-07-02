@@ -716,6 +716,23 @@ function checkURLParameters() {
         );
       }
     },
+    setTodayDistance: value => {
+      const distance = parseFloat(value);
+      if (distance >= 0 && isFinite(distance)) {
+        appState.todayDistanceTraveled = distance;
+        updateDisplayElements();
+        debouncedSave();
+        console.log(`CONSOLE: Set today's distance to ${distance}km`);
+        showFeedback(
+          `Today's distance set to ${distance.toFixed(1)}km`,
+          'success'
+        );
+      } else {
+        console.error(
+          "Invalid today's distance. Please provide a non-negative number."
+        );
+      }
+    },
   };
 
   for (const [key, handler] of Object.entries(paramHandlers)) {
