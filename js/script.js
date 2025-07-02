@@ -4,7 +4,7 @@
 // No manual configuration (like WALKING_MODE) is needed.
 
 const RTIRL_USER_ID = '41908566'; // Replace with your real user ID
-const TOTAL_DISTANCE_KM = 2.0; // distance from vienna to zagreb is ~371km
+const TOTAL_DISTANCE_KM = 371.0; // distance from vienna to zagreb is ~371km
 
 // DEMO MODE: Set to true for testing without RTIRL (use ?demo=true in URL)
 const DEMO_MODE = false;
