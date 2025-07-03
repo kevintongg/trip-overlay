@@ -38,12 +38,12 @@ const MOVEMENT_MODES = {
     gpsThrottle: 1500,
     avatar: 'assets/cycling.gif', // Bicycle avatar
   },
-  VEHICLE: {
-    maxSpeed: 200, // Up to 200 km/h
-    minMovementM: 10,
-    gpsThrottle: 1000,
-    avatar: 'assets/motorbike.gif', // Motorbike avatar
-  },
+  // VEHICLE: {
+  //   maxSpeed: 200, // Up to 200 km/h
+  //   minMovementM: 10,
+  //   gpsThrottle: 1000,
+  //   avatar: 'assets/motorbike.gif', // Motorbike avatar
+  // },
 };
 
 // Time (in ms) to wait before switching to a slower mode (e.g., from vehicle to walking)
@@ -182,7 +182,7 @@ function connectToRtirl() {
     console.log('📋 Trip: User ID:', RTIRL_USER_ID);
     console.log('⚙️ Trip: Movement detection enabled');
     console.log(
-      `📡 Trip: GPS throttling - STATIONARY:${MOVEMENT_MODES.STATIONARY.gpsThrottle}ms, WALKING:${MOVEMENT_MODES.WALKING.gpsThrottle}ms, CYCLING:${MOVEMENT_MODES.CYCLING.gpsThrottle}ms, VEHICLE:${MOVEMENT_MODES.VEHICLE.gpsThrottle}ms`
+      `📡 Trip: GPS throttling - STATIONARY:${MOVEMENT_MODES.STATIONARY.gpsThrottle}ms, WALKING:${MOVEMENT_MODES.WALKING.gpsThrottle}ms, CYCLING:${MOVEMENT_MODES.CYCLING.gpsThrottle}ms`
     );
 
     const streamer = RealtimeIRL.forStreamer('twitch', RTIRL_USER_ID);
@@ -219,7 +219,7 @@ function handleSpeedData(speedData) {
   let newMode = 'STATIONARY';
 
   if (speed > MOVEMENT_MODES.CYCLING.maxSpeed) {
-    newMode = 'VEHICLE';
+    newMode = 'CYCLING';
   } else if (speed > MOVEMENT_MODES.WALKING.maxSpeed) {
     newMode = 'CYCLING';
   } else if (speed > MOVEMENT_MODES.STATIONARY.maxSpeed) {
@@ -230,10 +230,8 @@ function handleSpeedData(speedData) {
     // If moving to a slower mode, wait a bit to confirm
     const isSlowingDown =
       (newMode === 'STATIONARY' && appState.currentMode !== 'STATIONARY') ||
-      (newMode === 'WALKING' &&
-        (appState.currentMode === 'CYCLING' ||
-          appState.currentMode === 'VEHICLE')) ||
-      (newMode === 'CYCLING' && appState.currentMode === 'VEHICLE');
+      (newMode === 'WALKING' && appState.currentMode === 'CYCLING') ||
+      (newMode === 'CYCLING' && appState.currentMode === 'CYCLING');
 
     if (isSlowingDown) {
       if (!appState.modeSwitchTimeout) {
@@ -362,7 +360,7 @@ function handleRtirtData(data) {
     let plausibleMode = 'STATIONARY';
 
     if (plausibleSpeed > MOVEMENT_MODES.CYCLING.maxSpeed) {
-      plausibleMode = 'VEHICLE';
+      plausibleMode = 'CYCLING';
     } else if (plausibleSpeed > MOVEMENT_MODES.WALKING.maxSpeed) {
       plausibleMode = 'CYCLING';
     } else if (plausibleSpeed > MOVEMENT_MODES.STATIONARY.maxSpeed) {
@@ -375,7 +373,7 @@ function handleRtirtData(data) {
 
     // Update the current mode if the plausible mode is faster
     if (plausibleMode !== appState.currentMode) {
-      const modeOrder = ['STATIONARY', 'WALKING', 'CYCLING', 'VEHICLE'];
+      const modeOrder = ['STATIONARY', 'WALKING', 'CYCLING'];
       const currentIndex = modeOrder.indexOf(appState.currentMode);
       const plausibleIndex = modeOrder.indexOf(plausibleMode);
 
@@ -405,7 +403,7 @@ function handleRtirtData(data) {
 
     // Use the more permissive of current or plausible mode
     const usedMode = [appState.currentMode, plausibleMode].sort((a, b) => {
-      const order = ['STATIONARY', 'WALKING', 'CYCLING', 'VEHICLE'];
+      const order = ['STATIONARY', 'WALKING', 'CYCLING'];
       return order.indexOf(a) - order.indexOf(b);
     })[1];
     const usedModeConfig = MOVEMENT_MODES[usedMode];
@@ -1020,7 +1018,7 @@ function setupConsoleCommands() {
 // --- DEMO MODE ---
 function startDemoMode() {
   let currentModeIndex = 0;
-  const modes = ['STATIONARY', 'WALKING', 'CYCLING', 'VEHICLE'];
+  const modes = ['STATIONARY', 'WALKING', 'CYCLING'];
 
   appState.demoTimer = setInterval(() => {
     const currentMode = modes[currentModeIndex];
