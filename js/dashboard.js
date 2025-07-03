@@ -136,6 +136,7 @@ const combinedElements = {
   date: document.getElementById('date-combined'),
   time: document.getElementById('time-combined'),
   timezone: document.getElementById('timezone-combined'),
+  weatherFeelsLike: document.getElementById('weather-feels-like-combined'),
 };
 
 // --- Helpers ---
@@ -442,12 +443,23 @@ function updateWeatherDisplay(weather) {
   const current = weather.current;
   const tempUnit = CONFIG.weather.useMetric ? 'C' : 'F';
   const temp = `${Math.round(current.temperature_2m)}°${tempUnit}`;
+  const feelsLike =
+    current.apparent_temperature !== undefined
+      ? `${Math.round(current.apparent_temperature)}°${tempUnit}`
+      : null;
   const desc = weatherDescriptions[current.weather_code] || 'Unknown';
   const icon = getWeatherIcon(current.weather_code);
 
   console.log(`🌡️ Dashboard: Weather updated - ${temp} ${desc}`);
 
   updateCombinedWeather(icon, temp, desc);
+
+  // Show 'feels like' in the main card if the element exists
+  const feelsLikeEl = document.getElementById('weather-feels-like-combined');
+  if (feelsLikeEl) {
+    feelsLikeEl.textContent = feelsLike ? `Feels like: ${feelsLike}` : '';
+    feelsLikeEl.style.display = feelsLike ? '' : 'none';
+  }
 }
 
 // --- Status & Demo ---
@@ -567,14 +579,18 @@ function updateCombinedWeather(icon, temp, desc) {
 }
 
 function updateCombinedTime(dateStr, timeStr, tzStr) {
+  const combined = [dateStr || '--', timeStr || '--:--:--', tzStr || '--'].join(
+    ' · '
+  );
   if (combinedElements.date) {
-    combinedElements.date.textContent = dateStr || '--';
+    combinedElements.date.textContent = combined;
   }
+  // Hide the separate time and timezone elements if present
   if (combinedElements.time) {
-    combinedElements.time.textContent = timeStr || '--:--:--';
+    combinedElements.time.textContent = '';
   }
   if (combinedElements.timezone) {
-    combinedElements.timezone.textContent = tzStr || '--';
+    combinedElements.timezone.textContent = '';
   }
 }
 

@@ -42,13 +42,13 @@ body {
     rgba(30, 30, 30, 0.92)
   );
   border-radius: 16px;
-  padding: 24px 32px 20px 32px;
-  box-shadow: 0 6px 32px rgba(0, 0, 0, 0.7);
-  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  padding: 1.2rem 1.5rem 1.1rem 1.5rem;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+  border: 1.5px solid rgba(255,255,255,0.12);
   color: #fff;
   font-family: 'Inter', 'Segoe UI', 'Roboto', 'Arial', sans-serif;
-  min-width: 340px;
-  max-width: 480px;
+  min-width: 320px;
+  max-width: 420px;
   margin: 0;
 }
 .dashboard-row.top {
@@ -112,6 +112,10 @@ body {
   font-weight: 500;
   text-shadow: 0 1px 4px #000a;
   text-transform: capitalize;
+  text-align: left;
+  margin-left: 0.7em;
+  margin-top: 0;
+  display: inline;
 }
 .date,
 .time,
@@ -120,6 +124,14 @@ body {
   color: #ccc;
   font-weight: 500;
   text-shadow: 0 1px 4px #000a;
+}
+.weather-feels-like {
+  font-size: 0.95em;
+  color: #bbbbbb;
+  font-weight: 400;
+  margin: 0.3em 0 0 0;
+  display: block;
+  text-align: center;
 }
 
 /* Hide old widget styles if present */
@@ -132,7 +144,6 @@ body {
 .location-accuracy,
 .weather-container,
 .weather-details,
-.weather-feels-like,
 .time-display,
 .time-date,
 .time-timezone {
@@ -247,4 +258,23 @@ body {
   display: inline;
   font-weight: bold;
   color: #4caf50;
+}
+
+.weather-temp-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0 10px;
+  text-align: center;
+}
+
+.weather-temp-block .weather-icon {
+  margin-right: 8px;
+}
+
+.weather-temp-block-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
 }
