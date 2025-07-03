@@ -161,37 +161,36 @@ function updateDisplayElements() {
 
 function connectToRtirl() {
   if (isDemoMode()) {
-    console.log('🎭 Demo mode enabled - simulating GPS and speed data');
-    showFeedback('🎭 Demo mode active', 'success');
-    startDemoMode();
-  } else {
-    console.log('📡 Real-time GPS and speed data enabled');
-  }
-
-  if (!RTIRL_USER_ID || RTIRL_USER_ID.trim() === '') {
-    console.error('❌ RTIRL_USER_ID not configured.');
-    showFeedback('⚠️ RTIRL not configured', 'warning', 5000);
+    console.log('🎭 Trip: Demo mode enabled, skipping RTIRL connection');
+    appState.demoTimer = setTimeout(startDemoMode, 2000);
     return;
   }
 
-  console.log(`🌐 Creating RTIRL API client for user: ${RTIRL_USER_ID}`);
+  if (!window.RealtimeIRL) {
+    console.error('❌ Trip: RTIRL library not loaded!');
+    showFeedback('⚠️ RTIRL library not found', 'error');
+    return;
+  }
 
   try {
-    if (appState.rtirtLocationListener) {
-      appState.rtirtLocationListener();
-    }
+    console.log('🔌 Trip: Connecting to RTIRL...');
+    console.log('📋 Trip: User ID:', RTIRL_USER_ID);
+    console.log('⚙️ Trip: Movement detection enabled');
+    console.log(
+      `📡 Trip: GPS throttling - STATIONARY:${MOVEMENT_MODES.STATIONARY.gpsThrottle}ms, WALKING:${MOVEMENT_MODES.WALKING.gpsThrottle}ms, CYCLING:${MOVEMENT_MODES.CYCLING.gpsThrottle}ms, VEHICLE:${MOVEMENT_MODES.VEHICLE.gpsThrottle}ms`
+    );
 
     const streamer = RealtimeIRL.forStreamer('twitch', RTIRL_USER_ID);
 
+    // GPS location
     appState.rtirtLocationListener =
       streamer.addLocationListener(handleRtirtData);
 
-    appState.isConnected = true;
-    showFeedback('✅ RTIRL connected', 'success');
-    console.log('✅ RTIRL API listeners for location are setup');
+    console.log('✅ Trip: RTIRL listeners attached successfully');
+    showFeedback('🔌 Connecting to RTIRL...', 'warning');
   } catch (error) {
-    console.error('❌ Failed to create RTIRL API client:', error);
-    showFeedback('❌ RTIRL client creation failed', 'error');
+    console.error('❌ Trip: Failed to connect to RTIRL:', error);
+    showFeedback('❌ RTIRL connection failed', 'error');
   }
 }
 
@@ -283,6 +282,7 @@ function handleRtirtData(data) {
   const modeConfig = MOVEMENT_MODES[appState.currentMode];
 
   if (now - appState.lastUpdateTime < modeConfig.gpsThrottle) {
+    console.log('⏱️ Trip: Update throttled (too soon since last update)');
     return;
   }
 
@@ -291,24 +291,29 @@ function handleRtirtData(data) {
 
   if (!data) {
     if (appState.isConnected) {
-      // Only log if we were previously connected
-      console.log('📍 Location is hidden or streamer is offline');
+      console.log('📍 Trip: Location is hidden or streamer is offline');
       showFeedback('🔌 RTIRL location hidden', 'warning');
     }
     appState.isConnected = false;
     return;
   }
 
+  console.log(
+    `📡 Trip: Location received - ${data.latitude?.toFixed(4) || 'N/A'}, ${data.longitude?.toFixed(4) || 'N/A'} (accuracy: ${data.accuracy || 'unknown'}m)`
+  );
+
   // If speed is present in the location data, handle it
   if (typeof data.kmh !== 'undefined') {
+    console.log(`🏃 Trip: Speed from location - ${data.kmh} km/h`);
     handleSpeedData({ kmh: data.kmh });
   } else if (typeof data.speed !== 'undefined') {
+    console.log(`🏃 Trip: Speed from location (alt) - ${data.speed} km/h`);
     handleSpeedData({ kmh: data.speed });
   }
 
   // If we were previously disconnected and now have data, log that we're live
   if (!appState.isConnected) {
-    console.log('✅ Streamer location is now live!');
+    console.log('✅ Trip: Streamer location is now live!');
     showFeedback('✅ Streamer is live!', 'success');
     appState.isConnected = true;
   }
@@ -316,18 +321,22 @@ function handleRtirtData(data) {
   const currentPosition = { lat: data.latitude, lon: data.longitude };
 
   if (!validateCoordinates(currentPosition)) {
-    console.warn('⚠️ Invalid GPS coordinates received:', currentPosition);
+    console.warn('⚠️ Trip: Invalid GPS coordinates received:', currentPosition);
     return;
   }
 
   if (USE_AUTO_START && !appState.startLocation) {
     if (data.latitude === 0 && data.longitude === 0) {
-      console.warn('⚠️ Rejecting suspicious 0,0 coordinates for auto-start');
+      console.warn(
+        '⚠️ Trip: Rejecting suspicious 0,0 coordinates for auto-start'
+      );
       return;
     }
     appState.startLocation = currentPosition;
     appState.lastPosition = currentPosition;
-    console.log('✅ Auto-detected start location:', appState.startLocation);
+    console.log(
+      `✅ Trip: Auto-detected start location - ${appState.startLocation.lat.toFixed(4)}, ${appState.startLocation.lon.toFixed(4)}`
+    );
     debouncedSave();
     return;
   }
@@ -337,12 +346,16 @@ function handleRtirtData(data) {
       appState.lastPosition,
       currentPosition
     );
+
+    console.log(
+      `📏 Trip: Distance calculated - ${newDistance.toFixed(6)}km between points`
+    );
+
     // --- Begin permissive mode logic ---
-    // Calculate plausible mode based on distance/time
     const timeDiff = Math.max(1, (now - previousUpdateTime) / 1000);
-    // Calculate plausible speed in km/h
     const plausibleSpeed = newDistance / (timeDiff / 3600);
     let plausibleMode = 'STATIONARY';
+
     if (plausibleSpeed > MOVEMENT_MODES.CYCLING.maxSpeed) {
       plausibleMode = 'VEHICLE';
     } else if (plausibleSpeed > MOVEMENT_MODES.WALKING.maxSpeed) {
@@ -350,6 +363,11 @@ function handleRtirtData(data) {
     } else if (plausibleSpeed > MOVEMENT_MODES.STATIONARY.maxSpeed) {
       plausibleMode = 'WALKING';
     }
+
+    console.log(
+      `🧮 Trip: Movement analysis - ${plausibleSpeed.toFixed(1)} km/h suggests ${plausibleMode} (current: ${appState.currentMode})`
+    );
+
     // Use the more permissive of current or plausible mode
     const usedMode = [appState.currentMode, plausibleMode].sort((a, b) => {
       const order = ['STATIONARY', 'WALKING', 'CYCLING', 'VEHICLE'];
@@ -357,25 +375,30 @@ function handleRtirtData(data) {
     })[1];
     const usedModeConfig = MOVEMENT_MODES[usedMode];
     const minMovementKm = usedModeConfig.minMovementM / 1000;
+
     if (newDistance < minMovementKm) {
+      console.log(
+        `🔇 Trip: Distance ${newDistance.toFixed(4)}km below ${usedMode} threshold (${minMovementKm}km) - ignoring`
+      );
       return; // Ignore noise
     }
+
     const maxSpeedMs = usedModeConfig.maxSpeed / 3.6;
     const maxReasonableDistance = (timeDiff * maxSpeedMs) / 1000;
+
     if (newDistance > maxReasonableDistance * 1.5) {
-      // Add 50% buffer
       console.warn(
-        `⚠️ GPS jump detected in ${usedMode} mode: ${newDistance.toFixed(2)}km - ignoring`
+        `⚠️ Trip: GPS jump detected in ${usedMode} mode: ${newDistance.toFixed(2)}km vs max ${maxReasonableDistance.toFixed(2)}km - ignoring`
       );
       return;
     }
-    // --- End permissive mode logic ---
+
+    // Valid movement detected
     appState.totalDistanceTraveled += newDistance;
     appState.todayDistanceTraveled += newDistance;
 
     // Update avatar to match usedMode if different from current
     if (domElements.avatar) {
-      // Compare only the path/filename, not the full URL
       const currentAvatar = domElements.avatar.src
         .split('/')
         .slice(-2)
@@ -383,19 +406,27 @@ function handleRtirtData(data) {
       const newAvatar = MOVEMENT_MODES[usedMode].avatar;
       if (currentAvatar !== newAvatar) {
         domElements.avatar.src = newAvatar;
-        console.log(`AVATAR UPDATE: Set to ${usedMode} avatar (${newAvatar})`);
+        console.log(`🎨 Trip: Avatar updated to ${usedMode} (${newAvatar})`);
       }
     }
 
     // Log distance/progress update
     const progressPercent =
       (appState.totalDistanceTraveled / appState.originalTotalDistance) * 100;
+    const kmToMiles = 0.621371;
+    const unitMultiplier = appState.useImperialUnits ? kmToMiles : 1;
+    const units = appState.useImperialUnits ? 'mi' : 'km';
+
     console.log(
-      `PROGRESS UPDATE: +${newDistance.toFixed(4)}km | Total: ${appState.totalDistanceTraveled.toFixed(4)}km | Progress: ${progressPercent.toFixed(2)}% | Mode: ${usedMode}`
+      `📈 Trip: Progress update - +${(newDistance * unitMultiplier).toFixed(4)}${units} | Total: ${(appState.totalDistanceTraveled * unitMultiplier).toFixed(4)}${units} | ${progressPercent.toFixed(2)}% | Mode: ${usedMode}`
     );
 
     updateDisplayElements();
     debouncedSave();
+  } else {
+    console.log(
+      '⚠️ Trip: Missing start location or last position for distance calculation'
+    );
   }
 
   appState.lastPosition = currentPosition;

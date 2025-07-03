@@ -87,10 +87,22 @@ body {
   align-items: center;
   gap: 8px;
 }
-.weather-icon {
-  font-size: 1.5em;
+.weather-icon,
+#weather-icon-combined {
+  font-family:
+    "Apple Color Emoji",
+    "Segoe UI Emoji",
+    "Noto Color Emoji",
+    "Segoe UI Symbol",
+    "Android Emoji",
+    "EmojiSymbols",
+    sans-serif;
+  font-size: 1.2em;
+  display: inline-block;
   line-height: 1;
-  text-shadow: 0 2px 8px #000c;
+  text-rendering: optimizeLegibility;
+  -webkit-font-feature-settings: "liga" on;
+  font-feature-settings: "liga" on;
 }
 .weather-temp {
   font-size: 1.2em;
@@ -225,4 +237,30 @@ body {
   color: #fff;
   text-shadow: 0 1px 4px #000a;
   text-align: center;
+}
+
+/* Fallback for platforms without emoji support */
+.weather-icon-fallback {
+  display: none;
+}
+
+/* Show fallback text when emoji fails to render */
+@supports not (font-family: "Apple Color Emoji") {
+  .weather-icon-fallback {
+    display: inline;
+  }
+  .weather-icon {
+    display: none;
+  }
+}
+
+/* Additional fallback for very old browsers */
+.no-emoji .weather-icon {
+  display: none;
+}
+
+.no-emoji .weather-icon-fallback {
+  display: inline;
+  font-weight: bold;
+  color: #4CAF50;
 }

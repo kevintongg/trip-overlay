@@ -33,34 +33,34 @@ const elements = {};
 
 // Weather condition mapping for Open-Meteo WMO codes
 const weatherIcons = {
-  0: '☀️', // Clear sky
-  1: '🌤️', // Mainly clear
-  2: '⛅', // Partly cloudy
-  3: '☁️', // Overcast
-  45: '🌫️', // Fog
-  48: '🌫️', // Depositing rime fog
-  51: '🌦️', // Drizzle: Light
-  53: '🌦️', // Drizzle: Moderate
-  55: '🌦️', // Drizzle: Dense
-  56: '🌧️', // Freezing Drizzle: Light
-  57: '🌧️', // Freezing Drizzle: Dense
-  61: '🌧️', // Rain: Slight
-  63: '🌧️', // Rain: Moderate
-  65: '🌧️', // Rain: Heavy
-  66: '🌧️', // Freezing Rain: Light
-  67: '🌧️', // Freezing Rain: Heavy
-  71: '🌨️', // Snow fall: Slight
-  73: '🌨️', // Snow fall: Moderate
-  75: '🌨️', // Snow fall: Heavy
-  77: '🌨️', // Snow grains
-  80: '🌦️', // Rain showers: Slight
-  81: '🌦️', // Rain showers: Moderate
-  82: '🌦️', // Rain showers: Violent
-  85: '🌨️', // Snow showers slight
-  86: '🌨️', // Snow showers heavy
-  95: '⛈️', // Thunderstorm: Slight or moderate
-  96: '⛈️', // Thunderstorm with slight hail
-  99: '⛈️', // Thunderstorm with heavy hail
+  0: '☀', // Clear sky - basic sun symbol
+  1: '🌤', // Mainly clear - keep if supported, fallback below
+  2: '⛅', // Partly cloudy - basic cloud with sun
+  3: '☁', // Overcast - basic cloud
+  45: '🌫', // Fog - keep if supported
+  48: '🌫', // Depositing rime fog
+  51: '🌦', // Drizzle: Light
+  53: '🌦', // Drizzle: Moderate
+  55: '🌦', // Drizzle: Dense
+  56: '🌧', // Freezing Drizzle: Light
+  57: '🌧', // Freezing Drizzle: Dense
+  61: '🌧', // Rain: Slight
+  63: '🌧', // Rain: Moderate
+  65: '🌧', // Rain: Heavy
+  66: '🌧', // Freezing Rain: Light
+  67: '🌧', // Freezing Rain: Heavy
+  71: '❄', // Snow fall: Slight - basic snowflake
+  73: '❄', // Snow fall: Moderate
+  75: '❄', // Snow fall: Heavy
+  77: '❄', // Snow grains
+  80: '🌦', // Rain showers: Slight
+  81: '🌦', // Rain showers: Moderate
+  82: '🌦', // Rain showers: Violent
+  85: '❄', // Snow showers slight
+  86: '❄', // Snow showers heavy
+  95: '⛈', // Thunderstorm: Slight or moderate
+  96: '⛈', // Thunderstorm with slight hail
+  99: '⛈', // Thunderstorm with heavy hail
 };
 
 // Weather condition descriptions for Open-Meteo WMO codes
@@ -95,6 +95,38 @@ const weatherDescriptions = {
   99: 'Thunderstorm with heavy hail',
 };
 
+// Text fallbacks for weather icons
+const weatherIconFallbacks = {
+  0: 'SUN', // Clear sky
+  1: 'SUN', // Mainly clear
+  2: 'PART', // Partly cloudy
+  3: 'CLOUD', // Overcast
+  45: 'FOG', // Fog
+  48: 'FOG', // Depositing rime fog
+  51: 'DRIZZLE', // Drizzle: Light
+  53: 'DRIZZLE', // Drizzle: Moderate
+  55: 'DRIZZLE', // Drizzle: Dense
+  56: 'RAIN', // Freezing Drizzle: Light
+  57: 'RAIN', // Freezing Drizzle: Dense
+  61: 'RAIN', // Rain: Slight
+  63: 'RAIN', // Rain: Moderate
+  65: 'RAIN', // Rain: Heavy
+  66: 'RAIN', // Freezing Rain: Light
+  67: 'RAIN', // Freezing Rain: Heavy
+  71: 'SNOW', // Snow fall: Slight
+  73: 'SNOW', // Snow fall: Moderate
+  75: 'SNOW', // Snow fall: Heavy
+  77: 'SNOW', // Snow grains
+  80: 'SHOWER', // Rain showers: Slight
+  81: 'SHOWER', // Rain showers: Moderate
+  82: 'SHOWER', // Rain showers: Violent
+  85: 'SNOW', // Snow showers slight
+  86: 'SNOW', // Snow showers heavy
+  95: 'STORM', // Thunderstorm: Slight or moderate
+  96: 'STORM', // Thunderstorm with slight hail
+  99: 'STORM', // Thunderstorm with heavy hail
+};
+
 // --- Combined Dashboard DOM Cache ---
 const combinedElements = {
   location: document.getElementById('location-combined'),
@@ -121,10 +153,23 @@ const setClass = (el, cls) => {
 
 // --- Initialization ---
 function initializeDashboard() {
+  console.log('🚀 Dashboard: Starting initialization...');
+  console.log('📋 Dashboard: Configuration:', CONFIG);
+
+  // Check emoji support and add class if needed
+  if (!supportsEmoji()) {
+    document.body.classList.add('no-emoji');
+    console.log(
+      '⚠️ Dashboard: Limited emoji support detected, using text fallbacks'
+    );
+  }
+
   cacheDOM();
   handleURLParameters();
   initTime();
   initRTIRL();
+
+  console.log('✅ Dashboard: Initialization complete');
 }
 
 function cacheDOM() {
@@ -177,6 +222,13 @@ function handleURLParameters() {
 
 // --- Time ---
 function initTime() {
+  console.log('⏰ Dashboard: Initializing time display');
+  console.log('⚙️ Dashboard: Time config:', {
+    use24Hour: CONFIG.time.use24Hour,
+    showSeconds: CONFIG.time.showSeconds,
+    updateInterval: CONFIG.time.updateInterval,
+    timezone: dashboardState.timezone || 'auto-detect',
+  });
   updateTimeDisplay();
   dashboardState.timers.time = setInterval(
     updateTimeDisplay,
@@ -205,6 +257,7 @@ function updateTimeDisplay() {
     timeZone: timeZone,
   });
   const tzAbbr = getTimezoneAbbreviation(timeZone);
+
   updateCombinedTime(dateString, timeString, tzAbbr);
 }
 function getTimezoneAbbreviation(timeZone) {
@@ -228,28 +281,37 @@ function getTimezoneAbbreviation(timeZone) {
 // --- RTIRL Location ---
 function initRTIRL() {
   if (CONFIG.rtirl.demoMode) {
+    console.log('🎭 Dashboard: Demo mode enabled');
     return;
   }
   if (!window.RealtimeIRL) {
-    console.log('❌ RTIRL library not loaded');
+    console.log('❌ Dashboard: RTIRL library not loaded');
     return updateConnectionStatus('Library not loaded', 'error');
   }
   try {
-    console.log('🔌 Connecting to RTIRL...');
+    console.log('🔌 Dashboard: Connecting to RTIRL...');
+    console.log('📋 Dashboard: User ID:', CONFIG.rtirl.userId);
     const streamer = RealtimeIRL.forStreamer('twitch', CONFIG.rtirl.userId);
     dashboardState.rtirtLocationListener =
       streamer.addLocationListener(handleLocationData);
     updateConnectionStatus('Connecting to RTIRL...', 'connecting');
+    console.log('✅ Dashboard: RTIRL listener attached successfully');
   } catch (e) {
-    console.log('❌ Failed to initialize RTIRL:', e);
+    console.log('❌ Dashboard: Failed to initialize RTIRL:', e);
     updateConnectionStatus('Connection failed', 'error');
   }
 }
 function handleLocationData(data) {
   if (!data || !data.latitude || !data.longitude) {
-    console.log('📍 Location is hidden or streamer is offline');
+    console.log('📍 Dashboard: Location is hidden or streamer is offline');
+    updateCombinedLocation('Location hidden');
     return;
   }
+
+  console.log(
+    `📍 Dashboard: Location received - ${data.latitude.toFixed(4)}, ${data.longitude.toFixed(4)}`
+  );
+
   dashboardState.lastPosition = {
     latitude: data.latitude,
     longitude: data.longitude,
@@ -258,29 +320,36 @@ function handleLocationData(data) {
   };
   dashboardState.isConnected = true;
   updateConnectionStatus('Connected', 'connected');
-  console.log('📍 Location update received:', data);
+  console.log('✅ Dashboard: Connection status updated to connected');
   updateLocationDisplay();
   updateWeatherData();
 }
 function updateLocationDisplay() {
   const pos = dashboardState.lastPosition;
   if (!pos) {
+    console.log('⚠️ Dashboard: No position data for location display');
     updateCombinedLocation('--');
     return;
   }
   updateCombinedLocation('Detecting location...');
-  console.log('🌍 Reverse geocoding for address...');
+  console.log(
+    '🌍 Dashboard: Starting reverse geocoding for:',
+    pos.latitude,
+    pos.longitude
+  );
   reverseGeocode(pos.latitude, pos.longitude);
 }
 async function reverseGeocode(lat, lon) {
   try {
+    console.log('🌐 Dashboard: Fetching address from OpenStreetMap...');
     const response = await fetch(
       `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&addressdetails=1`
     );
     if (!response.ok) {
-      throw new Error('Geocoding failed');
+      throw new Error(`Geocoding failed: ${response.status}`);
     }
     const data = await response.json();
+
     if (data && data.address) {
       const city =
         data.address.city ||
@@ -289,12 +358,15 @@ async function reverseGeocode(lat, lon) {
         data.address.municipality;
       const country = data.address.country;
       const location = [city, country].filter(Boolean).join(', ');
+      console.log('📍 Dashboard: Location resolved to:', location);
       updateCombinedLocation(location || '--');
-      console.log('🌍 Location resolved:', location);
+    } else {
+      console.log('⚠️ Dashboard: No address data in geocoding response');
+      updateCombinedLocation('Location unavailable');
     }
-  } catch {
+  } catch (error) {
+    console.log('❌ Dashboard: Reverse geocoding failed:', error);
     updateCombinedLocation('Location unavailable');
-    console.log('⚠️ Reverse geocoding failed');
   }
 }
 
@@ -302,17 +374,20 @@ async function reverseGeocode(lat, lon) {
 async function updateWeatherData() {
   const pos = dashboardState.lastPosition;
   if (!pos) {
+    console.log('⚠️ Dashboard: No position data for weather update');
     return;
   }
   try {
     const tempUnit = CONFIG.weather.useMetric ? 'celsius' : 'fahrenheit';
-    const response = await fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=${pos.latitude}&longitude=${pos.longitude}&current=temperature_2m,apparent_temperature,weather_code&temperature_unit=${tempUnit}&timezone=auto`
-    );
+    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${pos.latitude}&longitude=${pos.longitude}&current=temperature_2m,apparent_temperature,weather_code&temperature_unit=${tempUnit}&timezone=auto`;
+    console.log('🌤️ Dashboard: Fetching weather from:', weatherUrl);
+
+    const response = await fetch(weatherUrl);
     if (!response.ok) {
-      throw new Error('Weather fetch failed');
+      throw new Error(`Weather fetch failed: ${response.status}`);
     }
     const weather = await response.json();
+
     dashboardState.weather = weather;
     updateWeatherDisplay(weather);
     clearTimeout(dashboardState.timers.weather);
@@ -320,32 +395,45 @@ async function updateWeatherData() {
       updateWeatherData,
       CONFIG.weather.updateInterval
     );
-  } catch {
+    console.log(
+      `⏰ Dashboard: Weather updated successfully, next scheduled update in ${CONFIG.weather.updateInterval / 1000}s (or when location changes)`
+    );
+  } catch (error) {
+    console.log('❌ Dashboard: Weather update failed:', error);
     setText(elements.weatherDescription, 'Weather unavailable');
   }
 }
 function updateWeatherDisplay(weather) {
   if (!weather || !weather.current) {
-    updateCombinedWeather('🌤️', '--°', 'Loading...');
+    console.log('⚠️ Dashboard: Invalid weather data for display');
+    updateCombinedWeather('🌤', '--°', 'Loading...');
     return;
   }
   const current = weather.current;
   const tempUnit = CONFIG.weather.useMetric ? 'C' : 'F';
   const temp = `${Math.round(current.temperature_2m)}°${tempUnit}`;
   const desc = weatherDescriptions[current.weather_code] || 'Unknown';
-  const icon = weatherIcons[current.weather_code] || '🌤️';
+  const icon = getWeatherIcon(current.weather_code);
+
+  console.log(`🌡️ Dashboard: Weather updated - ${temp} ${desc}`);
+
   updateCombinedWeather(icon, temp, desc);
-  console.log('🌦️ Weather updated:', temp, desc);
 }
 
 // --- Status & Demo ---
 function updateConnectionStatus(message, type) {
+  console.log(
+    `📡 Dashboard: Connection status changed to "${message}" (${type})`
+  );
   setText(elements.connectionStatus, message);
   setClass(elements.connectionStatus, `corner-detail status-${type}`);
 }
 function startDemoMode() {
+  console.log('🎭 Dashboard: Starting demo mode with Vienna coordinates');
   setTimeout(() => {
-    handleLocationData({ latitude: 48.2082, longitude: 16.3738, accuracy: 5 });
+    const demoData = { latitude: 48.2082, longitude: 16.3738, accuracy: 5 };
+    console.log('🎭 Dashboard: Injecting demo location data:', demoData);
+    handleLocationData(demoData);
   }, 2000);
   updateConnectionStatus('Demo mode', 'connected');
 }
@@ -389,6 +477,66 @@ function updateCombinedTime(dateStr, timeStr, tzStr) {
   if (combinedElements.timezone) {
     combinedElements.timezone.textContent = tzStr || '--';
   }
+}
+
+// --- Debug Status Function ---
+function getDashboardStatus() {
+  const status = {
+    config: CONFIG,
+    state: dashboardState,
+    isConnected: dashboardState.isConnected,
+    lastPosition: dashboardState.lastPosition,
+    weather: dashboardState.weather,
+    timezone: dashboardState.timezone,
+    timers: Object.keys(dashboardState.timers).map(key => ({
+      name: key,
+      active: !!dashboardState.timers[key],
+    })),
+  };
+
+  console.log('🔍 Dashboard Status:', status);
+  console.log('📊 Dashboard Elements:', combinedElements);
+
+  // Check if elements are properly connected
+  const elementsStatus = {};
+  Object.keys(combinedElements).forEach(key => {
+    const element = combinedElements[key];
+    elementsStatus[key] = {
+      found: !!element,
+      content: element?.textContent || 'N/A',
+    };
+  });
+  console.log('🎯 Dashboard DOM Elements:', elementsStatus);
+
+  return status;
+}
+
+// Make it available globally for console access
+window.getDashboardStatus = getDashboardStatus;
+
+// Function to detect emoji support
+function supportsEmoji() {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  const smile = '😀';
+
+  ctx.textBaseline = 'top';
+  ctx.font = '32px Arial';
+  ctx.fillText(smile, 0, 0);
+
+  return ctx.getImageData(16, 16, 1, 1).data[0] !== 0;
+}
+
+// Function to get weather icon with fallback
+function getWeatherIcon(weatherCode) {
+  const icon = weatherIcons[weatherCode] || '🌤';
+  const fallback = weatherIconFallbacks[weatherCode] || 'WEATHER';
+
+  if (!supportsEmoji()) {
+    return fallback;
+  }
+
+  return icon;
 }
 
 if (document.readyState === 'loading') {
