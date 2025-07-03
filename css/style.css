@@ -28,25 +28,25 @@ body {
 /* This container holds the entire overlay and positions it */
 #overlay-container {
   position: absolute;
-  bottom: 50px;
-  width: 800px;
+  bottom: 35px;
+  width: 600px;
   left: 50%;
   transform: translateX(-50%);
   background-color: rgba(0, 0, 0, 0.3);
   padding: 0;
-  border-radius: 15px;
+  border-radius: 12px;
   box-shadow: 0 2px 12px rgba(0,0,0,0.12);
 }
 
 /* This creates the visual for the progress bar's background */
 #progress-bar {
   width: 100%;
-  max-width: 800px;
+  max-width: 600px;
   margin: 0 auto 8px auto;
-  height: 15px;
+  height: 11px;
   background-color: rgba(0,0,0,0.3);
   border: 1px solid rgba(255,255,255,0.3);
-  border-radius: 10px;
+  border-radius: 7px;
   position: relative;
 }
 
@@ -61,8 +61,8 @@ body {
 /* This positions the motorbike avatar on the progress bar */
 #avatar {
   position: absolute;
-  height: 80px;
-  bottom: 5px;
+  height: 60px;
+  bottom: 2px;
   left: 0%; /* Updated by JavaScript based on progress */
   transform: translateX(-50%); /* Centers the avatar on the progress line */
 }
@@ -70,19 +70,19 @@ body {
 /* Container for distance data display */
 #data-container {
   width: 100%;
-  max-width: 800px;
+  max-width: 600px;
   margin: 0 auto;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-top: 10px;
+  margin-top: 6px;
   padding: 0;
 }
 
 /* Main distance values styling */
 .data-box {
   flex: 1;
-  font-size: 28px;
+  font-size: 21px;
   font-weight: bold;
   display: flex;
   flex-direction: column;
@@ -99,7 +99,7 @@ body {
 .data-box.today {
   align-items: center;
   justify-content: center;
-  font-size: 22px;
+  font-size: 16px;
   font-weight: normal;
   text-align: center;
 }
@@ -112,7 +112,7 @@ body {
 
 /* Labels for distance values */
 .label {
-  font-size: 14px;
+  font-size: 11px;
   font-weight: normal;
   color: #cccccc;
   text-transform: uppercase;
@@ -244,7 +244,7 @@ body,
   top: 50%;
   transform: translate(-50%, -50%);
   color: #fff;
-  font-size: 1.1em;
+  font-size: 0.9em;
   font-weight: 600;
   text-shadow: 0 1px 4px #000a, 1px 1px 3px rgba(0,0,0,0.8);
   pointer-events: none;
