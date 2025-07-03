@@ -368,6 +368,36 @@ function handleRtirtData(data) {
       `🧮 Trip: Movement analysis - ${plausibleSpeed.toFixed(1)} km/h suggests ${plausibleMode} (current: ${appState.currentMode})`
     );
 
+    // Update the current mode if the plausible mode is faster
+    if (plausibleMode !== appState.currentMode) {
+      const modeOrder = ['STATIONARY', 'WALKING', 'CYCLING', 'VEHICLE'];
+      const currentIndex = modeOrder.indexOf(appState.currentMode);
+      const plausibleIndex = modeOrder.indexOf(plausibleMode);
+
+      // If plausible mode is faster, switch immediately
+      // If plausible mode is slower, use delay (same logic as handleSpeedData)
+      if (plausibleIndex > currentIndex) {
+        setMovementMode(plausibleMode);
+      } else if (plausibleIndex < currentIndex) {
+        // Switching to slower mode - use delay
+        if (!appState.modeSwitchTimeout) {
+          console.log(
+            `⏱️ Trip: Scheduling mode switch from ${appState.currentMode} to ${plausibleMode} in ${MODE_SWITCH_DELAY / 1000}s`
+          );
+          appState.modeSwitchTimeout = setTimeout(() => {
+            setMovementMode(plausibleMode);
+            appState.modeSwitchTimeout = null;
+          }, MODE_SWITCH_DELAY);
+        }
+      }
+    } else {
+      // If mode is the same, cancel any pending switch
+      if (appState.modeSwitchTimeout) {
+        clearTimeout(appState.modeSwitchTimeout);
+        appState.modeSwitchTimeout = null;
+      }
+    }
+
     // Use the more permissive of current or plausible mode
     const usedMode = [appState.currentMode, plausibleMode].sort((a, b) => {
       const order = ['STATIONARY', 'WALKING', 'CYCLING', 'VEHICLE'];
@@ -397,19 +427,6 @@ function handleRtirtData(data) {
     appState.totalDistanceTraveled += newDistance;
     appState.todayDistanceTraveled += newDistance;
 
-    // Update avatar to match usedMode if different from current
-    if (domElements.avatar) {
-      const currentAvatar = domElements.avatar.src
-        .split('/')
-        .slice(-2)
-        .join('/');
-      const newAvatar = MOVEMENT_MODES[usedMode].avatar;
-      if (currentAvatar !== newAvatar) {
-        domElements.avatar.src = newAvatar;
-        console.log(`🎨 Trip: Avatar updated to ${usedMode} (${newAvatar})`);
-      }
-    }
-
     // Log distance/progress update
     const progressPercent =
       (appState.totalDistanceTraveled / appState.originalTotalDistance) * 100;
@@ -418,7 +435,7 @@ function handleRtirtData(data) {
     const units = appState.useImperialUnits ? 'mi' : 'km';
 
     console.log(
-      `📈 Trip: Progress update - +${(newDistance * unitMultiplier).toFixed(4)}${units} | Total: ${(appState.totalDistanceTraveled * unitMultiplier).toFixed(4)}${units} | ${progressPercent.toFixed(2)}% | Mode: ${usedMode}`
+      `📈 Trip: Progress update - +${(newDistance * unitMultiplier).toFixed(4)}${units} | Total: ${(appState.totalDistanceTraveled * unitMultiplier).toFixed(4)}${units} | ${progressPercent.toFixed(2)}% | Mode: ${appState.currentMode}`
     );
 
     updateDisplayElements();
