@@ -58,7 +58,8 @@ body {
   font-size: 1.25em;
   font-weight: 600;
   width: 100%;
-  justify-content: center;
+  justify-content: space-between;
+  flex-wrap: nowrap;
 }
 .dashboard-row.bottom {
   display: flex;
@@ -71,10 +72,15 @@ body {
   justify-content: center;
 }
 .location {
-  font-size: 1.1em;
+  font-size: 1em;
   font-weight: 700;
   color: #fff;
   text-shadow: 0 1px 4px #000a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 1;
+  min-width: 0;
 }
 .weather {
   display: flex;
@@ -182,4 +188,41 @@ body {
   100% {
     opacity: 1;
   }
+}
+
+/* Location row - top */
+.dashboard-row.location-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+/* Weather row - middle */
+.dashboard-row.weather-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+/* Time row - bottom */
+.dashboard-row.time-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  font-size: 0.95em;
+  color: #ccc;
+}
+
+.location {
+  font-size: 1.3em;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 4px #000a;
+  text-align: center;
 }
