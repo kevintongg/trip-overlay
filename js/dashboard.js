@@ -442,10 +442,10 @@ function updateWeatherDisplay(weather) {
   }
   const current = weather.current;
   const tempUnit = CONFIG.weather.useMetric ? 'C' : 'F';
-  const temp = `${Math.round(current.temperature_2m)}°${tempUnit}`;
+  const temp = `${current.temperature_2m.toFixed(1)}°${tempUnit}`;
   const feelsLike =
     current.apparent_temperature !== undefined
-      ? `${Math.round(current.apparent_temperature)}°${tempUnit}`
+      ? `${current.apparent_temperature.toFixed(1)}°${tempUnit}`
       : null;
   const desc = weatherDescriptions[current.weather_code] || 'Unknown';
   const icon = getWeatherIcon(current.weather_code);
