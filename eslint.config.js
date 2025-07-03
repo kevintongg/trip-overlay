@@ -17,6 +17,7 @@ export default [
         localStorage: 'readonly',
         navigator: 'readonly',
         fetch: 'readonly',
+        Response: 'readonly',
         setTimeout: 'readonly',
         clearTimeout: 'readonly',
         setInterval: 'readonly',

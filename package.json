@@ -15,7 +15,8 @@
     "eslint": "^9.13.0",
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-prettier": "^5.5.1",
-    "prettier": "^3.3.3"
+    "prettier": "^3.3.3",
+    "wrangler": "^4.23.0"
   },
   "keywords": [
     "overlay",

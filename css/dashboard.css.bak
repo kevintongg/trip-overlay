@@ -29,7 +29,6 @@ body {
   gap: 18px;
   padding: 18px 18px 0 0;
   pointer-events: none; /* Allow clicks through overlay */
-  margin-top: 40px;
 }
 
 /* Combined Dashboard Card Styles */

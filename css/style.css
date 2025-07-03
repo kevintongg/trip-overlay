@@ -28,7 +28,7 @@ body {
 /* This container holds the entire overlay and positions it */
 #overlay-container {
   position: absolute;
-  bottom: 35px;
+  top: 40px;
   width: 600px;
   left: 50%;
   transform: translateX(-50%);
