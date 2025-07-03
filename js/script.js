@@ -152,6 +152,11 @@ function updateDisplayElements() {
       if (domElements.avatar) {
         domElements.avatar.style.left = `${progressPercent}%`;
       }
+      // Set % completion text
+      const percentEl = document.getElementById('progress-percent');
+      if (percentEl) {
+        percentEl.textContent = `${progressPercent.toFixed(1)}%`;
+      }
 
       appState.uiUpdateScheduled = false;
       appState.uiUpdateTimeout = null;

@@ -32,28 +32,22 @@ body {
   width: 800px;
   left: 50%;
   transform: translateX(-50%);
-
-  /* Semi-transparent background for readability - made more transparent */
   background-color: rgba(0, 0, 0, 0.3);
-
-  /* Spacing and styling */
-  padding: 20px;
+  padding: 0;
   border-radius: 15px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.12);
 }
 
 /* This creates the visual for the progress bar's background */
 #progress-bar {
   width: 100%;
-  height: 15px; /* The thickness of the bar */
-  background-color: rgba(
-    0,
-    0,
-    0,
-    0.3
-  ); /* A semi-transparent dark background - made more transparent */
-  border: 1px solid rgba(255, 255, 255, 0.3); /* A light border - slightly more transparent */
+  max-width: 800px;
+  margin: 0 auto 8px auto;
+  height: 15px;
+  background-color: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.3);
   border-radius: 10px;
-  position: relative; /* Needed so we can position the avatar on top of it */
+  position: relative;
 }
 
 /* This is the "filled" part of the bar that shows your progress */
@@ -76,25 +70,35 @@ body {
 /* Container for distance data display */
 #data-container {
   width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   margin-top: 10px;
+  padding: 0;
 }
 
 /* Main distance values styling */
 .data-box {
+  flex: 1;
   font-size: 28px;
   font-weight: bold;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 /* Left section (traveled) - left aligned */
 .data-box:first-child {
+  align-items: flex-start;
   text-align: left;
 }
 
 /* Center section (today) - center aligned */
 .data-box.today {
+  align-items: center;
+  justify-content: center;
   font-size: 22px;
   font-weight: normal;
   text-align: center;
@@ -102,6 +106,7 @@ body {
 
 /* Right section (remaining) - right aligned */
 .data-box:last-child {
+  align-items: flex-end;
   text-align: right;
 }
 
@@ -231,4 +236,24 @@ body,
 .label,
 .corner {
   font-family: 'Inter', 'Segoe UI', 'Roboto', 'Arial', sans-serif;
+}
+
+#progress-percent {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  color: #fff;
+  font-size: 1.1em;
+  font-weight: 600;
+  text-shadow: 0 1px 4px #000a, 1px 1px 3px rgba(0,0,0,0.8);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.progress-section {
+  margin: 0 auto;
+  padding: 20px 24px 18px 24px;
+  border-radius: 15px;
+  background: none;
 }
