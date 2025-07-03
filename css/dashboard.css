@@ -87,19 +87,14 @@ body {
 .weather-icon,
 #weather-icon-combined {
   font-family:
-    "Apple Color Emoji",
-    "Segoe UI Emoji",
-    "Noto Color Emoji",
-    "Segoe UI Symbol",
-    "Android Emoji",
-    "EmojiSymbols",
-    sans-serif;
+    'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji',
+    'Segoe UI Symbol', 'Android Emoji', 'EmojiSymbols', sans-serif;
   font-size: 1.2em;
   display: inline-block;
   line-height: 1;
   text-rendering: optimizeLegibility;
-  -webkit-font-feature-settings: "liga" on;
-  font-feature-settings: "liga" on;
+  -webkit-font-feature-settings: 'liga' on;
+  font-feature-settings: 'liga' on;
 }
 .weather-temp {
   font-size: 1.2em;
@@ -234,7 +229,7 @@ body {
 }
 
 /* Show fallback text when emoji fails to render */
-@supports not (font-family: "Apple Color Emoji") {
+@supports not (font-family: 'Apple Color Emoji') {
   .weather-icon-fallback {
     display: inline;
   }
@@ -251,53 +246,5 @@ body {
 .no-emoji .weather-icon-fallback {
   display: inline;
   font-weight: bold;
-  color: #4CAF50;
-}
-
-.dashboard-hourly-card {
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  align-items: flex-end;
-  background: linear-gradient(135deg, rgba(10, 10, 10, 0.92), rgba(30, 30, 30, 0.88));
-  border-radius: 14px;
-  padding: 18px 24px 16px 24px;
-  box-shadow: 0 6px 32px rgba(0, 0, 0, 0.7);
-  border: 1.2px solid rgba(255, 255, 255, 0.10);
-  color: #fff;
-  font-family: 'Inter', 'Segoe UI', 'Roboto', 'Arial', sans-serif;
-  max-width: 480px;
-  overflow-x: auto;
-  gap: 24px;
-}
-
-.hourly-forecast-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  min-width: 56px;
-  max-width: 64px;
-  flex: 1 1 0;
-  gap: 4px;
-  padding: 4px 0;
-}
-
-.hourly-forecast-time {
-  font-size: 0.98em;
-  color: #ccc;
-  font-weight: 500;
-  margin-bottom: 2px;
-}
-
-.hourly-forecast-icon {
-  font-size: 1.2em;
-  margin-bottom: 2px;
-}
-
-.hourly-forecast-temp {
-  font-size: 1.08em;
-  font-weight: 700;
-  color: #fff;
-  text-shadow: 0 1px 4px #000a;
+  color: #4caf50;
 }

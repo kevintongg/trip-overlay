@@ -420,7 +420,6 @@ async function updateWeatherData() {
 
     dashboardState.weather = weather;
     updateWeatherDisplay(weather);
-    updateHourlyForecastCard(weather);
     clearTimeout(dashboardState.timers.weather);
     dashboardState.timers.weather = setTimeout(
       updateWeatherData,
@@ -449,64 +448,6 @@ function updateWeatherDisplay(weather) {
   console.log(`🌡️ Dashboard: Weather updated - ${temp} ${desc}`);
 
   updateCombinedWeather(icon, temp, desc);
-}
-
-// --- Hourly Forecast Card ---
-function updateHourlyForecastCard(weather) {
-  const card = document.getElementById('hourly-forecast-card');
-  if (!card || !weather || !weather.hourly) {
-    card.innerHTML = '';
-    return;
-  }
-  // Find the current hour index
-  const now = new Date();
-  const times = weather.hourly.time;
-  let startIdx = times.findIndex(t => {
-    // t is ISO string, e.g. '2025-07-03T12:00'
-    const tDate = new Date(t);
-    return tDate >= now;
-  });
-  if (startIdx === -1) {
-    startIdx = 0;
-  }
-  // Show next 6 hours
-  const hoursToShow = 5;
-  const items = [];
-  for (
-    let i = startIdx;
-    i < Math.min(times.length, startIdx + hoursToShow);
-    i++
-  ) {
-    const t = new Date(times[i]);
-    const tz = dashboardState.timezone || 'Europe/Vienna';
-    const hourStr = t.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: undefined,
-      hour12: !CONFIG.time.use24Hour,
-      timeZone: tz,
-    });
-    const temp = weather.hourly.temperature_2m[i];
-    const tempUnit = CONFIG.weather.useMetric ? 'C' : 'F';
-    const tempStr = `${Math.round(temp)}°${tempUnit}`;
-    const code = weather.hourly.weather_code[i];
-    const iconInfo = getWeatherIconType(code);
-    let iconHtml = '';
-    if (iconInfo.type === 'emoji') {
-      iconHtml = `<span class="hourly-forecast-icon">${iconInfo.value}</span>`;
-    } else if (iconInfo.type === 'svg') {
-      iconHtml = `<img class="hourly-forecast-icon" src="assets/${iconInfo.value}" alt="" style="height:1.2em;vertical-align:middle;display:inline-block;" />`;
-    } else {
-      iconHtml = `<span class="hourly-forecast-icon weather-icon-fallback">${iconInfo.value}</span>`;
-    }
-    items.push(
-      `<div class="hourly-forecast-item">
-        <span class="hourly-forecast-time">${hourStr}</span>
-        ${iconHtml}
-        <span class="hourly-forecast-temp">${tempStr}</span>
-      </div>`
-    );
-  }
-  card.innerHTML = items.join('');
 }
 
 // --- Status & Demo ---
