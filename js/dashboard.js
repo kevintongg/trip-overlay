@@ -206,6 +206,7 @@ function updateTimeDisplay() {
   });
   const tzAbbr = getTimezoneAbbreviation(timeZone);
   updateCombinedTime(dateString, timeString, tzAbbr);
+  console.log('⏰ Time updated:', dateString, timeString, tzAbbr);
 }
 function getTimezoneAbbreviation(timeZone) {
   try {
@@ -231,19 +232,23 @@ function initRTIRL() {
     return;
   }
   if (!window.RealtimeIRL) {
+    console.log('❌ RTIRL library not loaded');
     return updateConnectionStatus('Library not loaded', 'error');
   }
   try {
+    console.log('🔌 Connecting to RTIRL...');
     const streamer = RealtimeIRL.forStreamer('twitch', CONFIG.rtirl.userId);
     dashboardState.rtirtLocationListener =
       streamer.addLocationListener(handleLocationData);
     updateConnectionStatus('Connecting to RTIRL...', 'connecting');
   } catch (e) {
-    updateConnectionStatus('Connection failed', e.message);
+    console.log('❌ Failed to initialize RTIRL:', e);
+    updateConnectionStatus('Connection failed', 'error');
   }
 }
 function handleLocationData(data) {
   if (!data || !data.latitude || !data.longitude) {
+    console.log('📍 Location is hidden or streamer is offline');
     return;
   }
   dashboardState.lastPosition = {
@@ -254,6 +259,7 @@ function handleLocationData(data) {
   };
   dashboardState.isConnected = true;
   updateConnectionStatus('Connected', 'connected');
+  console.log('📍 Location update received:', data);
   updateLocationDisplay();
   updateWeatherData();
 }
@@ -264,6 +270,7 @@ function updateLocationDisplay() {
     return;
   }
   updateCombinedLocation('Detecting location...');
+  console.log('🌍 Reverse geocoding for address...');
   reverseGeocode(pos.latitude, pos.longitude);
 }
 async function reverseGeocode(lat, lon) {
@@ -284,9 +291,11 @@ async function reverseGeocode(lat, lon) {
       const country = data.address.country;
       const location = [city, country].filter(Boolean).join(', ');
       updateCombinedLocation(location || '--');
+      console.log('🌍 Location resolved:', location);
     }
   } catch {
     updateCombinedLocation('Location unavailable');
+    console.log('⚠️ Reverse geocoding failed');
   }
 }
 
@@ -327,6 +336,7 @@ function updateWeatherDisplay(weather) {
   const desc = weatherDescriptions[current.weather_code] || 'Unknown';
   const icon = weatherIcons[current.weather_code] || '🌤️';
   updateCombinedWeather(icon, temp, desc);
+  console.log('🌦️ Weather updated:', temp, desc);
 }
 
 // --- Status & Demo ---
