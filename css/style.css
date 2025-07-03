@@ -14,7 +14,7 @@ body {
   /* background-repeat: no-repeat; */
 
   /* Sets a clean, readable font */
-  font-family: 'Arial', sans-serif;
+  font-family: 'Inter', 'Segoe UI', 'Roboto', 'Arial', sans-serif;
   color: white; /* Makes all text white by default */
 
   /* Adds a subtle shadow to make white text readable on any background */
@@ -221,4 +221,14 @@ body {
   background-color: rgba(220, 53, 69, 0.2);
   border: 1px solid rgba(220, 53, 69, 0.4);
   color: #dc3545;
+}
+
+body,
+.overlay,
+.trip-info,
+.distance,
+.unit,
+.label,
+.corner {
+  font-family: 'Inter', 'Segoe UI', 'Roboto', 'Arial', sans-serif;
 }
