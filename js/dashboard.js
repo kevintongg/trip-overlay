@@ -206,7 +206,6 @@ function updateTimeDisplay() {
   });
   const tzAbbr = getTimezoneAbbreviation(timeZone);
   updateCombinedTime(dateString, timeString, tzAbbr);
-  console.log('⏰ Time updated:', dateString, timeString, tzAbbr);
 }
 function getTimezoneAbbreviation(timeZone) {
   try {
