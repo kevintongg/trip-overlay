@@ -343,7 +343,7 @@ async function reverseGeocode(lat, lon) {
   try {
     console.log('🌐 Dashboard: Fetching address from OpenStreetMap...');
     const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&addressdetails=1`
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=16&addressdetails=1`
     );
     if (!response.ok) {
       throw new Error(`Geocoding failed: ${response.status}`);
@@ -351,14 +351,43 @@ async function reverseGeocode(lat, lon) {
     const data = await response.json();
 
     if (data && data.address) {
+      // Extract location components with priority order
+      const district =
+        data.address.district ||
+        data.address.borough ||
+        data.address.neighbourhood ||
+        data.address.suburb ||
+        data.address.quarter ||
+        data.address.city_district;
+
       const city =
         data.address.city ||
         data.address.town ||
         data.address.village ||
         data.address.municipality;
+
       const country = data.address.country;
-      const location = [city, country].filter(Boolean).join(', ');
+
+      // Build location string: "District, City, Country" or "City, Country"
+      const locationParts = [];
+      if (district && district !== city) {
+        locationParts.push(district);
+      }
+      if (city) {
+        locationParts.push(city);
+      }
+      if (country) {
+        locationParts.push(country);
+      }
+
+      const location = locationParts.filter(Boolean).join(', ');
       console.log('📍 Dashboard: Location resolved to:', location);
+      console.log('🏘️ Dashboard: Address components:', {
+        district: district || 'none',
+        city: city || 'none',
+        country: country || 'none',
+      });
+
       updateCombinedLocation(location || '--');
     } else {
       console.log('⚠️ Dashboard: No address data in geocoding response');

@@ -72,15 +72,12 @@ body {
   justify-content: center;
 }
 .location {
-  font-size: 1em;
+  font-size: 1.3em;
   font-weight: 700;
   color: #fff;
   text-shadow: 0 1px 4px #000a;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  flex-shrink: 1;
-  min-width: 0;
+  text-align: center;
+  word-break: break-word;
 }
 .weather {
   display: flex;
@@ -229,14 +226,6 @@ body {
   width: 100%;
   font-size: 0.95em;
   color: #ccc;
-}
-
-.location {
-  font-size: 1.3em;
-  font-weight: 700;
-  color: #fff;
-  text-shadow: 0 1px 4px #000a;
-  text-align: center;
 }
 
 /* Fallback for platforms without emoji support */
