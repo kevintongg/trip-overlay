@@ -519,15 +519,21 @@ Edit `css/style.css` to customize:
 
 ### Positioning
 
-The overlay is positioned at bottom-center by default. To change position, modify in `css/style.css`:
+The overlay is positioned at the top-center by default. To change position, modify in `css/style.css`:
 
 ```css
 #overlay-container {
-  bottom: 50px; /* Distance from bottom */
+  top: 40px; /* Distance from top */
   left: 50%; /* Horizontal center */
   transform: translateX(-50%); /* Center alignment */
 }
 ```
+
+The dashboard card is also top-aligned by default. You can adjust the vertical spacing by changing the `top` value for `#overlay-container` and the `margin-top` value for `.dashboard-container` in `css/dashboard.css`.
+
+### Weather Icons
+
+The overlay now uses official OpenWeatherMap weather icons for all conditions, with emoji fallback if the icon cannot be loaded or displayed.
 
 ## Technical Details
 

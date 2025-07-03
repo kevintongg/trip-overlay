@@ -35,9 +35,10 @@ const TOTAL_DISTANCE_KM = 205.0; // Change this to your trip distance
    - ✅ Refresh browser when scene becomes active
 
 2. **Position the Overlay**:
-   - Drag to bottom of screen
+   - Drag to top of screen
    - Resize as needed
    - Set blend mode to "Normal"
+   - (The overlay is top-aligned by default. You can adjust the top margin in the CSS if needed.)
 
 ### 4. **Stream Controls**
 
