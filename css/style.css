@@ -35,7 +35,7 @@ body {
   background-color: rgba(0, 0, 0, 0.3);
   padding: 0;
   border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
 }
 
 /* This creates the visual for the progress bar's background */
@@ -44,8 +44,8 @@ body {
   max-width: 600px;
   margin: 0 auto 8px auto;
   height: 11px;
-  background-color: rgba(0,0,0,0.3);
-  border: 1px solid rgba(255,255,255,0.3);
+  background-color: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 7px;
   position: relative;
 }
@@ -74,7 +74,7 @@ body {
   margin: 0 auto;
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: flex-start; /* Align horizontally */
   margin-top: 6px;
   padding: 0;
 }
@@ -86,7 +86,7 @@ body {
   font-weight: bold;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  /* Remove align-items: center; so only the center box is centered */
 }
 
 /* Left section (traveled) - left aligned */
@@ -98,9 +98,6 @@ body {
 /* Center section (today) - center aligned */
 .data-box.today {
   align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  font-weight: normal;
   text-align: center;
 }
 
@@ -130,6 +127,8 @@ body {
 .data-box:last-child .label {
   text-align: right;
 }
+
+/* All three counters are now horizontally aligned in a single row, with today centered. */
 
 /* Enhanced control panel for IRLToolkit/cloud streaming */
 #control-panel {
@@ -246,7 +245,9 @@ body,
   color: #fff;
   font-size: 0.9em;
   font-weight: 600;
-  text-shadow: 0 1px 4px #000a, 1px 1px 3px rgba(0,0,0,0.8);
+  text-shadow:
+    0 1px 4px #000a,
+    1px 1px 3px rgba(0, 0, 0, 0.8);
   pointer-events: none;
   z-index: 2;
 }

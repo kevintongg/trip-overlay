@@ -25,6 +25,7 @@ const dashboardState = {
   isConnected: false,
   weather: null,
   timezone: null,
+  timezoneAbbr: null,
   rtirtLocationListener: null,
 };
 
@@ -240,6 +241,7 @@ function updateTimeDisplay() {
   const now = new Date();
   const timeZone =
     dashboardState.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+
   const timeOptions = {
     hour12: !CONFIG.time.use24Hour,
     hour: '2-digit',
@@ -250,6 +252,7 @@ function updateTimeDisplay() {
     timeOptions.second = '2-digit';
   }
   const timeString = now.toLocaleTimeString('en-US', timeOptions);
+
   const dateString = now.toLocaleDateString('en-US', {
     weekday: 'short',
     month: 'short',
@@ -257,7 +260,10 @@ function updateTimeDisplay() {
     year: 'numeric',
     timeZone: timeZone,
   });
-  const tzAbbr = getTimezoneAbbreviation(timeZone);
+
+  // Prefer abbreviation from API if available
+  const tzAbbr =
+    dashboardState.timezoneAbbr || getTimezoneAbbreviation(timeZone);
 
   updateCombinedTime(dateString, timeString, tzAbbr);
 }
@@ -420,6 +426,13 @@ async function updateWeatherData() {
     const weather = await response.json();
 
     dashboardState.weather = weather;
+    // Set timezone from API response if available
+    if (weather.timezone) {
+      dashboardState.timezone = weather.timezone;
+    }
+    if (weather.timezone_abbreviation) {
+      dashboardState.timezoneAbbr = weather.timezone_abbreviation;
+    }
     updateWeatherDisplay(weather);
     clearTimeout(dashboardState.timers.weather);
     dashboardState.timers.weather = setTimeout(
@@ -603,6 +616,7 @@ function getDashboardStatus() {
     lastPosition: dashboardState.lastPosition,
     weather: dashboardState.weather,
     timezone: dashboardState.timezone,
+    timezoneAbbr: dashboardState.timezoneAbbr,
     timers: Object.keys(dashboardState.timers).map(key => ({
       name: key,
       active: !!dashboardState.timers[key],

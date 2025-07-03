@@ -43,8 +43,8 @@ body {
   );
   border-radius: 16px;
   padding: 1.2rem 1.5rem 1.1rem 1.5rem;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.18);
-  border: 1.5px solid rgba(255,255,255,0.12);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18);
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
   color: #fff;
   font-family: 'Inter', 'Segoe UI', 'Roboto', 'Arial', sans-serif;
   min-width: 320px;
@@ -89,9 +89,13 @@ body {
   font-family:
     'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji',
     'Segoe UI Symbol', 'Android Emoji', 'EmojiSymbols', sans-serif;
-  font-size: 1.2em;
-  display: inline-block;
+  font-size: 1.6em;
+  display: flex;
+  align-items: center;
   line-height: 1;
+  position: relative;
+  top: 2px;
+  margin-right: 0.1em;
   text-rendering: optimizeLegibility;
   -webkit-font-feature-settings: 'liga' on;
   font-feature-settings: 'liga' on;
@@ -276,5 +280,5 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5em;
+  gap: 0.4em;
 }
