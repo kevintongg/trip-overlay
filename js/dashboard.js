@@ -1,22 +1,14 @@
 // Dashboard Overlay - Optimized for Streaming, IRLToolkit, and Cloud OBS
 // Clean, DRY, and robust implementation
 
-// Configuration
-const CONFIG = {
-  rtirl: {
-    userId: '41908566',
-    demoMode: false,
-  },
-  weather: {
-    updateInterval: 300000, // 5 minutes
-    useMetric: true,
-  },
-  time: {
-    use24Hour: true,
-    showSeconds: true,
-    updateInterval: 1000,
-  },
-};
+// Import centralized configuration and RTIRL module
+import { CONFIG, WEATHER_ICONS, OWM_ICON_BASE_URL } from '../utils/config.js';
+import { calculateDistance } from '../utils/gps.js';
+import {
+  initRTIRL,
+  addLocationCallback,
+  getConnectionState,
+} from '../utils/rtirl.js';
 
 // Application state
 const dashboardState = {
@@ -28,72 +20,11 @@ const dashboardState = {
   timezoneAbbr: null,
   rtirtLocationListener: null,
   hasFetchedInitialWeather: false, // Flag to control initial fetch
+  lastLocationName: '', // Add this line
 };
 
 // DOM elements cache
 const elements = {};
-
-// OpenWeatherMap icon base URL
-const OWM_ICON_BASE_URL = 'https://openweathermap.org/img/wn/';
-
-// Weather condition mapping for OpenWeatherMap codes (fallback emojis)
-const weatherIcons = {
-  200: '⛈',
-  201: '⛈',
-  202: '⛈',
-  210: '⛈',
-  211: '⛈',
-  212: '⛈',
-  221: '⛈',
-  230: '⛈',
-  231: '⛈',
-  232: '⛈',
-  300: '🌦',
-  301: '🌦',
-  302: '🌦',
-  310: '🌦',
-  311: '🌦',
-  312: '🌦',
-  313: '🌦',
-  314: '🌦',
-  321: '🌦',
-  500: '🌧',
-  501: '🌧',
-  502: '🌧',
-  503: '🌧',
-  504: '🌧',
-  511: '❄',
-  520: '🌦',
-  521: '🌦',
-  522: '🌦',
-  531: '🌦',
-  600: '❄',
-  601: '❄',
-  602: '❄',
-  611: '🌨',
-  612: '🌨',
-  613: '🌨',
-  615: '🌨',
-  616: '🌨',
-  620: '🌨',
-  621: '🌨',
-  622: '🌨',
-  701: '🌫',
-  711: '🌫',
-  721: '🌫',
-  731: '🌫',
-  741: '🌫',
-  751: '🌫',
-  761: '🌫',
-  762: '🌫',
-  771: '🌫',
-  781: '🌪',
-  800: '☀',
-  801: '🌤',
-  802: '⛅',
-  803: '☁',
-  804: '☁',
-};
 
 // --- Combined Dashboard DOM Cache ---
 const combinedElements = {
@@ -124,6 +55,60 @@ const setClass = (el, cls) => {
   }
 };
 
+// --- Debug Utilities ---
+function getStatus() {
+  // Renamed for clarity
+  const rtirtConnection = getConnectionState();
+  const tripState = window.appState || {}; // Safely get trip state
+
+  const {
+    totalDistanceTraveled = 0,
+    todayDistanceTraveled = 0,
+    originalTotalDistance = 0,
+    currentMode = 'N/A',
+    useImperialUnits = false,
+  } = tripState;
+
+  const kmToMiles = 0.621371;
+  const unitMultiplier = useImperialUnits ? kmToMiles : 1;
+  const units = useImperialUnits ? 'miles' : 'km';
+  const progress =
+    originalTotalDistance > 0
+      ? (totalDistanceTraveled / originalTotalDistance) * 100
+      : 0;
+
+  console.log(`
+🔍 UNIFIED STATUS REPORT
+============================================
+
+🔌 CONNECTION
+   • Library Connected: ${rtirtConnection.isConnected ? '✅ YES' : '❌ NO'}
+   • Demo Mode: ${rtirtConnection.isDemoMode ? '✅ YES' : '❌ NO'}
+   • Data Flow: ${dashboardState.isConnected ? '✅ Receiving' : '❌ Not receiving'}
+   • User ID: ${CONFIG.rtirl.userId}
+
+📊 TRIP PROGRESS
+   • Movement Mode: ${currentMode}
+   • Total Distance: ${(totalDistanceTraveled * unitMultiplier).toFixed(2)} ${units}
+   • Today's Distance: ${(todayDistanceTraveled * unitMultiplier).toFixed(2)} ${units}
+   • Progress: ${progress.toFixed(1)}%
+
+🌤️ DASHBOARD
+   • Weather: ${dashboardState.weather ? `${dashboardState.weather.current.temp.toFixed(1)}°${CONFIG.weather.useMetric ? 'C' : 'F'}, ${dashboardState.weather.current.weather[0].description}` : '❌ None'}
+   • Timezone: ${dashboardState.timezone || '❌ Not set'}
+   • Last Location: ${dashboardState.lastPosition ? `${dashboardState.lastPosition.latitude.toFixed(4)}, ${dashboardState.lastPosition.longitude.toFixed(4)}` : '❌ None'}
+
+------------------------------------
+`);
+
+  // Return a combined status object for programmatic access
+  return {
+    connection: rtirtConnection,
+    trip: tripState,
+    dashboard: dashboardState,
+  };
+}
+
 // --- Initialization ---
 function initializeDashboard() {
   console.log('🚀 Dashboard: Starting initialization...');
@@ -140,9 +125,18 @@ function initializeDashboard() {
   cacheDOM();
   handleURLParameters();
   initTime();
-  initRTIRL();
+  initRTIRLDashboard();
 
   console.log('✅ Dashboard: Initialization complete');
+
+  window.TripOverlay = window.TripOverlay || {};
+  window.TripOverlay.getStatus = getStatus;
+
+  // Also expose directly for backwards compatibility
+  window.getStatus = getStatus;
+
+  // Make dashboardState available for unified status
+  window.dashboardState = dashboardState;
 }
 
 function cacheDOM() {
@@ -184,7 +178,7 @@ function handleURLParameters() {
     dashboardState.timezone = params.get('timezone');
   }
   if (params.get('demo') === 'true') {
-    CONFIG.rtirl.demoMode = true;
+    // Dashboard demo mode: static location for weather/display testing only
     // Default to Vienna timezone in demo mode unless overridden
     if (!dashboardState.timezone) {
       dashboardState.timezone = 'Europe/Vienna';
@@ -257,48 +251,82 @@ function getTimezoneAbbreviation(timeZone) {
 }
 
 // --- RTIRL Location ---
-function initRTIRL() {
-  if (CONFIG.rtirl.demoMode) {
-    console.log('🎭 Dashboard: Demo mode enabled');
+function initRTIRLDashboard() {
+  // Register callback for location updates
+  addLocationCallback((locationUpdate, type) => {
+    if (type === 'hidden') {
+      updateConnectionStatus('Location hidden', 'warning');
+      return;
+    }
+
+    if (locationUpdate) {
+      handleLocationData(locationUpdate);
+    }
+  });
+
+  // Check if dashboard is in its own demo mode
+  const isDashboardDemo =
+    new URLSearchParams(window.location.search).get('demo') === 'true';
+
+  if (isDashboardDemo) {
+    // Dashboard demo mode: don't initialize RTIRL, use static demo data instead
+    console.log(
+      '🎭 Dashboard: Using dashboard-specific demo mode (static location)'
+    );
+    updateConnectionStatus('Dashboard demo mode (static)', 'connected');
     return;
   }
-  if (!window.RealtimeIRL) {
-    console.log('❌ Dashboard: RTIRL library not loaded');
-    return updateConnectionStatus('Library not loaded', 'error');
-  }
-  try {
-    console.log('🔌 Dashboard: Connecting to RTIRL...');
-    console.log('📋 Dashboard: User ID:', CONFIG.rtirl.userId);
-    const streamer = RealtimeIRL.forStreamer('twitch', CONFIG.rtirl.userId);
-    dashboardState.rtirtLocationListener =
-      streamer.addLocationListener(handleLocationData);
-    updateConnectionStatus('Connecting to RTIRL...', 'connecting');
-    console.log('✅ Dashboard: RTIRL listener attached successfully');
-  } catch (e) {
-    console.log('❌ Dashboard: Failed to initialize RTIRL:', e);
-    updateConnectionStatus('Connection failed', 'error');
+
+  // Initialize RTIRL connection for live data
+  const result = initRTIRL({
+    moduleName: 'Dashboard',
+    onConnectionChange: (connected, status) => {
+      if (connected) {
+        updateConnectionStatus(
+          'RTIRL library connected, waiting for location...',
+          'connecting'
+        );
+      } else {
+        updateConnectionStatus(status || 'Disconnected', 'error');
+      }
+    },
+  });
+
+  if (!result.success && !result.demo) {
+    updateConnectionStatus(result.error || 'Connection failed', 'error');
   }
 }
-function handleLocationData(data) {
-  if (!data || !data.latitude || !data.longitude) {
+function handleLocationData(locationUpdate) {
+  if (
+    !locationUpdate ||
+    !locationUpdate.latitude ||
+    !locationUpdate.longitude
+  ) {
     console.log('📍 Dashboard: Location is hidden or streamer is offline');
     updateCombinedLocation('Location hidden');
+    updateConnectionStatus('Location hidden or streamer offline', 'warning');
+    dashboardState.isConnected = false;
     return;
   }
 
-  console.log(
-    `📍 Dashboard: Location received - ${data.latitude.toFixed(4)}, ${data.longitude.toFixed(4)}`
-  );
+  // Only log location updates occasionally in demo mode to reduce spam
 
   dashboardState.lastPosition = {
-    latitude: data.latitude,
-    longitude: data.longitude,
-    accuracy: data.accuracy || 0,
-    timestamp: Date.now(),
+    latitude: locationUpdate.latitude,
+    longitude: locationUpdate.longitude,
+    accuracy: locationUpdate.accuracy || 0,
+    timestamp: locationUpdate.timestamp,
   };
-  dashboardState.isConnected = true;
-  updateConnectionStatus('Connected', 'connected');
-  console.log('✅ Dashboard: Connection status updated to connected');
+
+  // Only update connection status if it's changed
+  if (!dashboardState.isConnected) {
+    dashboardState.isConnected = true;
+    updateConnectionStatus(
+      'Connected and receiving location data',
+      'connected'
+    );
+    console.log('✅ Dashboard: Location data flow established');
+  }
   updateLocationDisplay();
 
   // Only fetch weather on the first location update
@@ -317,24 +345,99 @@ function updateLocationDisplay() {
     updateCombinedLocation('--');
     return;
   }
-  updateCombinedLocation('Detecting location...');
-  console.log(
-    '🌍 Dashboard: Starting reverse geocoding for:',
-    pos.latitude,
-    pos.longitude
-  );
-  reverseGeocode(pos.latitude, pos.longitude);
+
+  // Throttle reverse geocoding to prevent API spam
+  const now = Date.now();
+  const lastGeocode = dashboardState.lastGeocodeTime || 0;
+  const timeSinceLastGeocode = now - lastGeocode;
+
+  const shouldGeocode =
+    !dashboardState.lastGeocodedPosition ||
+    timeSinceLastGeocode > 30000 ||
+    getDistanceFromLastGeocode(pos) > 0.1; // 0.1km = ~100m
+
+  if (shouldGeocode) {
+    updateCombinedLocation('Detecting location...');
+    console.log(
+      '🌍 Dashboard: Starting reverse geocoding for:',
+      pos.latitude,
+      pos.longitude
+    );
+    dashboardState.lastGeocodeTime = now;
+    dashboardState.lastGeocodedPosition = {
+      lat: pos.latitude,
+      lon: pos.longitude,
+    };
+    reverseGeocode(pos.latitude, pos.longitude);
+  } else {
+    // If we have a location name and we are not geocoding, just keep it.
+    if (dashboardState.lastLocationName) {
+      updateCombinedLocation(dashboardState.lastLocationName);
+    } else {
+      // Otherwise, show coordinates as a fallback.
+      updateCombinedLocation(
+        `${pos.latitude.toFixed(4)}, ${pos.longitude.toFixed(4)}`
+      );
+    }
+  }
 }
+
+function getDistanceFromLastGeocode(currentPos) {
+  if (!dashboardState.lastGeocodedPosition) {
+    return Infinity;
+  }
+
+  const lastPos = dashboardState.lastGeocodedPosition;
+  return calculateDistance(
+    { lat: lastPos.lat, lon: lastPos.lon },
+    { lat: currentPos.latitude, lon: currentPos.longitude }
+  );
+}
+
 async function reverseGeocode(lat, lon) {
   try {
-    console.log('🌐 Dashboard: Fetching address from OpenStreetMap...');
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=16&addressdetails=1`
-    );
-    if (!response.ok) {
-      throw new Error(`Geocoding failed: ${response.status}`);
+    // Validate coordinates
+    if (
+      !isFinite(lat) ||
+      !isFinite(lon) ||
+      lat < -90 ||
+      lat > 90 ||
+      lon < -180 ||
+      lon > 180
+    ) {
+      throw new Error(`Invalid coordinates: ${lat}, ${lon}`);
     }
+
+    console.log('🌐 Dashboard: Fetching address from OpenStreetMap...');
+
+    // Add timeout and proper headers
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=16&addressdetails=1`,
+      {
+        signal: controller.signal,
+        headers: {
+          Accept: 'application/json',
+          'User-Agent': 'TripOverlay/1.0 (Cycling Trip Tracker)',
+        },
+      }
+    );
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(
+        `Geocoding failed: ${response.status} ${response.statusText}`
+      );
+    }
+
     const data = await response.json();
+
+    // Validate response structure
+    if (!data || typeof data !== 'object') {
+      throw new Error('Invalid geocoding response format');
+    }
 
     if (data && data.address) {
       // Extract location components with priority order
@@ -367,6 +470,7 @@ async function reverseGeocode(lat, lon) {
       }
 
       const location = locationParts.filter(Boolean).join(', ');
+      dashboardState.lastLocationName = location; // Store the successful location name
       console.log('📍 Dashboard: Location resolved to:', location);
       console.log('🏘️ Dashboard: Address components:', {
         district: district || 'none',
@@ -380,8 +484,22 @@ async function reverseGeocode(lat, lon) {
       updateCombinedLocation('Location unavailable');
     }
   } catch (error) {
+    dashboardState.lastLocationName = ''; // Clear the name on error
     console.log('❌ Dashboard: Reverse geocoding failed:', error);
-    updateCombinedLocation('Location unavailable');
+
+    // Handle different error types gracefully
+    if (error.name === 'AbortError') {
+      updateCombinedLocation('Location lookup timed out');
+    } else if (
+      error.name === 'TypeError' &&
+      error.message.includes('Failed to fetch')
+    ) {
+      updateCombinedLocation('Network error');
+    } else if (error.message.includes('Invalid coordinates')) {
+      updateCombinedLocation('Invalid GPS coordinates');
+    } else {
+      updateCombinedLocation('Location unavailable');
+    }
   }
 }
 
@@ -397,14 +515,40 @@ async function updateWeatherData() {
     const weatherUrl = `/weather?lat=${pos.latitude}&lon=${pos.longitude}&units=${units}`;
     console.log('🌤️ Dashboard: Fetching weather from proxy:', weatherUrl);
 
-    const response = await fetch(weatherUrl);
-    const data = await response.json();
+    // Add timeout and network error handling
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+    const response = await fetch(weatherUrl, {
+      signal: controller.signal,
+      headers: {
+        Accept: 'application/json',
+      },
+    });
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
-      // Throw an error with the detailed message from the proxy
+      // Try to get error details from response
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch {
+        errorData = {
+          error: 'Invalid response format',
+          message: response.statusText,
+        };
+      }
+
       throw new Error(
-        `Weather fetch failed: ${response.status} - ${data.error || 'Unknown error'} - ${data.message || 'No message'}`
+        `Weather fetch failed: ${response.status} - ${errorData.error || 'Unknown error'} - ${errorData.message || 'No message'}`
       );
+    }
+
+    const data = await response.json();
+
+    // Validate weather data structure
+    if (!data || typeof data !== 'object') {
+      throw new Error('Invalid weather data format received');
     }
 
     // Set timezone from API response if available
@@ -429,7 +573,35 @@ async function updateWeatherData() {
     );
   } catch (error) {
     console.error('❌ Dashboard: Weather update failed:', error);
+
+    // Handle different error types
+    if (error.name === 'AbortError') {
+      console.log(
+        '⏰ Dashboard: Weather request timed out, will retry on next interval'
+      );
+      updateCombinedWeather('⏰', '--°', 'Request timed out');
+    } else if (
+      error.name === 'TypeError' &&
+      error.message.includes('Failed to fetch')
+    ) {
+      console.log('🌐 Dashboard: Network error, will retry on next interval');
+      updateCombinedWeather('🌐', '--°', 'Network error');
+    } else {
+      console.log(
+        '⚠️ Dashboard: Weather service error, will retry on next interval'
+      );
+      updateCombinedWeather('⚠️', '--°', 'Service unavailable');
+    }
+
+    // Set fallback text for older elements
     setText(elements.weatherDescription, 'Weather unavailable');
+
+    // Still schedule next update to retry
+    clearTimeout(dashboardState.timers.weather);
+    dashboardState.timers.weather = setTimeout(
+      updateWeatherData,
+      CONFIG.weather.updateInterval
+    );
   }
 }
 
@@ -616,7 +788,7 @@ function updateCombinedWeather(weatherIcon, temp, desc) {
       img.onerror = () => {
         // Fallback to emoji if image fails to load
         const weatherCode = dashboardState.weather?.current?.weather[0]?.id;
-        const fallbackEmoji = weatherIcons[weatherCode] || '🌤';
+        const fallbackEmoji = WEATHER_ICONS[weatherCode] || '🌤';
         el.textContent = fallbackEmoji;
         el.className = 'weather-icon';
       };
@@ -624,7 +796,7 @@ function updateCombinedWeather(weatherIcon, temp, desc) {
     } else {
       // Fallback to emoji if no icon provided
       const weatherCode = dashboardState.weather?.current?.weather[0]?.id;
-      const fallbackEmoji = weatherIcons[weatherCode] || '🌤';
+      const fallbackEmoji = WEATHER_ICONS[weatherCode] || '🌤';
       el.textContent = fallbackEmoji;
       el.className = 'weather-icon';
     }
@@ -658,42 +830,6 @@ function updateCombinedSunriseSunset(text) {
     combinedElements.sunriseSunset.textContent = text;
   }
 }
-
-// --- Debug Status Function ---
-function getDashboardStatus() {
-  const status = {
-    config: CONFIG,
-    state: dashboardState,
-    isConnected: dashboardState.isConnected,
-    lastPosition: dashboardState.lastPosition,
-    weather: dashboardState.weather,
-    timezone: dashboardState.timezone,
-    timezoneAbbr: dashboardState.timezoneAbbr,
-    timers: Object.keys(dashboardState.timers).map(key => ({
-      name: key,
-      active: !!dashboardState.timers[key],
-    })),
-  };
-
-  console.log('🔍 Dashboard Status:', status);
-  console.log('📊 Dashboard Elements:', combinedElements);
-
-  // Check if elements are properly connected
-  const elementsStatus = {};
-  Object.keys(combinedElements).forEach(key => {
-    const element = combinedElements[key];
-    elementsStatus[key] = {
-      found: !!element,
-      content: element?.textContent || 'N/A',
-    };
-  });
-  console.log('🎯 Dashboard DOM Elements:', elementsStatus);
-
-  return status;
-}
-
-// Make it available globally for console access
-window.getDashboardStatus = getDashboardStatus;
 
 // Function to detect emoji support
 function supportsEmoji() {
