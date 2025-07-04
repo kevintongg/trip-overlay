@@ -18,12 +18,12 @@ The project currently consists of three main JavaScript files:
 
 **Key Issues Identified:**
 
-1.  **Redundant RTIRL Logic:** Both `js/dashboard-overlay.js` and `js/trip-progress.js` contain significant duplication in handling RTIRL (RealtimeIRL) connection, location data processing, and demo mode.
-2.  **Global Scope Pollution:** Several functions and variables are exposed globally (`window.getDashboardStatus`, `window.addDistance`, etc.), which can lead to naming conflicts and make code harder to reason about.
-3.  **Scattered Configuration:** Configuration values (e.g., RTIRL user ID, demo mode flags, movement thresholds) are duplicated across `js/dashboard-overlay.js` and `js/trip-progress.js`.
-4.  **Complex Movement Mode Detection:** The logic in `js/trip-progress.js` for inferring movement modes (stationary, walking, cycling) based on speed and distance is sophisticated with adaptive GPS throttling and mode switching delays.
-5.  **Mixed Responsibilities:** While generally well-separated, there are some overlaps in concerns, particularly around location data processing.
-6.  **Cloud Compatibility:** Some features may not work reliably in IRLToolkit's cloud environment (limited unicode, no console access).
+1.  **Redundant RTIRL Logic:** Both `js/dashboard-overlay.js` and `js/trip-progress.js` contain significant duplication in handling RTIRL (RealtimeIRL) connection, location data processing, and demo mode. *Solution: Extract to shared module.*
+2.  **Global Scope Pollution:** Several functions and variables are exposed globally (`window.getDashboardStatus`, `window.addDistance`, etc.), which can lead to naming conflicts and make code harder to reason about. *Solution: Encapsulate in modules while preserving cloud compatibility.*
+3.  **Scattered Configuration:** Configuration values (e.g., RTIRL user ID, demo mode flags, movement thresholds) are duplicated across `js/dashboard-overlay.js` and `js/trip-progress.js`. *Solution: Centralize in single config module.*
+4.  **Poorly Modularized Movement Detection:** The sophisticated movement mode detection logic in `js/trip-progress.js` is well-implemented but embedded directly in the main file, making it hard to test, maintain, and reuse. The algorithm itself is good but lacks proper separation of concerns. *Solution: Extract to dedicated movement detection module with proper documentation and tests.*
+5.  **Mixed Responsibilities:** While generally well-separated, there are some overlaps in concerns, particularly around location data processing where both files handle raw GPS data differently. Each module should have a single, clear responsibility. *Solution: Define clearer module boundaries and create shared utilities for common operations.*
+6.  **Cloud Compatibility Issues:** Some features may not work reliably in IRLToolkit's cloud environment (limited unicode, no console access). *Solution: Add environment detection and fallback mechanisms.*
 
 ## Refactoring Goals
 
@@ -71,34 +71,41 @@ The refactoring will be executed in several phases:
     - Ensure URL parameter processing remains accessible in cloud environments.
     - Test all URL parameter functionality after refactoring.
 
-### Phase 3: Refine Module Responsibilities
+### Phase 3: Extract Movement Detection and Refine Module Responsibilities
 
-**Objective:** Ensure each main JavaScript file has a clear and distinct responsibility.
+**Objective:** Create a dedicated movement detection module and ensure each main JavaScript file has a clear and distinct responsibility.
 
-1.  **Refine `js/trip-progress.js`:**
+1.  **Create `utils/movement-detector.js`:**
+    - Extract the sophisticated movement mode detection logic from `js/trip-progress.js`.
+    - Move `MOVEMENT_MODES` configuration, `handleSpeedData()`, `setMovementMode()`, and mode switching logic.
+    - Add comprehensive documentation explaining the movement detection algorithm.
+    - Create unit tests for movement detection edge cases.
+    - Provide a clean API for movement detection that can be used by other modules.
+2.  **Refine `js/trip-progress.js`:**
     - Focus solely on trip progress: distance calculation, progress bar updates, persistence (localStorage), and control panel interactions.
-    - Keep sophisticated movement mode detection with `MOVEMENT_MODES` object as it's well-implemented.
+    - Import and use the new movement detector module instead of handling movement logic directly.
     - Ensure URL parameter control system remains functional for cloud environments.
     - Remove any weather-related or time-related logic.
-2.  **Refine `js/dashboard-overlay.js`:**
+3.  **Refine `js/dashboard-overlay.js`:**
     - Focus solely on dashboard display: time, weather, and general connection status UI updates.
     - Remove any trip-progress related logic.
     - OpenWeatherMap icons (retrieved via web URLs) should work fine in cloud environment; only hardcoded emoji fallbacks may need adjustment.
-3.  **Refine `functions/weather.js`:**
+4.  **Refine `functions/weather.js`:**
     - Consider adding caching for OpenWeatherMap responses using Cloudflare's Cache API to reduce external API calls and improve performance.
     - Add more robust input validation for `lat` and `lon`.
 
 ### Phase 4: Clean Up Global Scope and Utilities
 
-**Objective:** Reduce global scope pollution and create shared utility functions.
+**Objective:** Reduce global scope pollution while maintaining cloud environment compatibility.
 
 1.  **Encapsulate Global Functions:**
     - Move debugging functions (e.g., `getDashboardStatus` from `dashboard-overlay.js`, console commands from `trip-progress.js`) into a dedicated `utils/debug.js` module.
-    - **Important:** Keep some global functions accessible for URL parameter processing in cloud environments.
+    - **Cloud Compatibility Note:** Some global functions must remain accessible for URL parameter processing and console access in local environments. The goal is to reduce *unnecessary* global pollution, not eliminate all global access.
     - Make debugging functions conditional on environment detection (local vs cloud).
-    - Remove unnecessary `window.functionName = function` assignments while preserving cloud compatibility.
+    - Organize global functions into logical namespaces (e.g., `window.TripOverlay.debug.*`) instead of direct window assignments.
 2.  **Create `utils/dom.js` (Optional):**
     - If `$` (getElementById shorthand), `setText`, `setClass` are used frequently across modules, move them to a shared `utils/dom.js` file.
+    - Note: Current code doesn't appear to use these utilities extensively, so this may not be necessary.
 
 ## Verification
 
