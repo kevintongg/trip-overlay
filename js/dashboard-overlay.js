@@ -8,7 +8,7 @@ const CONFIG = {
     demoMode: false,
   },
   weather: {
-    updateInterval: 600000,
+    updateInterval: 300000, // 5 minutes
     useMetric: true,
   },
   time: {
@@ -27,105 +27,72 @@ const dashboardState = {
   timezone: null,
   timezoneAbbr: null,
   rtirtLocationListener: null,
+  hasFetchedInitialWeather: false, // Flag to control initial fetch
 };
 
 // DOM elements cache
 const elements = {};
 
-// Weather condition mapping for Open-Meteo WMO codes
+// OpenWeatherMap icon base URL
+const OWM_ICON_BASE_URL = 'https://openweathermap.org/img/wn/';
+
+// Weather condition mapping for OpenWeatherMap codes (fallback emojis)
 const weatherIcons = {
-  0: '☀', // Clear sky - basic sun symbol
-  1: '🌤', // Mainly clear - keep if supported, fallback below
-  2: '⛅', // Partly cloudy - basic cloud with sun
-  3: '☁', // Overcast - basic cloud
-  45: '🌫', // Fog - keep if supported
-  48: '🌫', // Depositing rime fog
-  51: '🌦', // Drizzle: Light
-  53: '🌦', // Drizzle: Moderate
-  55: '🌦', // Drizzle: Dense
-  56: '🌧', // Freezing Drizzle: Light
-  57: '🌧', // Freezing Drizzle: Dense
-  61: '🌧', // Rain: Slight
-  63: '🌧', // Rain: Moderate
-  65: '🌧', // Rain: Heavy
-  66: '🌧', // Freezing Rain: Light
-  67: '🌧', // Freezing Rain: Heavy
-  71: '❄', // Snow fall: Slight - basic snowflake
-  73: '❄', // Snow fall: Moderate
-  75: '❄', // Snow fall: Heavy
-  77: '❄', // Snow grains
-  80: '🌦', // Rain showers: Slight
-  81: '🌦', // Rain showers: Moderate
-  82: '🌦', // Rain showers: Violent
-  85: '❄', // Snow showers slight
-  86: '❄', // Snow showers heavy
-  95: '⛈', // Thunderstorm: Slight or moderate
-  96: '⛈', // Thunderstorm with slight hail
-  99: '⛈', // Thunderstorm with heavy hail
-};
-
-// Weather condition descriptions for Open-Meteo WMO codes
-const weatherDescriptions = {
-  0: 'Clear sky',
-  1: 'Mainly clear',
-  2: 'Partly cloudy',
-  3: 'Overcast',
-  45: 'Fog',
-  48: 'Depositing rime fog',
-  51: 'Light drizzle',
-  53: 'Moderate drizzle',
-  55: 'Dense drizzle',
-  56: 'Light freezing drizzle',
-  57: 'Dense freezing drizzle',
-  61: 'Slight rain',
-  63: 'Moderate rain',
-  65: 'Heavy rain',
-  66: 'Light freezing rain',
-  67: 'Heavy freezing rain',
-  71: 'Slight snow fall',
-  73: 'Moderate snow fall',
-  75: 'Heavy snow fall',
-  77: 'Snow grains',
-  80: 'Slight rain showers',
-  81: 'Moderate rain showers',
-  82: 'Violent rain showers',
-  85: 'Slight snow showers',
-  86: 'Heavy snow showers',
-  95: 'Thunderstorm',
-  96: 'Thunderstorm with hail',
-  99: 'Thunderstorm with heavy hail',
-};
-
-// Text fallbacks for weather icons
-const weatherIconFallbacks = {
-  0: 'SUN', // Clear sky
-  1: 'SUN', // Mainly clear
-  2: 'PART', // Partly cloudy
-  3: 'CLOUD', // Overcast
-  45: 'FOG', // Fog
-  48: 'FOG', // Depositing rime fog
-  51: 'DRIZZLE', // Drizzle: Light
-  53: 'DRIZZLE', // Drizzle: Moderate
-  55: 'DRIZZLE', // Drizzle: Dense
-  56: 'RAIN', // Freezing Drizzle: Light
-  57: 'RAIN', // Freezing Drizzle: Dense
-  61: 'RAIN', // Rain: Slight
-  63: 'RAIN', // Rain: Moderate
-  65: 'RAIN', // Rain: Heavy
-  66: 'RAIN', // Freezing Rain: Light
-  67: 'RAIN', // Freezing Rain: Heavy
-  71: 'SNOW', // Snow fall: Slight
-  73: 'SNOW', // Snow fall: Moderate
-  75: 'SNOW', // Snow fall: Heavy
-  77: 'SNOW', // Snow grains
-  80: 'SHOWER', // Rain showers: Slight
-  81: 'SHOWER', // Rain showers: Moderate
-  82: 'SHOWER', // Rain showers: Violent
-  85: 'SNOW', // Snow showers slight
-  86: 'SNOW', // Snow showers heavy
-  95: 'STORM', // Thunderstorm: Slight or moderate
-  96: 'STORM', // Thunderstorm with slight hail
-  99: 'STORM', // Thunderstorm with heavy hail
+  200: '⛈',
+  201: '⛈',
+  202: '⛈',
+  210: '⛈',
+  211: '⛈',
+  212: '⛈',
+  221: '⛈',
+  230: '⛈',
+  231: '⛈',
+  232: '⛈',
+  300: '🌦',
+  301: '🌦',
+  302: '🌦',
+  310: '🌦',
+  311: '🌦',
+  312: '🌦',
+  313: '🌦',
+  314: '🌦',
+  321: '🌦',
+  500: '🌧',
+  501: '🌧',
+  502: '🌧',
+  503: '🌧',
+  504: '🌧',
+  511: '❄',
+  520: '🌦',
+  521: '🌦',
+  522: '🌦',
+  531: '🌦',
+  600: '❄',
+  601: '❄',
+  602: '❄',
+  611: '🌨',
+  612: '🌨',
+  613: '🌨',
+  615: '🌨',
+  616: '🌨',
+  620: '🌨',
+  621: '🌨',
+  622: '🌨',
+  701: '🌫',
+  711: '🌫',
+  721: '🌫',
+  731: '🌫',
+  741: '🌫',
+  751: '🌫',
+  761: '🌫',
+  762: '🌫',
+  771: '🌫',
+  781: '🌪',
+  800: '☀',
+  801: '🌤',
+  802: '⛅',
+  803: '☁',
+  804: '☁',
 };
 
 // --- Combined Dashboard DOM Cache ---
@@ -329,7 +296,15 @@ function handleLocationData(data) {
   updateConnectionStatus('Connected', 'connected');
   console.log('✅ Dashboard: Connection status updated to connected');
   updateLocationDisplay();
-  updateWeatherData();
+
+  // Only fetch weather on the first location update
+  if (!dashboardState.hasFetchedInitialWeather) {
+    console.log(
+      '🌤️ Dashboard: First location received, fetching initial weather...'
+    );
+    updateWeatherData();
+    dashboardState.hasFetchedInitialWeather = true;
+  }
 }
 function updateLocationDisplay() {
   const pos = dashboardState.lastPosition;
@@ -414,58 +389,68 @@ async function updateWeatherData() {
     return;
   }
   try {
-    const tempUnit = CONFIG.weather.useMetric ? 'celsius' : 'fahrenheit';
-    // Request both current and hourly forecast (next 6 hours)
-    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${pos.latitude}&longitude=${pos.longitude}&current=temperature_2m,apparent_temperature,weather_code&hourly=temperature_2m,weather_code&temperature_unit=${tempUnit}&timezone=auto`;
-    console.log('🌤️ Dashboard: Fetching weather from:', weatherUrl);
+    const units = CONFIG.weather.useMetric ? 'metric' : 'imperial';
+    const weatherUrl = `/weather?lat=${pos.latitude}&lon=${pos.longitude}&units=${units}`;
+    console.log('🌤️ Dashboard: Fetching weather from proxy:', weatherUrl);
 
     const response = await fetch(weatherUrl);
-    if (!response.ok) {
-      throw new Error(`Weather fetch failed: ${response.status}`);
-    }
-    const weather = await response.json();
+    const data = await response.json();
 
-    dashboardState.weather = weather;
+    if (!response.ok) {
+      // Throw an error with the detailed message from the proxy
+      throw new Error(
+        `Weather fetch failed: ${response.status} - ${data.error || 'Unknown error'} - ${data.message || 'No message'}`
+      );
+    }
+
     // Set timezone from API response if available
-    if (weather.timezone) {
-      dashboardState.timezone = weather.timezone;
+    if (data.timezone) {
+      dashboardState.timezone = data.timezone;
+      console.log(
+        `⏰ Dashboard: Timezone updated to ${data.timezone} from API`
+      );
     }
-    if (weather.timezone_abbreviation) {
-      dashboardState.timezoneAbbr = weather.timezone_abbreviation;
-    }
-    updateWeatherDisplay(weather);
+
+    dashboardState.weather = data;
+    updateWeatherDisplay(data);
+
+    // Clear any existing timer and start the 5-minute interval
     clearTimeout(dashboardState.timers.weather);
     dashboardState.timers.weather = setTimeout(
       updateWeatherData,
       CONFIG.weather.updateInterval
     );
     console.log(
-      `⏰ Dashboard: Weather updated successfully, next scheduled update in ${CONFIG.weather.updateInterval / 1000}s (or when location changes)`
+      `⏰ Dashboard: Weather updated. Next update in ${CONFIG.weather.updateInterval / 1000}s.`
     );
   } catch (error) {
-    console.log('❌ Dashboard: Weather update failed:', error);
+    console.error('❌ Dashboard: Weather update failed:', error);
     setText(elements.weatherDescription, 'Weather unavailable');
   }
 }
+
 function updateWeatherDisplay(weather) {
   if (!weather || !weather.current) {
     console.log('⚠️ Dashboard: Invalid weather data for display');
     updateCombinedWeather('🌤', '--°', 'Loading...');
+    renderHourlyForecast([]);
     return;
   }
   const current = weather.current;
   const tempUnit = CONFIG.weather.useMetric ? 'C' : 'F';
-  const temp = `${current.temperature_2m.toFixed(1)}°${tempUnit}`;
+  const temp = `${current.temp.toFixed(1)}°${tempUnit}`;
   const feelsLike =
-    current.apparent_temperature !== undefined
-      ? `${current.apparent_temperature.toFixed(1)}°${tempUnit}`
+    current.feels_like !== undefined
+      ? `${current.feels_like.toFixed(1)}°${tempUnit}`
       : null;
-  const desc = weatherDescriptions[current.weather_code] || 'Unknown';
-  const icon = getWeatherIcon(current.weather_code);
+  const desc = current.weather[0].description || 'Unknown';
+  const weatherIcon = current.weather[0].icon || '01d'; // Use OWM icon, fallback to clear day
 
-  console.log(`🌡️ Dashboard: Weather updated - ${temp} ${desc}`);
+  console.log(
+    `🌡️ Dashboard: Weather updated - ${temp} ${desc} (icon: ${weatherIcon})`
+  );
 
-  updateCombinedWeather(icon, temp, desc);
+  updateCombinedWeather(weatherIcon, temp, desc);
 
   // Show 'feels like' in the main card if the element exists
   const feelsLikeEl = document.getElementById('weather-feels-like-combined');
@@ -473,6 +458,53 @@ function updateWeatherDisplay(weather) {
     feelsLikeEl.textContent = feelsLike ? `Feels like: ${feelsLike}` : '';
     feelsLikeEl.style.display = feelsLike ? '' : 'none';
   }
+
+  // Render hourly forecast (next 5 hours)
+  if (weather && Array.isArray(weather.hourly)) {
+    renderHourlyForecast(
+      weather.hourly.slice(1, 6),
+      tempUnit,
+      weather.timezone
+    );
+  } else {
+    renderHourlyForecast([]);
+  }
+}
+
+// Render the next 5 hours of forecast below the main dashboard card
+function renderHourlyForecast(hourly, tempUnit = 'C', timeZone = undefined) {
+  const container = document.getElementById('dashboard-hourly');
+  if (!container) {
+    return;
+  }
+  // Remove offline note logic; only show 'No forecast data' if empty
+  if (!Array.isArray(hourly) || hourly.length === 0) {
+    container.innerHTML =
+      '<div style="width:100%;text-align:center;color:#bbb;font-size:0.95em;">No forecast data</div>';
+    return;
+  }
+  container.innerHTML = hourly
+    .map(hour => {
+      const dt = new Date(hour.dt * 1000);
+      const hourStr = dt.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+        timeZone,
+      });
+      const icon = hour.weather[0]?.icon || '01d';
+      const desc = hour.weather[0]?.description || '';
+      const temp = `${hour.temp.toFixed(1)}°${tempUnit}`;
+      return `
+        <div class="hourly-forecast-block">
+          <div class="hourly-forecast-time">${hourStr}</div>
+          <img class="hourly-forecast-icon" src="${OWM_ICON_BASE_URL}${icon}@2x.png" alt="${desc}" onerror="this.style.display='none'" />
+          <div class="hourly-forecast-temp">${temp}</div>
+          <div class="hourly-forecast-desc">${desc}</div>
+        </div>
+      `;
+    })
+    .join('');
 }
 
 // --- Status & Demo ---
@@ -486,7 +518,11 @@ function updateConnectionStatus(message, type) {
 function startDemoMode() {
   console.log('🎭 Dashboard: Starting demo mode with Vienna coordinates');
   setTimeout(() => {
-    const demoData = { latitude: 48.2082, longitude: 16.3738, accuracy: 5 };
+    const demoData = {
+      latitude: 48.1465,
+      longitude: 17.1235,
+      accuracy: 5,
+    };
     console.log('🎭 Dashboard: Injecting demo location data:', demoData);
     handleLocationData(demoData);
   }, 2000);
@@ -512,75 +548,35 @@ function updateCombinedLocation(locationText) {
   }
 }
 
-// --- Weather Icon Fallback Logic ---
-function getWeatherIconType(weatherCode) {
-  // Returns { type: 'emoji' | 'svg' | 'text', value: string }
-  const emoji = weatherIcons[weatherCode] || '🌤';
-  const svgMap = {
-    0: 'weather-sunny.svg', // Clear sky
-    1: 'weather-sunny.svg', // Mainly clear
-    2: 'weather-partly-cloudy.svg', // Partly cloudy
-    3: 'weather-cloudy.svg', // Overcast
-    45: 'weather-fog.svg', // Fog
-    48: 'weather-fog.svg', // Depositing rime fog
-    51: 'weather-drizzle.svg', // Drizzle: Light
-    53: 'weather-drizzle.svg', // Drizzle: Moderate
-    55: 'weather-drizzle.svg', // Drizzle: Dense
-    56: 'weather-mixed.svg', // Freezing Drizzle: Light (sleet)
-    57: 'weather-mixed.svg', // Freezing Drizzle: Dense (sleet)
-    61: 'weather-showers.svg', // Rain: Slight (showers)
-    63: 'weather-rain.svg', // Rain: Moderate
-    65: 'weather-heavy-rain.svg', // Rain: Heavy
-    66: 'weather-mixed.svg', // Freezing Rain: Light (sleet)
-    67: 'weather-mixed.svg', // Freezing Rain: Heavy (sleet)
-    71: 'weather-snow.svg', // Snow fall: Slight
-    73: 'weather-snow.svg', // Snow fall: Moderate
-    75: 'weather-heavy-snow.svg', // Snow fall: Heavy
-    77: 'weather-hail.svg', // Snow grains (hail)
-    80: 'weather-showers.svg', // Rain showers: Slight
-    81: 'weather-showers.svg', // Rain showers: Moderate
-    82: 'weather-heavy-rain.svg', // Rain showers: Violent
-    85: 'weather-snow-showers.svg', // Snow showers slight
-    86: 'weather-snow-showers.svg', // Snow showers heavy
-    95: 'weather-thunderstorm.svg', // Thunderstorm: Slight or moderate
-    96: 'weather-thunderstorm.svg', // Thunderstorm with slight hail
-    99: 'weather-thunderstorm.svg', // Thunderstorm with heavy hail
-  };
-  const svg = svgMap[weatherCode] || 'weather-sunny.svg';
-  const text = weatherIconFallbacks[weatherCode] || 'WEATHER';
-
-  if (supportsEmoji()) {
-    return { type: 'emoji', value: emoji };
-  }
-  // Check if SVG exists (assume yes for demo)
-  if (svg) {
-    return { type: 'svg', value: svg };
-  }
-  return { type: 'text', value: text };
-}
-
-// --- Update Combined Weather with Fallbacks ---
-function updateCombinedWeather(icon, temp, desc) {
+// --- Update Combined Weather with OpenWeatherMap Icons ---
+function updateCombinedWeather(weatherIcon, temp, desc) {
   if (combinedElements.weatherIcon) {
-    // Determine which icon type to use
-    const weatherCode = dashboardState.weather?.current?.weather_code;
-    const iconInfo = getWeatherIconType(weatherCode);
     const el = combinedElements.weatherIcon;
     el.innerHTML = '';
     el.className = 'weather-icon';
-    if (iconInfo.type === 'emoji') {
-      el.textContent = iconInfo.value;
-    } else if (iconInfo.type === 'svg') {
+
+    // Use OpenWeatherMap icon if available
+    if (weatherIcon && weatherIcon.length === 3) {
       const img = document.createElement('img');
-      img.src = `assets/${iconInfo.value}`;
+      img.src = `${OWM_ICON_BASE_URL}${weatherIcon}@2x.png`;
       img.alt = desc;
       img.style.height = '1.2em';
       img.style.verticalAlign = 'middle';
       img.style.display = 'inline-block';
+      img.onerror = () => {
+        // Fallback to emoji if image fails to load
+        const weatherCode = dashboardState.weather?.current?.weather[0]?.id;
+        const fallbackEmoji = weatherIcons[weatherCode] || '🌤';
+        el.textContent = fallbackEmoji;
+        el.className = 'weather-icon';
+      };
       el.appendChild(img);
     } else {
-      el.textContent = iconInfo.value;
-      el.className = 'weather-icon weather-icon-fallback';
+      // Fallback to emoji if no icon provided
+      const weatherCode = dashboardState.weather?.current?.weather[0]?.id;
+      const fallbackEmoji = weatherIcons[weatherCode] || '🌤';
+      el.textContent = fallbackEmoji;
+      el.className = 'weather-icon';
     }
   }
   if (combinedElements.weatherTemp) {
@@ -654,18 +650,6 @@ function supportsEmoji() {
   ctx.fillText(smile, 0, 0);
 
   return ctx.getImageData(16, 16, 1, 1).data[0] !== 0;
-}
-
-// Function to get weather icon with fallback
-function getWeatherIcon(weatherCode) {
-  const icon = weatherIcons[weatherCode] || '🌤';
-  const fallback = weatherIconFallbacks[weatherCode] || 'WEATHER';
-
-  if (!supportsEmoji()) {
-    return fallback;
-  }
-
-  return icon;
 }
 
 if (document.readyState === 'loading') {
