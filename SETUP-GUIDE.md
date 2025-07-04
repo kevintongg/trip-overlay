@@ -1,8 +1,15 @@
-# 🏍️ IRL Trip Overlay Setup Guide
+# 🚴‍♂️ IRL Trip Overlay Setup Guide
 
 ## Quick Start for IRL Streamers
 
-### 1. **Test the Overlay (Demo Mode)**
+### 1. **Browser Requirements**
+
+**Modern Browser Required**: The overlay now uses ES6 modules and requires:
+
+- Chrome 63+ / Firefox 60+ / Safari 11+ / Edge 79+
+- Local file access (file:// URLs work fine)
+
+### 2. **Test the Overlay (Demo Mode)**
 
 Open `index.html` and add `?demo=true` to the URL:
 
@@ -10,11 +17,11 @@ Open `index.html` and add `?demo=true` to the URL:
 file:///path/to/index.html?demo=true
 ```
 
-You should see the overlay simulate a trip from 0km to 205km over a few minutes.
+You should see the overlay simulate cycling movement and distance tracking.
 
-### 2. **Configure for Your Trip**
+### 3. **Configure for Your Trip**
 
-Edit `js/script.js` and update these values:
+Edit `utils/config.js` and update these values:
 
 ```javascript
 // Your RTIRL user ID (find this at rtirl.com in your profile)

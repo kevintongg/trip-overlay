@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dashboard Overlay</title>
-    <link rel="stylesheet" href="css/dashboard-overlay.css" />
+    <link rel="stylesheet" href="css/dashboard.css" />
     <script src="https://cdn.jsdelivr.net/npm/@rtirl/api@latest/lib/index.min.js"></script>
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap"
@@ -27,9 +27,19 @@
                   >Loading...</span
                 >
               </span>
-              <div id="weather-secondary-details" class="weather-secondary-details" style="display: none;">
-                <span id="weather-feels-like-combined" class="weather-feels-like"></span>
-                <span id="weather-humidity-combined" class="weather-humidity"></span>
+              <div
+                id="weather-secondary-details"
+                class="weather-secondary-details"
+                style="display: none"
+              >
+                <span
+                  id="weather-feels-like-combined"
+                  class="weather-feels-like"
+                ></span>
+                <span
+                  id="weather-humidity-combined"
+                  class="weather-humidity"
+                ></span>
               </div>
               <span
                 id="weather-extra-combined"
@@ -42,13 +52,15 @@
         <div class="dashboard-row time-row">
           <span id="date-combined" class="date">--</span>
         </div>
+        <!--
         <div class="dashboard-row sunrise-sunset-row">
           <span id="sunrise-sunset-combined" class="sunrise-sunset"></span>
         </div>
+        -->
       </div>
-      <div class="dashboard-hourly" id="dashboard-hourly"></div>
+      <!-- <div class="dashboard-hourly" id="dashboard-hourly"></div> -->
     </div>
 
-    <script src="js/dashboard-overlay.js"></script>
+    <script type="module" src="js/dashboard.js"></script>
   </body>
 </html>
