@@ -472,6 +472,7 @@ function updateWeatherDisplay(weather) {
     ).toLocaleTimeString([], {
       hour: '2-digit',
       minute: '2-digit',
+      hour12: false,
       timeZone: weather.timezone,
     });
     const sunsetTime = new Date(
@@ -479,9 +480,12 @@ function updateWeatherDisplay(weather) {
     ).toLocaleTimeString([], {
       hour: '2-digit',
       minute: '2-digit',
+      hour12: false,
       timeZone: weather.timezone,
     });
-    updateCombinedSunriseSunset(`🌅 ${sunriseTime} 🌇 ${sunsetTime}`);
+    updateCombinedSunriseSunset(
+      `Sunrise ${sunriseTime} · Sunset ${sunsetTime}`
+    );
   } else {
     updateCombinedSunriseSunset('');
   }
