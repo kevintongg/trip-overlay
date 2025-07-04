@@ -27,7 +27,7 @@ export async function onRequest(context) {
     });
   }
 
-  const apiUrl = `https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${lon}&units=${units}&exclude=minutely,hourly,daily,alerts&appid=${apiKey}`;
+  const apiUrl = `https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${lon}&units=${units}&exclude=minutely,daily,alerts&appid=${apiKey}`;
 
   try {
     const response = await fetch(apiUrl);

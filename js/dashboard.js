@@ -433,6 +433,7 @@ function updateWeatherDisplay(weather) {
   if (!weather || !weather.current) {
     console.log('⚠️ Dashboard: Invalid weather data for display');
     updateCombinedWeather('🌤', '--°', 'Loading...');
+    renderHourlyForecast([]);
     return;
   }
   const current = weather.current;
@@ -457,6 +458,52 @@ function updateWeatherDisplay(weather) {
     feelsLikeEl.textContent = feelsLike ? `Feels like: ${feelsLike}` : '';
     feelsLikeEl.style.display = feelsLike ? '' : 'none';
   }
+
+  // Render hourly forecast (next 5 hours)
+  if (weather && Array.isArray(weather.hourly)) {
+    renderHourlyForecast(
+      weather.hourly.slice(1, 6),
+      tempUnit,
+      weather.timezone
+    );
+  } else {
+    renderHourlyForecast([]);
+  }
+}
+
+// Render the next 5 hours of forecast below the main dashboard card
+function renderHourlyForecast(hourly, tempUnit = 'C', timeZone = undefined) {
+  const container = document.getElementById('dashboard-hourly');
+  if (!container) {
+    return;
+  }
+  if (!Array.isArray(hourly) || hourly.length === 0) {
+    container.innerHTML =
+      '<div style="width:100%;text-align:center;color:#bbb;font-size:0.95em;">No forecast data</div>';
+    return;
+  }
+  container.innerHTML = hourly
+    .map(hour => {
+      const dt = new Date(hour.dt * 1000);
+      const hourStr = dt.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+        timeZone,
+      });
+      const icon = hour.weather[0]?.icon || '01d';
+      const desc = hour.weather[0]?.description || '';
+      const temp = `${hour.temp.toFixed(1)}°${tempUnit}`;
+      return `
+        <div class="hourly-forecast-block">
+          <div class="hourly-forecast-time">${hourStr}</div>
+          <img class="hourly-forecast-icon" src="${OWM_ICON_BASE_URL}${icon}@2x.png" alt="${desc}" onerror="this.style.display='none'" />
+          <div class="hourly-forecast-temp">${temp}</div>
+          <div class="hourly-forecast-desc">${desc}</div>
+        </div>
+      `;
+    })
+    .join('');
 }
 
 // --- Status & Demo ---
