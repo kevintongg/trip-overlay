@@ -79,7 +79,7 @@ trip-overlay/
 ├── css/
 │   └── style.css        # Overlay styling
 ├── assets/
-│   ├── motorbike.gif    # Avatar animation
+│   ├── cycling.gif      # Avatar animation for cycling
 │   └── example.gif      # Demo screenshot
 ├── docs/
 │   ├── README.md        # Main documentation

@@ -1,6 +1,6 @@
 # Trip Overlay for RTIRL
 
-A professional real-time GPS tracking overlay for live streaming motorbike trips. Perfect for IRL (In Real Life) streamers using RTIRL to show their journey progress with beautiful visuals and accurate distance tracking.
+A professional real-time GPS tracking overlay for live streaming cycling trips. Perfect for IRL (In Real Life) streamers using RTIRL to show their journey progress with beautiful visuals and accurate distance tracking, specifically designed for cycling adventures like Vienna to Zagreb.
 
 ## **🔍 Quick Navigation**
 
@@ -76,12 +76,12 @@ A professional real-time GPS tracking overlay for live streaming motorbike trips
 
 ![Trip Overlay Example](assets/example.gif)
 
-_The overlay in action - showing real-time distance tracking with animated motorbike avatar_
+_The overlay in action - showing real-time distance tracking with animated cycling avatar_
 
 ## Features
 
 - **Real-time GPS tracking** via RTIRL WebSocket API
-- **Animated motorbike avatar** that moves along the progress bar
+- **Animated cycling avatar** that moves along the progress bar
 - **Distance tracking**: Total traveled, daily distance, and remaining distance
 - **GPS drift protection** - filters out stationary GPS noise
 - **Progress persistence** - keeps your distance progress across stream sessions
@@ -181,43 +181,62 @@ body {
 
 ## Configuration Options
 
-### Distance Settings
+### Centralized Configuration
 
-- **TOTAL_DISTANCE_KM**: Your planned trip distance (measure with Google Maps)
-
-### GPS Drift Protection
-
-The overlay includes smart filtering to prevent GPS drift from inflating your distances:
+All settings are now managed in `utils/config.js` for easy customization:
 
 ```javascript
-const MOVEMENT_MODES = {
-  STATIONARY: {
-    minMovementM: 1,
+export const CONFIG = {
+  // Trip Settings
+  trip: {
+    totalDistanceKm: 371.0, // Distance from Vienna to Zagreb
+    useAutoStart: false,
+    manualStartLocation: { lat: 48.209, lon: 16.3531 }, // Vienna
   },
-  WALKING: {
-    minMovementM: 1,
+
+  // RTIRL Integration
+  rtirl: {
+    userId: '41908566', // Replace with your RTIRL user ID
+    demoMode: false,
   },
-  CYCLING: {
-    minMovementM: 5,
-  },
-  VEHICLE: {
-    minMovementM: 10,
+
+  // Movement Detection (Optimized for Cycling)
+  movement: {
+    modes: {
+      STATIONARY: { maxSpeed: 2, minMovementM: 1, gpsThrottle: 5000 },
+      WALKING: { maxSpeed: 10, minMovementM: 1, gpsThrottle: 2000 },
+      CYCLING: { maxSpeed: 35, minMovementM: 5, gpsThrottle: 1500 },
+    },
+    modeSwitchDelay: 10000, // 10 seconds
   },
 };
 ```
 
-**What this means:**
+### GPS Drift Protection
 
-- ✅ **Stationary GPS drift** (1-8m) gets filtered out
-- ✅ **Real motorbike movement** gets counted immediately
-- ✅ **Walking around hotels/cafes** gets counted (realistic!)
-- ✅ **No more "151/150 km" overshoot** - distance caps at your planned total
+The overlay includes sophisticated filtering to prevent GPS drift from inflating your distances:
 
-### Timing Examples
+**Permissible Mode System:**
 
-- **Walking speed**: ~7 seconds to trigger 10m threshold
-- **City riding**: ~1.2 seconds to trigger (very responsive)
-- **Highway riding**: ~0.5 seconds to trigger (instant updates)
+- ✅ **Stationary GPS drift** (1-8m) gets filtered out automatically
+- ✅ **Real cycling movement** gets counted immediately
+- ✅ **Walking around cafes/hotels** gets counted (realistic!)
+- ✅ **Seamless mode transitions** - uses most permissive threshold during transitions
+- ✅ **No distance overshoot** - distance caps at your planned total
+
+### Movement Detection Examples
+
+- **Stationary** (cafes, traffic lights): Ignores movements < 1m
+- **Walking** (pushing bike, exploring): 1m threshold, up to 10 km/h
+- **Cycling** (main travel): 5m threshold, up to 35 km/h
+- **Permissible mode**: Uses higher threshold when transitioning between modes
+
+### Enhanced Error Handling
+
+- **Network resilience**: 8-10 second timeouts on all external APIs
+- **Memory management**: Automatic cache cleanup prevents memory leaks
+- **Input validation**: All URL parameters validated with appropriate limits
+- **Graceful degradation**: Continues working when weather/geocoding services fail
 
 ### Progress Persistence
 
@@ -506,7 +525,7 @@ All edge cases are handled silently with console warnings, ensuring your stream 
 
 ### Change the Avatar
 
-Replace `assets/motorbike.gif` with your own animated GIF
+Replace `assets/cycling.gif` with your own animated GIF
 
 ### Adjust Styling
 
@@ -648,9 +667,9 @@ body {
 
 ## Example Use Cases
 
-- **Prague to Vienna**: 330km motorbike tour
-- **Route 66 segments**: Daily progress tracking
-- **European motorcycle tour**: Multi-country adventures
+- **Prague to Vienna**: 330km cycling tour
+- **Vienna to Zagreb**: 371km (this overlay's default configuration)
+- **European cycling tour**: Multi-country adventures
 - **Local exploration**: City-to-city day trips
 
 ## Development Setup
@@ -750,7 +769,7 @@ Back to normal: https://your-username.github.io/trip-overlay/
 
 **Happy riding and streaming! 🏍️📺**
 
-_Built for the IRL streaming community with love for motorbike adventures._
+_Built for the IRL streaming community with love for cycling adventures._
 
 ## **IRLToolkit + GitHub Pages: Professional Streaming Setup**
 

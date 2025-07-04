@@ -1,6 +1,6 @@
 # 🎥 **IRLToolkit Streaming Guide**
 
-_Professional motorbike trip overlay for cloud streaming_
+_Professional cycling trip overlay for cloud streaming_
 
 ## **Setup Overview**
 

@@ -27,9 +27,19 @@
                   >Loading...</span
                 >
               </span>
-              <div id="weather-secondary-details" class="weather-secondary-details" style="display: none;">
-                <span id="weather-feels-like-combined" class="weather-feels-like"></span>
-                <span id="weather-humidity-combined" class="weather-humidity"></span>
+              <div
+                id="weather-secondary-details"
+                class="weather-secondary-details"
+                style="display: none"
+              >
+                <span
+                  id="weather-feels-like-combined"
+                  class="weather-feels-like"
+                ></span>
+                <span
+                  id="weather-humidity-combined"
+                  class="weather-humidity"
+                ></span>
               </div>
               <span
                 id="weather-extra-combined"
@@ -42,13 +52,15 @@
         <div class="dashboard-row time-row">
           <span id="date-combined" class="date">--</span>
         </div>
-        <!-- <div class="dashboard-row sunrise-sunset-row">
+        <!--
+        <div class="dashboard-row sunrise-sunset-row">
           <span id="sunrise-sunset-combined" class="sunrise-sunset"></span>
-        </div> -->
+        </div>
+        -->
       </div>
       <!-- <div class="dashboard-hourly" id="dashboard-hourly"></div> -->
     </div>
 
-    <script src="js/dashboard.js"></script>
+    <script type="module" src="js/dashboard.js"></script>
   </body>
 </html>

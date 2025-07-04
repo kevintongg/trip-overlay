@@ -26,6 +26,7 @@ export default [
         Blob: 'readonly',
         URL: 'readonly',
         URLSearchParams: 'readonly',
+        AbortController: 'readonly',
         confirm: 'readonly',
         WebSocket: 'readonly',
         RealtimeIRL: 'readonly',
