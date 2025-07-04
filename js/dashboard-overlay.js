@@ -105,6 +105,7 @@ const combinedElements = {
   time: document.getElementById('time-combined'),
   timezone: document.getElementById('timezone-combined'),
   weatherFeelsLike: document.getElementById('weather-feels-like-combined'),
+  sunriseSunset: document.getElementById('sunrise-sunset-combined'),
 };
 
 // --- Helpers ---
@@ -452,6 +453,27 @@ function updateWeatherDisplay(weather) {
 
   updateCombinedWeather(weatherIcon, temp, desc);
 
+  // Display sunrise and sunset times
+  if (weather.current.sunrise && weather.current.sunset) {
+    const sunriseTime = new Date(
+      weather.current.sunrise * 1000
+    ).toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: weather.timezone,
+    });
+    const sunsetTime = new Date(
+      weather.current.sunset * 1000
+    ).toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: weather.timezone,
+    });
+    updateCombinedSunriseSunset(`🌅 ${sunriseTime} 🌇 ${sunsetTime}`);
+  } else {
+    updateCombinedSunriseSunset('');
+  }
+
   // Show 'feels like' in the main card if the element exists
   const feelsLikeEl = document.getElementById('weather-feels-like-combined');
   if (feelsLikeEl) {
@@ -600,6 +622,12 @@ function updateCombinedTime(dateStr, timeStr, tzStr) {
   }
   if (combinedElements.timezone) {
     combinedElements.timezone.textContent = '';
+  }
+}
+
+function updateCombinedSunriseSunset(text) {
+  if (combinedElements.sunriseSunset) {
+    combinedElements.sunriseSunset.textContent = text;
   }
 }
 

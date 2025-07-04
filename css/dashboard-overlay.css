@@ -238,6 +238,17 @@ body {
   color: #ccc;
 }
 
+/* Sunrise/Sunset row */
+.dashboard-row.sunrise-sunset-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  font-size: 0.95em;
+  color: #ccc;
+  margin-top: 8px; /* Add some top margin for spacing */
+}
+
 /* Fallback for platforms without emoji support */
 .weather-icon-fallback {
   display: none;
