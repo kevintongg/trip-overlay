@@ -121,6 +121,28 @@ Uses Cloudflare Functions (`functions/weather.js`) as proxy to OpenWeatherMap AP
 - **Movement Detection**: Automatic mode switching based on speed thresholds
 - **Error Handling**: Graceful fallbacks for all external dependencies
 
+## Cloud Environment Compatibility
+
+### IRLToolkit Constraints
+- **Limited Unicode/Emoji Support**: Hardcoded emojis in code may not display properly
+- **No Console Access**: Browser console (F12) unavailable in cloud environment
+- **No Keyboard Input**: Keyboard shortcuts cannot be sent to cloud browser
+- **URL Parameters Only**: Primary control method for cloud environments
+
+### Working in Cloud
+- **OpenWeatherMap Icons**: Web-based icons work fine (retrieved via URLs)
+- **Emoji Fallbacks**: May need text alternatives for hardcoded unicode in `weatherIcons` object
+- **URL Parameter Control**: Fully functional for all management tasks
+- **LocalStorage**: Works within cloud browser context
+
+## Known Technical Debt
+
+### Code Duplication Issues
+- **RTIRL Logic**: Duplicated between `trip-progress.js` and `dashboard-overlay.js`
+- **Configuration**: Scattered across multiple files
+- **Global Functions**: Several debugging functions exposed globally
+- **See REFACTORING_PLAN.md**: Detailed plan for consolidation and cleanup
+
 ## Development Workflow
 
 1. **Local Development**: Open HTML files directly in browser

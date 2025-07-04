@@ -784,6 +784,23 @@ function checkURLParameters() {
         );
       }
     },
+    setTotalTraveled: value => {
+      const distance = parseFloat(value);
+      if (distance >= 0 && isFinite(distance)) {
+        appState.totalDistanceTraveled = distance;
+        updateDisplayElements();
+        debouncedSave();
+        console.log(`CONSOLE: Set total traveled distance to ${distance}km`);
+        showFeedback(
+          `Total traveled distance set to ${distance.toFixed(1)}km`,
+          'success'
+        );
+      } else {
+        console.error(
+          "Invalid total traveled distance. Please provide a non-negative number."
+        );
+      }
+    },
   };
 
   for (const [key, handler] of Object.entries(paramHandlers)) {
@@ -923,6 +940,24 @@ function showConsoleCommands() {
 
     // --- Debugging ---
     getStatus()           - Shows the current status of the overlay.
+
+    // --- URL Parameters (can be added to the overlay URL) ---
+    ?controls=true        - Shows the control panel on load.
+    ?reset=trip           - Resets all trip data on load.
+    ?reset=today          - Resets today's distance on load.
+    ?reset=location       - Resets auto-start location on load.
+    ?resets=trip,today    - Resets multiple items on load (comma-separated).
+    ?export=true          - Downloads trip data backup on load.
+    ?import=<json_string> - Imports trip data from a URL-encoded JSON string on load.
+    ?units=miles          - Sets units to miles on load.
+    ?units=km             - Sets units to kilometers on load.
+    ?totalDistance=<km>   - Sets the total trip distance on load.
+    ?addDistance=<km>     - Adds distance to total and today's distance on load.
+    ?setDistance=<km>     - Sets total and today's distance on load.
+    ?jumpTo=<percent>     - Jumps to a specific progress percentage on load.
+    ?stream=true          - Enables stream mode (hotkey hints).
+    ?setTodayDistance=<km>- Sets today's distance on load.
+    ?setTotalTraveled=<km>- Sets total traveled distance on load.
 
     ------------------------------------
     `);

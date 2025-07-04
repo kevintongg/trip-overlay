@@ -83,7 +83,7 @@ The refactoring will be executed in several phases:
 2.  **Refine `js/dashboard-overlay.js`:**
     - Focus solely on dashboard display: time, weather, and general connection status UI updates.
     - Remove any trip-progress related logic.
-    - Ensure weather icons work properly in cloud environment (may need fallback to text).
+    - OpenWeatherMap icons (retrieved via web URLs) should work fine in cloud environment; only hardcoded emoji fallbacks may need adjustment.
 3.  **Refine `functions/weather.js`:**
     - Consider adding caching for OpenWeatherMap responses using Cloudflare's Cache API to reduce external API calls and improve performance.
     - Add more robust input validation for `lat` and `lon`.
