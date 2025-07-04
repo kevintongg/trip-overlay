@@ -106,6 +106,7 @@ const combinedElements = {
   timezone: document.getElementById('timezone-combined'),
   weatherFeelsLike: document.getElementById('weather-feels-like-combined'),
   weatherHumidity: document.getElementById('weather-humidity-combined'),
+  weatherSecondaryDetails: document.getElementById('weather-secondary-details'),
   sunriseSunset: document.getElementById('sunrise-sunset-combined'),
   weatherExtra: document.getElementById('weather-extra-combined'),
 };
@@ -448,6 +449,13 @@ function updateWeatherDisplay(weather) {
       : null;
   const humidity =
     current.humidity !== undefined ? `${current.humidity}%` : null;
+  let wind =
+    current.wind_speed !== undefined
+      ? `${(current.wind_speed * 3.6).toFixed(1)} km/h`
+      : null;
+  if (wind && current.wind_deg !== undefined) {
+    wind += ` ${degToCompass(current.wind_deg)}`;
+  }
   const desc = current.weather[0].description || 'Unknown';
   const weatherIcon = current.weather[0].icon || '01d'; // Use OWM icon, fallback to clear day
 
@@ -478,37 +486,23 @@ function updateWeatherDisplay(weather) {
     updateCombinedSunriseSunset('');
   }
 
-  // Show 'feels like', humidity, and wind inline in the main card if the element exists
-  let wind = null;
-  if (current.wind_speed !== undefined) {
-    wind = `${(current.wind_speed * 3.6).toFixed(1)} km/h`;
-    if (current.wind_deg !== undefined) {
-      wind += ` ${degToCompass(current.wind_deg)}`;
-    }
+  // Show 'feels like' and humidity in the main card
+  const secondaryDetails = [];
+  if (feelsLike) {
+    secondaryDetails.push(`Feels like: ${feelsLike}`);
   }
-  const extraEl = document.getElementById('weather-extra-combined');
-  if (extraEl) {
-    const parts = [];
-    if (feelsLike) {
-      parts.push(`Feels like: ${feelsLike}`);
-    }
-    if (humidity) {
-      parts.push(`Humidity: ${humidity}`);
-    }
-    if (wind) {
-      parts.push(`Wind: ${wind}`);
-    }
-    extraEl.textContent = parts.join(' · ');
-    extraEl.style.display = parts.length ? '' : 'none';
+  if (humidity) {
+    secondaryDetails.push(`Humidity: ${humidity}`);
   }
-  // Hide old separate elements
-  const feelsLikeEl = document.getElementById('weather-feels-like-combined');
-  if (feelsLikeEl) {
-    feelsLikeEl.style.display = 'none';
+  if (wind) {
+    secondaryDetails.push(`Wind: ${wind}`);
   }
-  const humidityEl = document.getElementById('weather-humidity-combined');
-  if (humidityEl) {
-    humidityEl.style.display = 'none';
+
+  if (combinedElements.weatherSecondaryDetails) {
+    combinedElements.weatherSecondaryDetails.textContent =
+      secondaryDetails.join(' · ');
+    combinedElements.weatherSecondaryDetails.style.display =
+      secondaryDetails.length > 0 ? '' : 'none';
   }
 
   // Render hourly forecast (next 5 hours)
