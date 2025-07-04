@@ -105,7 +105,9 @@ const combinedElements = {
   time: document.getElementById('time-combined'),
   timezone: document.getElementById('timezone-combined'),
   weatherFeelsLike: document.getElementById('weather-feels-like-combined'),
+  weatherHumidity: document.getElementById('weather-humidity-combined'),
   sunriseSunset: document.getElementById('sunrise-sunset-combined'),
+  weatherExtra: document.getElementById('weather-extra-combined'),
 };
 
 // --- Helpers ---
@@ -444,6 +446,8 @@ function updateWeatherDisplay(weather) {
     current.feels_like !== undefined
       ? `${current.feels_like.toFixed(1)}°${tempUnit}`
       : null;
+  const humidity =
+    current.humidity !== undefined ? `${current.humidity}%` : null;
   const desc = current.weather[0].description || 'Unknown';
   const weatherIcon = current.weather[0].icon || '01d'; // Use OWM icon, fallback to clear day
 
@@ -474,11 +478,37 @@ function updateWeatherDisplay(weather) {
     updateCombinedSunriseSunset('');
   }
 
-  // Show 'feels like' in the main card if the element exists
+  // Show 'feels like', humidity, and wind inline in the main card if the element exists
+  let wind = null;
+  if (current.wind_speed !== undefined) {
+    wind = `${(current.wind_speed * 3.6).toFixed(1)} km/h`;
+    if (current.wind_deg !== undefined) {
+      wind += ` ${degToCompass(current.wind_deg)}`;
+    }
+  }
+  const extraEl = document.getElementById('weather-extra-combined');
+  if (extraEl) {
+    const parts = [];
+    if (feelsLike) {
+      parts.push(`Feels like: ${feelsLike}`);
+    }
+    if (humidity) {
+      parts.push(`Humidity: ${humidity}`);
+    }
+    if (wind) {
+      parts.push(`Wind: ${wind}`);
+    }
+    extraEl.textContent = parts.join(' · ');
+    extraEl.style.display = parts.length ? '' : 'none';
+  }
+  // Hide old separate elements
   const feelsLikeEl = document.getElementById('weather-feels-like-combined');
   if (feelsLikeEl) {
-    feelsLikeEl.textContent = feelsLike ? `Feels like: ${feelsLike}` : '';
-    feelsLikeEl.style.display = feelsLike ? '' : 'none';
+    feelsLikeEl.style.display = 'none';
+  }
+  const humidityEl = document.getElementById('weather-humidity-combined');
+  if (humidityEl) {
+    humidityEl.style.display = 'none';
   }
 
   // Render hourly forecast (next 5 hours)
@@ -678,6 +708,30 @@ function supportsEmoji() {
   ctx.fillText(smile, 0, 0);
 
   return ctx.getImageData(16, 16, 1, 1).data[0] !== 0;
+}
+
+// Helper: Convert wind degrees to compass direction
+function degToCompass(num) {
+  const val = Math.floor(num / 22.5 + 0.5);
+  const arr = [
+    'N',
+    'NNE',
+    'NE',
+    'ENE',
+    'E',
+    'ESE',
+    'SE',
+    'SSE',
+    'S',
+    'SSW',
+    'SW',
+    'WSW',
+    'W',
+    'WNW',
+    'NW',
+    'NNW',
+  ];
+  return arr[val % 16];
 }
 
 if (document.readyState === 'loading') {

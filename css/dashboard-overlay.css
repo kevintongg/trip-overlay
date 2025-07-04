@@ -137,6 +137,13 @@ body {
   display: block;
   text-align: center;
 }
+.weather-extra {
+  font-size: 0.95em;
+  color: #ccc;
+  font-weight: 400;
+  display: block;
+  margin-top: 2px;
+}
 
 /* Hide old widget styles if present */
 .corner,
