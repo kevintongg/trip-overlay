@@ -136,7 +136,7 @@ body {
   justify-content: flex-start; /* Align content to the left */
   align-items: baseline;
   width: 100%;
-  font-size: 1em;
+  font-size: 1.1em;
   font-weight: 700;
   color: #4caf50;
   text-shadow: 0 1px 4px #000a;
@@ -152,7 +152,7 @@ body {
 .speed-unit {
   text-align: center; /* Align number to the center within its space */
   margin-left: 0.5em;
-  font-size: 0.8em;
+  font-size: 0.9em;
   color: #4caf50;
   font-weight: 500;
   letter-spacing: 0.5px;
