@@ -14,6 +14,7 @@ import {
 } from '../utils/config.js';
 import { calculateDistance } from '../utils/gps.js';
 import { initRTIRL, addLocationCallback } from '../utils/rtirl.js';
+import { logger } from '../utils/logger.js';
 
 // Get configuration from centralized config
 const MOVEMENT_MODES = CONFIG.movement.modes;
@@ -131,8 +132,8 @@ function updateDisplayElements() {
 }
 
 function connectToRtirl() {
-  console.log('⚙️ Trip: Movement detection enabled');
-  console.log(
+  logger('⚙️ Trip: Movement detection enabled');
+  logger(
     `📡 Trip: GPS throttling - STATIONARY:${MOVEMENT_MODES.STATIONARY.gpsThrottle}ms, WALKING:${MOVEMENT_MODES.WALKING.gpsThrottle}ms, CYCLING:${MOVEMENT_MODES.CYCLING.gpsThrottle}ms`
   );
 
@@ -140,7 +141,7 @@ function connectToRtirl() {
   addLocationCallback((locationUpdate, type) => {
     if (type === 'hidden') {
       if (appState.isConnected) {
-        console.log('📍 Trip: Location is hidden or streamer is offline');
+        logger.warn('📍 Trip: Location is hidden or streamer is offline');
         showFeedback('🔌 RTIRL location hidden', 'warning');
       }
       appState.isConnected = false;
@@ -223,7 +224,7 @@ function setMovementMode(mode) {
   }
 
   // Log mode change
-  console.log(`MODE CHANGE: ${appState.currentMode} → ${mode}`);
+  logger(`MODE CHANGE: ${appState.currentMode} → ${mode}`);
 
   appState.currentMode = mode;
   const modeConfig = MOVEMENT_MODES[mode];
@@ -234,13 +235,11 @@ function setMovementMode(mode) {
     const newAvatar = modeConfig.avatar;
     if (currentAvatar !== newAvatar) {
       domElements.avatar.src = newAvatar;
-      console.log(
-        `AVATAR UPDATE: Set to ${mode} avatar (${modeConfig.avatar})`
-      );
+      logger(`AVATAR UPDATE: Set to ${mode} avatar (${modeConfig.avatar})`);
     }
   }
 
-  console.log(`🏃‍♂️ Movement mode changed to: ${mode}`);
+  logger(`🏃‍♂️ Movement mode changed to: ${mode}`);
   showFeedback(`Mode: ${mode}`, 'info', 2000);
 }
 
@@ -253,7 +252,7 @@ function handleRtirtData(locationUpdate) {
       !appState.lastThrottleLogTime ||
       now - appState.lastThrottleLogTime > 10000
     ) {
-      console.log('⏱️ Trip: Updates throttled (GPS throttling active)');
+      logger.warn('⏱️ Trip: Updates throttled (GPS throttling active)');
       appState.lastThrottleLogTime = now;
     }
     return;
@@ -268,7 +267,7 @@ function handleRtirtData(locationUpdate) {
 
   const isFirstConnection = !appState.isConnected;
   if (!appState.isConnected) {
-    console.log('✅ Trip: Streamer location is now live!');
+    logger('✅ Trip: Streamer location is now live!');
     showFeedback('✅ Streamer is live!', 'success');
     appState.isConnected = true;
   }
@@ -279,20 +278,20 @@ function handleRtirtData(locationUpdate) {
   };
 
   if (!validateCoordinates(currentPosition)) {
-    console.warn('⚠️ Trip: Invalid GPS coordinates received:', currentPosition);
+    logger.warn('⚠️ Trip: Invalid GPS coordinates received:', currentPosition);
     return;
   }
 
   if (USE_AUTO_START && !appState.startLocation) {
     if (locationUpdate.latitude === 0 && locationUpdate.longitude === 0) {
-      console.warn(
+      logger.warn(
         '⚠️ Trip: Rejecting suspicious 0,0 coordinates for auto-start'
       );
       return;
     }
     appState.startLocation = currentPosition;
     appState.lastPosition = currentPosition;
-    console.log(
+    logger(
       `✅ Trip: Auto-detected start location - ${appState.startLocation.lat.toFixed(4)}, ${appState.startLocation.lon.toFixed(4)}`
     );
     debouncedSave();
@@ -312,10 +311,10 @@ function handleRtirtData(locationUpdate) {
     const finalSpeed = Math.max(reportedSpeed, calculatedSpeed);
 
     if (isFirstConnection) {
-      console.log(
+      logger(
         `📡 Trip: Location received - ${locationUpdate.latitude?.toFixed(4)}, ${locationUpdate.longitude?.toFixed(4)}`
       );
-      console.log(
+      logger(
         `🧮 Trip: Initial speed check - Reported: ${reportedSpeed.toFixed(1)} km/h, Calculated: ${calculatedSpeed.toFixed(1)} km/h -> Using: ${finalSpeed.toFixed(1)} km/h`
       );
     }
@@ -333,7 +332,7 @@ function handleRtirtData(locationUpdate) {
     const maxReasonableDistance = (timeDiff * maxSpeedMs) / 1000;
 
     if (newDistance > maxReasonableDistance * 1.5) {
-      console.warn(
+      logger.warn(
         `⚠️ Trip: GPS jump detected in ${appState.currentMode} mode: ${newDistance.toFixed(2)}km vs max ${maxReasonableDistance.toFixed(2)}km - ignoring`
       );
       return;
@@ -356,7 +355,7 @@ function handleRtirtData(locationUpdate) {
       const kmToMiles = 0.621371;
       const unitMultiplier = appState.useImperialUnits ? kmToMiles : 1;
       const units = appState.useImperialUnits ? 'mi' : 'km';
-      console.log(
+      logger(
         `📈 Trip: Progress update - +${(newDistance * unitMultiplier).toFixed(4)}${units} | Total: ${(appState.totalDistanceTraveled * unitMultiplier).toFixed(4)}${units} | ${progressPercent.toFixed(2)}% | Mode: ${appState.currentMode}`
       );
       appState.lastProgressLogTime = now;
@@ -402,7 +401,7 @@ function loadPersistedData() {
       );
     } else {
       appState.todayDistanceTraveled = 0;
-      console.log('Daily distance reset - new travel day detected');
+      logger('Daily distance reset - new travel day detected');
     }
     if (USE_AUTO_START && validateCoordinates(data.autoStartLocation)) {
       appState.startLocation = data.autoStartLocation;
@@ -411,7 +410,7 @@ function loadPersistedData() {
       appState.useImperialUnits = data.useImperialUnits;
     }
   } catch (e) {
-    console.error('Failed to load persisted data:', e);
+    logger.error('Failed to load persisted data:', e);
   }
 }
 
@@ -430,7 +429,7 @@ function savePersistedData() {
     };
     localStorage.setItem('trip-overlay-data', JSON.stringify(data));
   } catch (e) {
-    console.error('Failed to save trip data:', e);
+    logger.error('Failed to save trip data:', e);
   }
 }
 
@@ -497,7 +496,7 @@ function exportTripData() {
     link.click();
     showFeedback('✅ Backup downloaded!', 'success');
   } catch (e) {
-    console.error('❌ Backup failed:', e);
+    logger.error('❌ Backup failed:', e);
     showFeedback('❌ Backup failed', 'error');
   }
 }
@@ -520,9 +519,9 @@ function importTripData(jsonString) {
     updateDisplayElements();
     savePersistedData();
     showFeedback('✅ Data imported successfully!', 'success');
-    console.log('CONSOLE: Trip data imported.');
+    logger('CONSOLE: Trip data imported.');
   } catch (e) {
-    console.error('CONSOLE: Failed to parse or apply import data:', e);
+    logger.error('CONSOLE: Failed to parse or apply import data:', e);
     showFeedback('❌ Failed to import data', 'error');
   }
 }
@@ -530,8 +529,8 @@ function importTripData(jsonString) {
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', () => {
   initializeDOMCache();
-  checkURLParameters();
   loadPersistedData();
+  checkURLParameters();
   updateDisplayElements();
   connectToRtirl();
   setupHotkeys();
@@ -550,7 +549,7 @@ function checkURLParameters() {
       }
     },
     reset: value => {
-      console.log('URL parameter triggered: reset =', value);
+      logger('URL parameter triggered: reset =', value);
       switch (value) {
         case 'trip':
           resetTripProgress();
@@ -562,12 +561,12 @@ function checkURLParameters() {
           resetAutoStartLocation();
           break;
         default:
-          console.warn('Unknown reset parameter:', value);
+          logger.warn('Unknown reset parameter:', value);
       }
     },
     resets: value => {
       const resetTypes = value.split(',');
-      console.log('URL parameter triggered: multiple resets =', resetTypes);
+      logger('URL parameter triggered: multiple resets =', resetTypes);
       resetTypes.forEach(type => {
         switch (type.trim()) {
           case 'trip':
@@ -580,13 +579,13 @@ function checkURLParameters() {
             resetAutoStartLocation();
             break;
           default:
-            console.warn('Unknown reset type in multiple resets:', type);
+            logger.warn('Unknown reset type in multiple resets:', type);
         }
       });
     },
     export: value => {
       if (value === 'true') {
-        console.log('URL parameter triggered: exportTripData()');
+        logger('URL parameter triggered: exportTripData()');
         setTimeout(exportTripData, 1000);
       }
     },
@@ -594,7 +593,7 @@ function checkURLParameters() {
       try {
         // Validate input length to prevent DoS
         if (value.length > 10000) {
-          console.warn('Import data too large (>10KB), ignoring');
+          logger.warn('Import data too large (>10KB), ignoring');
           return;
         }
 
@@ -603,11 +602,11 @@ function checkURLParameters() {
         // Basic JSON validation
         JSON.parse(decodedData);
 
-        console.log('URL parameter triggered: importTripData()');
+        logger('URL parameter triggered: importTripData()');
         importTripData(decodedData);
       } catch (error) {
-        console.error('Failed to import data from URL parameter:', error);
-        console.warn('Import data must be valid URL-encoded JSON');
+        logger.error('Failed to import data from URL parameter:', error);
+        logger.warn('Import data must be valid URL-encoded JSON');
       }
     },
     units: value => {
@@ -622,7 +621,7 @@ function checkURLParameters() {
       if (isFinite(distance) && distance > 0 && distance <= 50000) {
         setTotalDistance(distance);
       } else {
-        console.warn(
+        logger.warn(
           'Invalid totalDistance parameter:',
           value,
           '(must be 0-50000)'
@@ -634,7 +633,7 @@ function checkURLParameters() {
       if (isFinite(distance) && distance >= -10000 && distance <= 10000) {
         addDistance(distance);
       } else {
-        console.warn(
+        logger.warn(
           'Invalid addDistance parameter:',
           value,
           '(must be -10000 to 10000)'
@@ -646,7 +645,7 @@ function checkURLParameters() {
       if (isFinite(distance) && distance >= 0 && distance <= 50000) {
         setDistance(distance);
       } else {
-        console.warn(
+        logger.warn(
           'Invalid setDistance parameter:',
           value,
           '(must be 0-50000)'
@@ -658,7 +657,7 @@ function checkURLParameters() {
       if (isFinite(percentage) && percentage >= 0 && percentage <= 100) {
         jumpToProgress(percentage);
       } else {
-        console.warn('Invalid jumpTo parameter:', value, '(must be 0-100)');
+        logger.warn('Invalid jumpTo parameter:', value, '(must be 0-100)');
       }
     },
     stream: value => {
@@ -670,9 +669,7 @@ function checkURLParameters() {
             6000
           );
         }, 2000);
-        console.log(
-          '🎥 Stream Mode enabled - controls available via Ctrl+H hotkey'
-        );
+        logger('🎥 Stream Mode enabled - controls available via Ctrl+H hotkey');
       }
     },
     setTodayDistance: value => {
@@ -681,13 +678,13 @@ function checkURLParameters() {
         appState.todayDistanceTraveled = distance;
         updateDisplayElements();
         debouncedSave();
-        console.log(`CONSOLE: Set today's distance to ${distance}km`);
+        logger(`CONSOLE: Set today's distance to ${distance}km`);
         showFeedback(
           `Today's distance set to ${distance.toFixed(1)}km`,
           'success'
         );
       } else {
-        console.warn(
+        logger.warn(
           'Invalid setTodayDistance parameter:',
           value,
           '(must be 0-1000)'
@@ -700,13 +697,13 @@ function checkURLParameters() {
         appState.totalDistanceTraveled = distance;
         updateDisplayElements();
         debouncedSave();
-        console.log(`CONSOLE: Set total traveled distance to ${distance}km`);
+        logger(`CONSOLE: Set total traveled distance to ${distance}km`);
         showFeedback(
           `Total traveled distance set to ${distance.toFixed(1)}km`,
           'success'
         );
       } else {
-        console.warn(
+        logger.warn(
           'Invalid setTotalTraveled parameter:',
           value,
           '(must be 0-50000)'
@@ -751,10 +748,10 @@ function addDistance(km) {
     updateDisplayElements();
     debouncedSave();
     const action = distance >= 0 ? 'Added' : 'Adjusted';
-    console.log(`CONSOLE: ${action} ${Math.abs(distance)}km`);
+    logger(`CONSOLE: ${action} ${Math.abs(distance)}km`);
     showFeedback(`${action} ${Math.abs(distance).toFixed(1)}km`, 'success');
   } else {
-    console.error('Invalid distance provided. Please provide a number.');
+    logger.error('Invalid distance provided. Please provide a number.');
   }
 }
 
@@ -765,10 +762,10 @@ function setDistance(km) {
     appState.todayDistanceTraveled = distance;
     updateDisplayElements();
     debouncedSave();
-    console.log(`CONSOLE: Set distance to ${distance}km`);
+    logger(`CONSOLE: Set distance to ${distance}km`);
     showFeedback(`Set to ${distance.toFixed(1)}km`, 'success');
   } else {
-    console.error(
+    logger.error(
       'Invalid distance provided. Please provide a non-negative number.'
     );
   }
@@ -782,12 +779,12 @@ function jumpToProgress(percent) {
     appState.todayDistanceTraveled = targetDistance; // Also reset today's distance for consistency
     updateDisplayElements();
     debouncedSave();
-    console.log(
+    logger(
       `CONSOLE: Jumped to ${percentage}% (${targetDistance.toFixed(1)}km)`
     );
     showFeedback(`${percentage}% progress`, 'success');
   } else {
-    console.error(
+    logger.error(
       'Invalid percentage. Please provide a number between 0 and 100.'
     );
   }
@@ -798,10 +795,10 @@ function setTotalDistance(km) {
   if (newTotal > 0 && isFinite(newTotal)) {
     appState.originalTotalDistance = newTotal;
     updateDisplayElements();
-    console.log(`CONSOLE: Set total distance to ${newTotal}km`);
+    logger(`CONSOLE: Set total distance to ${newTotal}km`);
     showFeedback(`Trip distance: ${newTotal}km`, 'success');
   } else {
-    console.error('Invalid total distance. Please provide a positive number.');
+    logger.error('Invalid total distance. Please provide a positive number.');
   }
 }
 
@@ -810,7 +807,7 @@ function convertToMiles() {
     appState.useImperialUnits = true;
     updateDisplayElements();
     savePersistedData();
-    console.log('CONSOLE: Switched to miles');
+    logger('CONSOLE: Switched to miles');
     showFeedback('Units: Kilometers → Miles', 'success');
   }
 }
@@ -820,13 +817,13 @@ function convertToKilometers() {
     appState.useImperialUnits = false;
     updateDisplayElements();
     savePersistedData();
-    console.log('CONSOLE: Switched to kilometers');
+    logger('CONSOLE: Switched to kilometers');
     showFeedback('Units: Miles → Kilometers', 'success');
   }
 }
 
 function showConsoleCommands() {
-  console.log(`
+  logger(`
     --- Trip Overlay Console Commands ---
 
     // --- Distance Manipulation ---

@@ -2,6 +2,7 @@
 // Centralized RTIRL connection and location data handling
 
 import { CONFIG, isDemoMode } from './config.js';
+import { logger } from './logger.js';
 
 // RTIRL state management
 const rtirtState = {
@@ -36,13 +37,13 @@ export const initRTIRL = (options = {}) => {
   }
 
   if (isDemoMode()) {
-    console.log(`🎭 ${moduleName}: Demo mode enabled, starting demo data`);
+    logger(`🎭 ${moduleName}: Demo mode enabled, starting demo data`);
     startDemoMode(moduleName);
     return { success: true, demo: true };
   }
 
   if (!window.RealtimeIRL) {
-    console.error(`❌ ${moduleName}: RTIRL library not loaded!`);
+    logger.error(`❌ ${moduleName}: RTIRL library not loaded!`);
     if (onConnectionChange) {
       onConnectionChange(false, 'Library not loaded');
     }
@@ -50,8 +51,8 @@ export const initRTIRL = (options = {}) => {
   }
 
   try {
-    console.log(`🔌 ${moduleName}: Connecting to RTIRL...`);
-    console.log(`📋 ${moduleName}: User ID:`, CONFIG.rtirl.userId);
+    logger(`🔌 ${moduleName}: Connecting to RTIRL...`);
+    logger(`📋 ${moduleName}: User ID:`, CONFIG.rtirl.userId);
 
     const streamer = RealtimeIRL.forStreamer('twitch', CONFIG.rtirl.userId);
 
@@ -62,7 +63,7 @@ export const initRTIRL = (options = {}) => {
 
     rtirtState.locationListener = streamer.addLocationListener(locationHandler);
 
-    console.log(`✅ ${moduleName}: RTIRL listener attached successfully`);
+    logger(`✅ ${moduleName}: RTIRL listener attached successfully`);
 
     if (onConnectionChange) {
       onConnectionChange(true, 'Connecting...');
@@ -70,7 +71,7 @@ export const initRTIRL = (options = {}) => {
 
     return { success: true, demo: false };
   } catch (error) {
-    console.error(`❌ ${moduleName}: Failed to connect to RTIRL:`, error);
+    logger.error(`❌ ${moduleName}: Failed to connect to RTIRL:`, error);
     if (onConnectionChange) {
       onConnectionChange(false, 'Connection failed');
     }
@@ -82,7 +83,7 @@ export const initRTIRL = (options = {}) => {
 const handleLocationData = (data, moduleName = 'RTIRL') => {
   if (!data) {
     if (rtirtState.isConnected) {
-      console.log(
+      logger.warn(
         `📍 ${moduleName}: Location is hidden or streamer is offline`
       );
       rtirtState.isConnected = false;
@@ -93,7 +94,7 @@ const handleLocationData = (data, moduleName = 'RTIRL') => {
 
   // Log connection status change
   if (!rtirtState.isConnected) {
-    console.log(`✅ ${moduleName}: Streamer location is now live!`);
+    logger(`✅ ${moduleName}: Streamer location is now live!`);
     rtirtState.isConnected = true;
   }
 
@@ -110,7 +111,7 @@ const handleLocationData = (data, moduleName = 'RTIRL') => {
     typeof data.accuracy === 'number' && data.accuracy !== null
       ? ` (accuracy: ${data.accuracy}m)`
       : '';
-  console.log(
+  logger(
     `📡 ${moduleName}: Location received - ${data.latitude?.toFixed(4) || 'N/A'}, ${data.longitude?.toFixed(4) || 'N/A'}${accuracyStr}`
   );
 
@@ -124,7 +125,7 @@ const notifyCallbacks = (locationUpdate, type) => {
     try {
       callback(locationUpdate, type);
     } catch (error) {
-      console.error('Error in RTIRL callback:', error);
+      logger.error('Error in RTIRL callback:', error);
     }
   });
 };
@@ -181,7 +182,7 @@ const startDemoMode = (moduleName = 'RTIRL') => {
     // Only log every 5th update to reduce console spam
     updateCount++;
     if (updateCount === 1 || updateCount % 5 === 0) {
-      console.log(
+      logger(
         `🎭 ${moduleName}: Demo update #${updateCount} - ${demoLat.toFixed(4)}, ${demoLon.toFixed(4)} @ ${demoSpeed.toFixed(1)}km/h`
       );
     }

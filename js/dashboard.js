@@ -9,6 +9,7 @@ import {
   addLocationCallback,
   getConnectionState,
 } from '../utils/rtirl.js';
+import { logger } from '../utils/logger.js';
 
 // Application state
 const dashboardState = {
@@ -77,7 +78,7 @@ function getStatus() {
       ? (totalDistanceTraveled / originalTotalDistance) * 100
       : 0;
 
-  console.log(`
+  logger(`
 🔍 UNIFIED STATUS REPORT
 ============================================
 
@@ -111,13 +112,13 @@ function getStatus() {
 
 // --- Initialization ---
 function initializeDashboard() {
-  console.log('🚀 Dashboard: Starting initialization...');
-  console.log('📋 Dashboard: Configuration:', CONFIG);
+  logger('🚀 Dashboard: Starting initialization...');
+  logger('📋 Dashboard: Configuration:', CONFIG);
 
   // Check emoji support and add class if needed
   if (!supportsEmoji()) {
     document.body.classList.add('no-emoji');
-    console.log(
+    logger.warn(
       '⚠️ Dashboard: Limited emoji support detected, using text fallbacks'
     );
   }
@@ -127,7 +128,7 @@ function initializeDashboard() {
   initTime();
   initRTIRLDashboard();
 
-  console.log('✅ Dashboard: Initialization complete');
+  logger('✅ Dashboard: Initialization complete');
 
   window.TripOverlay = window.TripOverlay || {};
   window.TripOverlay.getStatus = getStatus;
@@ -189,8 +190,8 @@ function handleURLParameters() {
 
 // --- Time ---
 function initTime() {
-  console.log('⏰ Dashboard: Initializing time display');
-  console.log('⚙️ Dashboard: Time config:', {
+  logger('⏰ Dashboard: Initializing time display');
+  logger('⚙️ Dashboard: Time config:', {
     use24Hour: CONFIG.time.use24Hour,
     showSeconds: CONFIG.time.showSeconds,
     updateInterval: CONFIG.time.updateInterval,
@@ -270,7 +271,7 @@ function initRTIRLDashboard() {
 
   if (isDashboardDemo) {
     // Dashboard demo mode: don't initialize RTIRL, use static demo data instead
-    console.log(
+    logger.warn(
       '🎭 Dashboard: Using dashboard-specific demo mode (static location)'
     );
     updateConnectionStatus('Dashboard demo mode (static)', 'connected');
@@ -302,7 +303,7 @@ function handleLocationData(locationUpdate) {
     !locationUpdate.latitude ||
     !locationUpdate.longitude
   ) {
-    console.log('📍 Dashboard: Location is hidden or streamer is offline');
+    logger.warn('📍 Dashboard: Location is hidden or streamer is offline');
     updateCombinedLocation('Location hidden');
     updateConnectionStatus('Location hidden or streamer offline', 'warning');
     dashboardState.isConnected = false;
@@ -325,13 +326,13 @@ function handleLocationData(locationUpdate) {
       'Connected and receiving location data',
       'connected'
     );
-    console.log('✅ Dashboard: Location data flow established');
+    logger('✅ Dashboard: Location data flow established');
   }
   updateLocationDisplay();
 
   // Only fetch weather on the first location update
   if (!dashboardState.hasFetchedInitialWeather) {
-    console.log(
+    logger(
       '🌤️ Dashboard: First location received, fetching initial weather...'
     );
     updateWeatherData();
@@ -341,7 +342,7 @@ function handleLocationData(locationUpdate) {
 function updateLocationDisplay() {
   const pos = dashboardState.lastPosition;
   if (!pos) {
-    console.log('⚠️ Dashboard: No position data for location display');
+    logger.warn('⚠️ Dashboard: No position data for location display');
     updateCombinedLocation('--');
     return;
   }
@@ -358,7 +359,7 @@ function updateLocationDisplay() {
 
   if (shouldGeocode) {
     updateCombinedLocation('Detecting location...');
-    console.log(
+    logger(
       '🌍 Dashboard: Starting reverse geocoding for:',
       pos.latitude,
       pos.longitude
@@ -408,7 +409,7 @@ async function reverseGeocode(lat, lon) {
       throw new Error(`Invalid coordinates: ${lat}, ${lon}`);
     }
 
-    console.log('🌐 Dashboard: Fetching address from OpenStreetMap...');
+    logger('🌐 Dashboard: Fetching address from OpenStreetMap...');
 
     // Add timeout and proper headers
     const controller = new AbortController();
@@ -471,8 +472,8 @@ async function reverseGeocode(lat, lon) {
 
       const location = locationParts.filter(Boolean).join(', ');
       dashboardState.lastLocationName = location; // Store the successful location name
-      console.log('📍 Dashboard: Location resolved to:', location);
-      console.log('🏘️ Dashboard: Address components:', {
+      logger('📍 Dashboard: Location resolved to:', location);
+      logger('🏘️ Dashboard: Address components:', {
         district: district || 'none',
         city: city || 'none',
         country: country || 'none',
@@ -480,12 +481,12 @@ async function reverseGeocode(lat, lon) {
 
       updateCombinedLocation(location || '--');
     } else {
-      console.log('⚠️ Dashboard: No address data in geocoding response');
+      logger.warn('⚠️ Dashboard: No address data in geocoding response');
       updateCombinedLocation('Location unavailable');
     }
   } catch (error) {
     dashboardState.lastLocationName = ''; // Clear the name on error
-    console.log('❌ Dashboard: Reverse geocoding failed:', error);
+    logger.error('❌ Dashboard: Reverse geocoding failed:', error);
 
     // Handle different error types gracefully
     if (error.name === 'AbortError') {
@@ -507,13 +508,13 @@ async function reverseGeocode(lat, lon) {
 async function updateWeatherData() {
   const pos = dashboardState.lastPosition;
   if (!pos) {
-    console.log('⚠️ Dashboard: No position data for weather update');
+    logger.warn('⚠️ Dashboard: No position data for weather update');
     return;
   }
   try {
     const units = CONFIG.weather.useMetric ? 'metric' : 'imperial';
     const weatherUrl = `/weather?lat=${pos.latitude}&lon=${pos.longitude}&units=${units}`;
-    console.log('🌤️ Dashboard: Fetching weather from proxy:', weatherUrl);
+    logger('🌤️ Dashboard: Fetching weather from proxy:', weatherUrl);
 
     // Add timeout and network error handling
     const controller = new AbortController();
@@ -554,9 +555,7 @@ async function updateWeatherData() {
     // Set timezone from API response if available
     if (data.timezone) {
       dashboardState.timezone = data.timezone;
-      console.log(
-        `⏰ Dashboard: Timezone updated to ${data.timezone} from API`
-      );
+      logger(`⏰ Dashboard: Timezone updated to ${data.timezone} from API`);
     }
 
     dashboardState.weather = data;
@@ -568,7 +567,7 @@ async function updateWeatherData() {
       updateWeatherData,
       CONFIG.weather.updateInterval
     );
-    console.log(
+    logger(
       `⏰ Dashboard: Weather updated. Next update in ${CONFIG.weather.updateInterval / 1000}s.`
     );
   } catch (error) {
@@ -576,7 +575,7 @@ async function updateWeatherData() {
 
     // Handle different error types
     if (error.name === 'AbortError') {
-      console.log(
+      logger.warn(
         '⏰ Dashboard: Weather request timed out, will retry on next interval'
       );
       updateCombinedWeather('⏰', '--°', 'Request timed out');
@@ -584,10 +583,10 @@ async function updateWeatherData() {
       error.name === 'TypeError' &&
       error.message.includes('Failed to fetch')
     ) {
-      console.log('🌐 Dashboard: Network error, will retry on next interval');
+      logger.warn('🌐 Dashboard: Network error, will retry on next interval');
       updateCombinedWeather('🌐', '--°', 'Network error');
     } else {
-      console.log(
+      logger.warn(
         '⚠️ Dashboard: Weather service error, will retry on next interval'
       );
       updateCombinedWeather('⚠️', '--°', 'Service unavailable');
@@ -607,7 +606,7 @@ async function updateWeatherData() {
 
 function updateWeatherDisplay(weather) {
   if (!weather || !weather.current) {
-    console.log('⚠️ Dashboard: Invalid weather data for display');
+    logger.warn('⚠️ Dashboard: Invalid weather data for display');
     updateCombinedWeather('🌤', '--°', 'Loading...');
     renderHourlyForecast([]);
     return;
@@ -631,7 +630,7 @@ function updateWeatherDisplay(weather) {
   const desc = current.weather[0].description || 'Unknown';
   const weatherIcon = current.weather[0].icon || '01d'; // Use OWM icon, fallback to clear day
 
-  console.log(
+  logger(
     `🌡️ Dashboard: Weather updated - ${temp} ${desc} (icon: ${weatherIcon})`
   );
 
@@ -731,21 +730,19 @@ function renderHourlyForecast(hourly, tempUnit = 'C', timeZone = undefined) {
 
 // --- Status & Demo ---
 function updateConnectionStatus(message, type) {
-  console.log(
-    `📡 Dashboard: Connection status changed to "${message}" (${type})`
-  );
+  logger(`📡 Dashboard: Connection status changed to "${message}" (${type})`);
   setText(elements.connectionStatus, message);
   setClass(elements.connectionStatus, `corner-detail status-${type}`);
 }
 function startDemoMode() {
-  console.log('🎭 Dashboard: Starting demo mode with Vienna coordinates');
+  logger('🎭 Dashboard: Starting demo mode with Vienna coordinates');
   setTimeout(() => {
     const demoData = {
       latitude: 48.1465,
       longitude: 17.1235,
       accuracy: 5,
     };
-    console.log('🎭 Dashboard: Injecting demo location data:', demoData);
+    logger('🎭 Dashboard: Injecting demo location data:', demoData);
     handleLocationData(demoData);
   }, 2000);
   updateConnectionStatus('Demo mode', 'connected');
