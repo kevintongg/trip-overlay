@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/en/2.0.0/).
 
 ### Changed
 
+- **HTML Structure and Performance Optimization** [`055adca`](https://github.com/kevintongg/trip-overlay/commit/055adca): Applied consistent HTML formatting, added preconnect links for Google Fonts, reordered external scripts for better performance, and included descriptive section comments for improved code organization and readability in `dashboard.html` and `index.html`. Removed self-closing slashes from void elements and standardized inline style formatting.
 - **Refactored Logging** [`56257c2`](https://github.com/kevintongg/trip-overlay/commit/56257c2), [`71087e7`](https://github.com/kevintongg/trip-overlay/commit/71087e7): Replaced direct `console.log`, `console.warn`, and `console.error` calls in `js/dashboard.js`, `js/trip-progress.js`, and `utils/rtirl.js` with the new `logger` utility. This standardizes output and improves debuggability (DRY, KISS).
 - **Timestamp Format** [`56257c2`](https://github.com/kevintongg/trip-overlay/commit/56257c2): Changed the timestamp format in the logger to 24-hour time for consistency.
 - **Dashboard Weather Display** [`424fb9d`](https://github.com/kevintongg/trip-overlay/commit/424fb9d): Enhanced the weather display on the dashboard to include "feels like" temperature and a more streamlined layout.
