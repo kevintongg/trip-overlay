@@ -355,6 +355,7 @@ Available parameters:
 - `addDistance=X` - Add distance to current total
 - `units=km` or `units=miles` - Set unit preference
 - `totalDistance=X` - Change total trip distance target
+- `totalDistance=X` - Change total trip distance target
 - `jumpTo=X` - Jump to X% completion
 
 **Example recovery scenario:**

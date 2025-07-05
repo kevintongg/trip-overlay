@@ -84,6 +84,17 @@ Result: Auto-start will re-detect from next GPS reading
 Viewer impact: ~5 second overlay refresh
 ```
 
+#### **Set Total Trip Distance**
+
+```
+When: Need to adjust the total planned trip distance
+How: Change URL to: ?setTotalTraveled=500 (replace 500 with your desired distance in km)
+Wait: 5 seconds
+Return: Remove ?setTotalTraveled parameter
+Result: Total trip distance updated
+Viewer impact: ~5 second overlay refresh
+```
+
 #### **Complete Trip Reset**
 
 ```

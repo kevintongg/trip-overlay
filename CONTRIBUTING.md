@@ -75,23 +75,37 @@ pnpm run format:check
 trip-overlay/
 ├── index.html           # Main overlay interface
 ├── js/
-│   └── script.js        # Core application logic (~1000 lines)
+│   ├── dashboard.js     # Dashboard UI logic
+│   ├── legacy_script.js # Old script, kept for reference
+│   └── trip-progress.js # Core application logic
 ├── css/
-│   └── style.css        # Overlay styling
+│   ├── dashboard.css    # Dashboard styling
+│   └── trip-progress.css # Trip progress styling
 ├── assets/
 │   ├── cycling.gif      # Avatar animation for cycling
 │   └── example.gif      # Demo screenshot
-├── docs/
-│   ├── README.md        # Main documentation
-│   ├── SETUP-GUIDE.md   # Quick setup guide
-│   ├── IRLTOOLKIT-GUIDE.md  # Cloud streaming guide
-│   └── COMPATIBILITY.md # Feature matrix
+├── functions/
+│   └── weather.js       # Weather API integration
+├── utils/
+│   ├── config.js        # Centralized configuration
+│   ├── gps.js           # GPS utility functions
+│   ├── logger.js        # Timestamped logging utility
+│   └── rtirl.js         # RTIRL connection logic
+├── API.md               # API Reference
+├── BACKUP-GUIDE.md      # Backup and Restore Guide
+├── CHANGELOG.md         # Project Changelog
+├── CLAUDE.md            # Claude Code interaction guide
+├── COMPATIBILITY.md     # Feature compatibility matrix
+├── CONTRIBUTING.md      # Contribution Guide (this file)
+├── IRLTOOLKIT-GUIDE.md  # IRLToolkit Cloud Streaming Guide
+├── README.md            # Main project README
+├── SETUP-GUIDE.md       # Quick setup guide
 └── package.json         # Dependencies and scripts
 ```
 
 ## 🎯 Key Components
 
-### Core Application (`js/script.js`)
+### Core Application (`js/trip-progress.js` & `js/dashboard.js`)
 
 - **State Management** - `appState` object with connection status, UI state
 - **GPS Handling** - `handleRtirtData()` processes RTIRL WebSocket data
@@ -99,11 +113,18 @@ trip-overlay/
 - **Persistence** - `loadPersistedData()` / `savePersistedData()` for localStorage
 - **Console Commands** - Testing functions accessible via browser console
 
-### Styling (`css/style.css`)
+### Styling (`css/trip-progress.css` & `css/dashboard.css`)
 
 - **OBS Transparency** - Critical `background-color: rgba(0,0,0,0)` for streaming
 - **Responsive Design** - Flexbox layout for different screen sizes
 - **Stream-Friendly** - Semi-transparent backgrounds, readable text shadows
+
+### Utilities (`utils/logger.js`, `utils/config.js`, `utils/gps.js`, `utils/rtirl.js`)
+
+- **`logger.js`**: Provides consistent, timestamped, and leveled logging.
+- **`config.js`**: Centralized application configuration.
+- **`gps.js`**: Shared GPS calculation utilities.
+- **`rtirl.js`**: Shared RTIRL connection logic.
 
 ### Controls & Integration
 

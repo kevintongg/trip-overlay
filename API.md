@@ -115,6 +115,7 @@ URL parameters are the most flexible way to control the overlay, especially in c
 - `?setDistance=X`: Sets the current traveled distance. (e.g., `100`)
 - `?setTodayDistance=X`: Sets today's distance only, without affecting the total. (e.g., `42`)
 - `?jumpTo=X`: Jumps to a percentage of completion. (e.g., `50`)
+- `?setTotalTraveled=X`: Sets the total trip distance. (e.g., `500`)
 
 ### Resets
 

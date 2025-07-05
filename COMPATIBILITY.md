@@ -37,6 +37,7 @@ Ctrl+Shift+T     - Reset entire trip (with confirmation)
 ?reset=trip      - Reset entire trip
 ?controls=true   - Show control buttons permanently
 ?stream=true     - Enable hotkey support with clean overlay
+?setTotalTraveled=X: Sets the total trip distance. (e.g., `500`)
 ```
 
 **On-Screen Controls:**
@@ -64,6 +65,7 @@ When using IRLToolkit's cloud OBS service:
 ```
 Normal:    https://yourdomain.com/trip-overlay/
 Action:    https://yourdomain.com/trip-overlay/?reset=today
+Action:    https://yourdomain.com/trip-overlay/?setTotalTraveled=500
 Return:    https://yourdomain.com/trip-overlay/
 ```
 

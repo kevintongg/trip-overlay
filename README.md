@@ -91,6 +91,8 @@ _The overlay in action - showing real-time distance tracking with animated cycli
 - **OBS-ready** with transparent background support
 - **Responsive progress bar** that updates as you travel
 - **Accurate distance calculations** using the Haversine formula
+- **Timestamped Logging**: Centralized, timestamped, and leveled logging for easier debugging.
+- **`setTotalTraveled` URL Parameter**: Easily set total trip distance via URL.
 
 ## Perfect For
 

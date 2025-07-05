@@ -31,6 +31,10 @@ const RTIRL_USER_ID = 'YOUR_ACTUAL_RTIRL_ID';
 const TOTAL_DISTANCE_KM = 205.0; // Change this to your trip distance
 ```
 
+Alternatively, you can set the total distance using the `setTotalTraveled` URL parameter:
+
+`?setTotalTraveled=500` (to set total distance to 500km)
+
 ### 3. **Add to OBS Studio**
 
 1. **Add Browser Source**:
@@ -63,6 +67,7 @@ Add these to your OBS browser source URL:
 ?demo=true               # Demo mode for testing
 ?reset=today             # Reset today's distance on load
 ?export=true             # Auto-download backup on load
+?setTotalTraveled=500    # Set total trip distance to 500km
 ```
 
 Example: `file:///path/to/index.html?stream=true&controls=false`
