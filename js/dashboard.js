@@ -21,7 +21,7 @@ const dashboardState = {
   timezoneAbbr: null,
   rtirtLocationListener: null,
   hasFetchedInitialWeather: false, // Flag to control initial fetch
-  lastLocationName: '', // Add this line
+  lastLocationName: '',
 };
 
 // DOM elements cache
@@ -41,6 +41,13 @@ const combinedElements = {
   weatherSecondaryDetails: document.getElementById('weather-secondary-details'),
   sunriseSunset: document.getElementById('sunrise-sunset-combined'),
   weatherExtra: document.getElementById('weather-extra-combined'),
+  speedDisplay: document.getElementById('speed-display'),
+  speedValueMph: document.getElementById('speed-value-mph'),
+  speedValueKmh: document.getElementById('speed-value-kmh'),
+  speedNumMph: document.querySelector('#speed-value-mph .speed-number'),
+  speedUnitMph: document.querySelector('#speed-value-mph .speed-unit'),
+  speedNumKmh: document.querySelector('#speed-value-kmh .speed-number'),
+  speedUnitKmh: document.querySelector('#speed-value-kmh .speed-unit'),
 };
 
 // --- Helpers ---
@@ -307,10 +314,9 @@ function handleLocationData(locationUpdate) {
     updateCombinedLocation('Location hidden');
     updateConnectionStatus('Location hidden or streamer offline', 'warning');
     dashboardState.isConnected = false;
+    updateSpeedDisplay(0, 'STATIONARY');
     return;
   }
-
-  // Only log location updates occasionally in demo mode to reduce spam
 
   dashboardState.lastPosition = {
     latitude: locationUpdate.latitude,
@@ -318,6 +324,11 @@ function handleLocationData(locationUpdate) {
     accuracy: locationUpdate.accuracy || 0,
     timestamp: locationUpdate.timestamp,
   };
+
+  // Simple speed display update - just read current values
+  const speed = parseFloat(localStorage.getItem('tripOverlaySpeed')) || 0;
+  const currentMode = localStorage.getItem('tripOverlayMode') || 'STATIONARY';
+  updateSpeedDisplay(speed, currentMode);
 
   // Only update connection status if it's changed
   if (!dashboardState.isConnected) {
@@ -741,8 +752,21 @@ function startDemoMode() {
       latitude: 48.1465,
       longitude: 17.1235,
       accuracy: 5,
+      speed: 15.5, // Add demo speed for testing
     };
+
+    // Set demo cycling mode for speed display testing
+    if (!window.appState) {
+      window.appState = {};
+    }
+    window.appState.currentMode = 'CYCLING';
+
+    // Populate localStorage for speed display in dashboard demo mode
+    localStorage.setItem('tripOverlaySpeed', demoData.speed.toFixed(1));
+    localStorage.setItem('tripOverlayMode', window.appState.currentMode);
+
     logger('🎭 Dashboard: Injecting demo location data:', demoData);
+    logger('🚴 Dashboard: Demo mode set to CYCLING for speed display testing');
     handleLocationData(demoData);
   }, 2000);
   updateConnectionStatus('Demo mode', 'connected');
@@ -807,18 +831,14 @@ function updateCombinedWeather(weatherIcon, temp, desc) {
 }
 
 function updateCombinedTime(dateStr, timeStr, tzStr) {
-  const combined = [dateStr || '--', timeStr || '--:--:--', tzStr || '--'].join(
-    ' · '
-  );
-  if (combinedElements.date) {
-    combinedElements.date.textContent = combined;
+  if (document.getElementById('date-part')) {
+    document.getElementById('date-part').textContent = dateStr || '--';
   }
-  // Hide the separate time and timezone elements if present
-  if (combinedElements.time) {
-    combinedElements.time.textContent = '';
+  if (document.getElementById('time-part')) {
+    document.getElementById('time-part').textContent = timeStr || '--:--:--';
   }
-  if (combinedElements.timezone) {
-    combinedElements.timezone.textContent = '';
+  if (document.getElementById('timezone-part')) {
+    document.getElementById('timezone-part').textContent = tzStr || '--';
   }
 }
 
@@ -865,8 +885,37 @@ function degToCompass(num) {
   return arr[val % 16];
 }
 
+// --- Speed Display Functions ---
+function updateSpeedDisplay(speed, mode) {
+  if (
+    !combinedElements.speedDisplay ||
+    !combinedElements.speedNumMph ||
+    !combinedElements.speedNumKmh
+  ) {
+    return;
+  }
+
+  // Only show speed display when in cycling mode and speed > 0
+  if (mode === 'CYCLING' && speed > 0) {
+    const mph = (speed * 0.621371).toFixed(1);
+    combinedElements.speedNumMph.textContent = mph;
+    combinedElements.speedNumKmh.textContent = speed.toFixed(1);
+    combinedElements.speedDisplay.style.display = 'inline-flex';
+  } else {
+    combinedElements.speedDisplay.style.display = 'none';
+  }
+}
+
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initializeDashboard);
 } else {
   initializeDashboard();
 }
+
+window.addEventListener('storage', event => {
+  if (event.key === 'tripOverlaySpeed' || event.key === 'tripOverlayMode') {
+    const speed = parseFloat(localStorage.getItem('tripOverlaySpeed')) || 0;
+    const mode = localStorage.getItem('tripOverlayMode') || 'STATIONARY';
+    updateSpeedDisplay(speed, mode);
+  }
+});

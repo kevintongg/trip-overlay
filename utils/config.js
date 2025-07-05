@@ -47,7 +47,7 @@ export const CONFIG = {
       CYCLING: {
         maxSpeed: 35, // Up to 35 km/h
         minMovementM: 5,
-        gpsThrottle: 1500,
+        gpsThrottle: 500,
         avatar: 'assets/cycling.gif',
       },
       // VEHICLE: {

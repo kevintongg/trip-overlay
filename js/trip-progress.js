@@ -309,6 +309,7 @@ function handleRtirtData(locationUpdate) {
     const reportedSpeed = locationUpdate.speed || 0;
     const calculatedSpeed = (newDistance / timeDiff) * 3600; // km/h
     const finalSpeed = Math.max(reportedSpeed, calculatedSpeed);
+    appState.currentSpeedKmh = finalSpeed; // Expose calculated speed
 
     if (isFirstConnection) {
       logger(
@@ -320,6 +321,8 @@ function handleRtirtData(locationUpdate) {
     }
 
     handleSpeedData(finalSpeed);
+    localStorage.setItem('tripOverlaySpeed', finalSpeed.toFixed(1));
+    localStorage.setItem('tripOverlayMode', appState.currentMode);
 
     const usedModeConfig = MOVEMENT_MODES[appState.currentMode];
     const minMovementKm = usedModeConfig.minMovementM / 1000;

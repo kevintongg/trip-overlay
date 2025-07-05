@@ -24,6 +24,7 @@ function log(level, ...args) {
 const logger = (...args) => log('log', ...args);
 logger.warn = (...args) => log('warn', ...args);
 logger.error = (...args) => log('error', ...args);
+logger.debug = (...args) => log('debug', ...args);
 
 // Exporting the logger function
 export { logger };

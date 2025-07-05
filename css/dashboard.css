@@ -121,14 +121,60 @@ body {
   margin-top: 0;
   display: inline;
 }
-.date,
-.time,
-.timezone {
+
+/* Speed Display Styles */
+.speed-display {
+  display: inline-flex;
+  flex-direction: column; /* Stack items vertically */
+  align-items: flex-start; /* Align text to the left within the column */
+  margin-left: 0.5em;
+  font-weight: 600;
+}
+
+.speed-value-line {
+  display: flex;
+  justify-content: flex-start; /* Align content to the left */
+  align-items: baseline;
+  width: 100%;
+  font-size: 1em;
+  font-weight: 700;
+  color: #4caf50;
+  text-shadow: 0 1px 4px #000a;
+  font-family: 'JetBrains Mono', 'Consolas', 'Monaco', monospace;
+  letter-spacing: 0.5px;
+}
+
+.speed-number {
+  text-align: center; /* Align number to the center within its space */
+  min-width: 3.5em; /* Adjust this value to control the width of the number column */
+}
+
+.speed-unit {
+  text-align: center; /* Align number to the center within its space */
+  margin-left: 0.5em;
+  font-size: 0.8em;
+  color: #4caf50;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+.time-part {
+  font-family: 'JetBrains Mono', 'Consolas', 'Monaco', monospace;
+  letter-spacing: 0.5px;
   font-size: 1em;
   color: #ccc;
   font-weight: 500;
   text-shadow: 0 1px 4px #000a;
 }
+
+.date-part,
+.timezone-part {
+  font-size: 1em;
+  color: #ccc;
+  font-weight: 500;
+  text-shadow: 0 1px 4px #000a;
+}
+
 .weather-secondary-details {
   font-size: 0.95em;
   color: #bbbbbb;

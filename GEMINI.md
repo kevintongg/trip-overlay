@@ -29,25 +29,25 @@ This is a real-time GPS tracking overlay for live streaming cycling/bike trips. 
 **Two Main Overlays:**
 
 1.  **Trip Progress Overlay** (`index.html` + `js/trip-progress.js`)
-    -   Real-time GPS distance tracking
-    -   Animated progress bar with avatar
-    -   Smart movement detection (stationary/walking/cycling/vehicle)
-    -   localStorage persistence for trip data
+    - Real-time GPS distance tracking
+    - Animated progress bar with avatar
+    - Smart movement detection (stationary/walking/cycling/vehicle)
+    - localStorage persistence for trip data
 
 2.  **Dashboard Overlay** (`dashboard.html` + `js/dashboard.js`)
-    -   Real-time location display
-    -   Weather information with OpenWeatherMap integration
-    -   Time/timezone display
-    -   Optimized for streaming dashboards
+    - Real-time location display
+    - Weather information with OpenWeatherMap integration
+    - Time/timezone display
+    - Optimized for streaming dashboards
 
 **Key Features:**
 
--   **RTIRL Integration**: WebSocket connection to Real-Time IRL API for live GPS data
--   **Smart Movement Detection**: Automatically detects movement type based on speed
--   **GPS Drift Protection**: Filters out stationary GPS noise with configurable thresholds
--   **Persistence**: localStorage for trip progress across sessions
--   **Weather Integration**: Cloudflare Functions proxy for OpenWeatherMap API
--   **Cloud-Friendly**: URL parameters for control in cloud environments (IRLToolkit)
+- **RTIRL Integration**: WebSocket connection to Real-Time IRL API for live GPS data
+- **Smart Movement Detection**: Automatically detects movement type based on speed
+- **GPS Drift Protection**: Filters out stationary GPS noise with configurable thresholds
+- **Persistence**: localStorage for trip progress across sessions
+- **Weather Integration**: Cloudflare Functions proxy for OpenWeatherMap API
+- **Cloud-Friendly**: URL parameters for control in cloud environments (IRLToolkit)
 
 ### File Structure
 
@@ -73,18 +73,18 @@ This is a real-time GPS tracking overlay for live streaming cycling/bike trips. 
 
 ### State Management
 
--   **Trip Progress**: Uses localStorage for persistence with manual backup/restore
--   **Movement Detection**: Sophisticated permissible mode system with GPS drift protection
--   **Weather Cache**: Automatic caching with 5-minute intervals and error recovery
--   **Connection State**: Shared RTIRL connection state across both overlays
--   **Memory Management**: Automatic cache cleanup and timer management
--   **Error Recovery**: Comprehensive async error handling with graceful fallbacks
+- **Trip Progress**: Uses localStorage for persistence with manual backup/restore
+- **Movement Detection**: Sophisticated permissible mode system with GPS drift protection
+- **Weather Cache**: Automatic caching with 5-minute intervals and error recovery
+- **Connection State**: Shared RTIRL connection state across both overlays
+- **Memory Management**: Automatic cache cleanup and timer management
+- **Error Recovery**: Comprehensive async error handling with graceful fallbacks
 
 ## Gemini Specific Guidance
 
--   **Prioritize existing conventions**: When making changes, always adhere to the existing code style, naming conventions, and architectural patterns found in the project.
--   **Utilize `pnpm`**: The project uses `pnpm` for package management. Use `pnpm install`, `pnpm run lint`, etc.
--   **ES6 Modules**: Be aware that the project heavily utilizes ES6 modules.
--   **Centralized Configuration**: Refer to `utils/config.js` for all centralized configuration.
--   **Testing**: Use the `?demo=true` URL parameter for testing without a live RTIRL connection.
--   **Cloudflare Functions**: The `functions/weather.js` file is a Cloudflare Function.
+- **Prioritize existing conventions**: When making changes, always adhere to the existing code style, naming conventions, and architectural patterns found in the project.
+- **Utilize `pnpm`**: The project uses `pnpm` for package management. Use `pnpm install`, `pnpm run lint`, etc.
+- **ES6 Modules**: Be aware that the project heavily utilizes ES6 modules.
+- **Centralized Configuration**: Refer to `utils/config.js` for all centralized configuration.
+- **Testing**: Use the `?demo=true` URL parameter for testing without a live RTIRL connection.
+- **Cloudflare Functions**: The `functions/weather.js` file is a Cloudflare Function.

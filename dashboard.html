@@ -26,6 +26,17 @@
                 <span id="weather-desc-combined" class="weather-desc"
                   >Loading...</span
                 >
+                <span id="speed-display" class="speed-display">
+                  <!-- <span class="speed-separator">•</span> -->
+                  <span id="speed-value-mph" class="speed-value-line"
+                    ><span class="speed-number">--</span>
+                    <span class="speed-unit">mph</span></span
+                  >
+                  <span id="speed-value-kmh" class="speed-value-line"
+                    ><span class="speed-number">--</span>
+                    <span class="speed-unit">km/h</span></span
+                  >
+                </span>
               </span>
               <div
                 id="weather-secondary-details"
@@ -50,7 +61,9 @@
           </span>
         </div>
         <div class="dashboard-row time-row">
-          <span id="date-combined" class="date">--</span>
+          <span id="date-part" class="date-part">--</span>
+          <span id="time-part" class="time-part">--:--:--</span>
+          <span id="timezone-part" class="timezone-part">--</span>
         </div>
         <!--
         <div class="dashboard-row sunrise-sunset-row">

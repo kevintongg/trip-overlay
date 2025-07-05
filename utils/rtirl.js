@@ -153,7 +153,7 @@ const startDemoMode = (moduleName = 'RTIRL') => {
   rtirtState.demoModeActive = true;
   let demoLat = 48.209; // Vienna
   let demoLon = 16.3531;
-  let demoSpeed = 0;
+  let demoSpeed = 15.0; // Start at a cycling speed
   let speedDirection = 1;
 
   let updateCount = 0;
@@ -192,7 +192,7 @@ const startDemoMode = (moduleName = 'RTIRL') => {
 
   // Start demo data generation
   generateDemoData(); // Immediate first update
-  rtirtState.demoTimer = setInterval(generateDemoData, 10000); // Reduced from 3s to 10s
+  rtirtState.demoTimer = setInterval(generateDemoData, 1000); // Reduced from 10s to 1s
 };
 
 // Stop demo mode
