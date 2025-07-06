@@ -89,16 +89,17 @@ body {
   font-family:
     'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji',
     'Segoe UI Symbol', 'Android Emoji', 'EmojiSymbols', sans-serif;
-  font-size: 1.6em;
+  font-size: 2.2em;
   display: flex;
   align-items: center;
   line-height: 1;
-  position: relative;
-  top: 2px;
   margin-right: 0.1em;
   text-rendering: optimizeLegibility;
   -webkit-font-feature-settings: 'liga' on;
   font-feature-settings: 'liga' on;
+}
+.weather-icon img {
+  height: 2.2em !important;
 }
 .weather-temp-container {
   display: flex;
@@ -126,6 +127,7 @@ body {
   letter-spacing: 0.5px;
   text-shadow: 0 1px 4px #000a;
   font-family: 'Inter', 'Segoe UI', 'Roboto', 'Arial', sans-serif;
+  white-space: nowrap;
 }
 .weather-desc {
   font-size: 1em;
