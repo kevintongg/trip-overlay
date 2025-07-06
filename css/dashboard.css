@@ -181,17 +181,40 @@ body {
   font-weight: 400;
   margin: 0.3em 0 0 0;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2em;
 }
 
-.weather-secondary-details span {
+.weather-secondary-line {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.3em;
+}
+
+.weather-secondary-line span {
   display: inline-block;
 }
 
-.weather-secondary-details span + span::before {
+.weather-secondary-line span + span::before {
   content: ' · ';
   margin: 0 0.3em;
   color: #888;
 }
+
+.weather-wind,
+.weather-uvi {
+  font-size: 0.95em;
+  color: #bbbbbb;
+  font-weight: 400;
+}
+
+.weather-uvi span {
+  font-family: 'JetBrains Mono', 'Consolas', 'Monaco', monospace;
+  letter-spacing: 0.5px;
+}
+
 .weather-extra {
   font-size: 0.95em;
   color: #ccc;
@@ -423,3 +446,29 @@ body {
   word-break: break-word;
   max-width: 70px;
 }
+
+/* Weather icon background and style */
+.weather-icon {
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 50%;
+  padding: 0.2em;
+}
+
+/* UV Index color coding */
+.uvi-low {
+  color: #4caf50; /* Green */
+}
+.uvi-moderate {
+  color: #ffeb3b; /* Yellow */
+}
+.uvi-high {
+  color: #ff9800; /* Orange */
+}
+.uvi-very-high {
+  color: #f44336; /* Red */
+}
+.uvi-extreme {
+  color: #6a1b9a; /* Purple */
+}
+
+

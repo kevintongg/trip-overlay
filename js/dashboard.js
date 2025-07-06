@@ -40,6 +40,8 @@ const combinedElements = {
   weatherFeelsLike: document.getElementById('weather-feels-like-combined'),
   weatherHumidity: document.getElementById('weather-humidity-combined'),
   weatherSecondaryDetails: document.getElementById('weather-secondary-details'),
+  weatherWind: document.getElementById('weather-wind-combined'),
+  weatherUvi: document.getElementById('weather-uvi-combined'),
   sunriseSunset: document.getElementById('sunrise-sunset-combined'),
   weatherExtra: document.getElementById('weather-extra-combined'),
   speedDisplay: document.getElementById('speed-display'),
@@ -720,23 +722,65 @@ function updateWeatherDisplay(weather) {
     updateCombinedSunriseSunset('');
   }
 
-  // Show 'feels like' and humidity in the main card
-  const secondaryDetails = [];
+  // Show 'feels like' and humidity on the first line
+  const firstLineDetails = [];
   if (feelsLike) {
-    secondaryDetails.push(`Feels like: ${feelsLike}`);
+    firstLineDetails.push(`Feels like: ${feelsLike}`);
   }
   if (humidity) {
-    secondaryDetails.push(`Humidity: ${humidity}`);
-  }
-  if (wind) {
-    secondaryDetails.push(`Wind: ${wind}`);
+    firstLineDetails.push(`Humidity: ${humidity}`);
   }
 
+  // Show wind and UVI on the second line
+  const secondLineDetails = [];
+  if (wind) {
+    secondLineDetails.push(`Wind: ${wind}`);
+  }
+
+  // Add UVI if available
+  const uvi = current.uvi !== undefined ? current.uvi : null;
+  if (uvi !== null) {
+    const uviClass = getUviClass(uvi);
+    const uviText = `UV Index: <span class="${uviClass}" style="font-family: 'JetBrains Mono', 'Consolas', 'Monaco', monospace; letter-spacing: 0.5px;">${uvi.toFixed(1)}</span>`;
+    secondLineDetails.push(uviText);
+  }
+
+  // Update the display
   if (combinedElements.weatherSecondaryDetails) {
-    combinedElements.weatherSecondaryDetails.textContent =
-      secondaryDetails.join(' · ');
+    const hasFirstLine = firstLineDetails.length > 0;
+    const hasSecondLine = secondLineDetails.length > 0;
+
+    // Show the container if we have any details
     combinedElements.weatherSecondaryDetails.style.display =
-      secondaryDetails.length > 0 ? '' : 'none';
+      hasFirstLine || hasSecondLine ? '' : 'none';
+
+    // Update first line (feels like and humidity)
+    const firstLineElement =
+      combinedElements.weatherSecondaryDetails.querySelector(
+        '.weather-secondary-line:first-child'
+      );
+    if (firstLineElement) {
+      if (hasFirstLine) {
+        firstLineElement.style.display = '';
+        firstLineElement.innerHTML = firstLineDetails.join(' · ');
+      } else {
+        firstLineElement.style.display = 'none';
+      }
+    }
+
+    // Update second line (wind and UVI)
+    const secondLineElement =
+      combinedElements.weatherSecondaryDetails.querySelector(
+        '.weather-secondary-line:last-child'
+      );
+    if (secondLineElement) {
+      if (hasSecondLine) {
+        secondLineElement.style.display = '';
+        secondLineElement.innerHTML = secondLineDetails.join(' · ');
+      } else {
+        secondLineElement.style.display = 'none';
+      }
+    }
   }
 
   // Render hourly forecast (next 5 hours)
@@ -935,6 +979,21 @@ function degToCompass(num) {
     'NNW',
   ];
   return arr[val % 16];
+}
+
+// Helper: Get UV Index color class based on value
+function getUviClass(uvi) {
+  if (uvi <= 2) {
+    return 'uvi-low';
+  } else if (uvi <= 5) {
+    return 'uvi-moderate';
+  } else if (uvi <= 7) {
+    return 'uvi-high';
+  } else if (uvi <= 10) {
+    return 'uvi-very-high';
+  } else {
+    return 'uvi-extreme';
+  }
 }
 
 // --- Speed Display Functions ---
