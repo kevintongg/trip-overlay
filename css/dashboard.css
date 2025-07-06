@@ -89,7 +89,7 @@ body {
   font-family:
     'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji',
     'Segoe UI Symbol', 'Android Emoji', 'EmojiSymbols', sans-serif;
-  font-size: 2.2em;
+  font-size: 2em;
   display: flex;
   align-items: center;
   line-height: 1;
@@ -99,7 +99,7 @@ body {
   font-feature-settings: 'liga' on;
 }
 .weather-icon img {
-  height: 2.2em !important;
+  height: 2em !important;
 }
 .weather-temp-container {
   display: flex;
