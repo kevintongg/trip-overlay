@@ -1,94 +1,77 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <!-- Document Metadata -->
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Motorbike Trip Overlay</title>
 
-    <!-- External Stylesheets -->
-    <link rel="stylesheet" href="css/trip-progress.css">
+<head>
+  <!-- Document Metadata -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Motorbike Trip Overlay</title>
 
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap"
-      rel="stylesheet"
-    >
+  <!-- External Stylesheets -->
+  <link rel="stylesheet" href="css/trip-progress.css">
 
-    <!-- External Scripts -->
-    <!-- Use CDN version to avoid complex module resolution -->
-    <script src="https://cdn.jsdelivr.net/npm/@rtirl/api@latest/lib/index.min.js"></script>
-  </head>
-  <body>
-    <!-- Main Overlay Content -->
-    <div id="overlay-container">
-      <!-- Progress Section -->
-      <div class="progress-section">
-        <div id="progress-bar">
-          <div id="progress-bar-traveled"></div>
-          <span id="progress-percent">0%</span>
-          <img id="avatar" src="assets/stationary.png" alt="peeguu">
-        </div>
-        <!-- Data Container -->
-        <div id="data-container">
-          <div class="data-box">
-            <span id="distance-traveled">0.00 km</span>
-            <div class="label">traveled</div>
-          </div>
-          <div class="data-box today">
-            <span id="distance-today">0.0 km</span>
-            <div class="label">today</div>
-          </div>
-          <div class="data-box">
-            <span id="distance-remaining">0.00 km</span>
-            <div class="label">remaining</div>
-          </div>
-        </div>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- External Scripts -->
+  <!-- Use CDN version to avoid complex module resolution -->
+  <script src="https://cdn.jsdelivr.net/npm/@rtirl/api@latest/lib/index.min.js"></script>
+</head>
+
+<body>
+  <!-- Main Overlay Content -->
+  <div id="overlay-container">
+    <!-- Progress Section -->
+    <div class="progress-section">
+      <div id="progress-bar">
+        <div id="progress-bar-traveled"></div>
+        <span id="progress-percent">0%</span>
+        <img id="avatar" src="assets/stationary.png" alt="peeguu">
       </div>
-
-      <!-- Enhanced control panel for IRLToolkit/cloud environments -->
-      <div id="control-panel" style="display: none;">
-        <div class="control-header">Stream Controls</div>
-        <div class="control-row">
-          <button
-            id="reset-today-btn"
-            onclick="resetTodayDistance()"
-            title="Reset today's distance - most common for daily tours"
-          >
-            🔄 Reset Today
-          </button>
-          <button
-            id="export-btn"
-            onclick="exportTripData()"
-            title="Download backup file"
-          >
-            💾 Backup
-          </button>
+      <!-- Data Container -->
+      <div id="data-container">
+        <div class="data-box">
+          <span id="distance-traveled">0.00 km</span>
+          <div class="label">traveled</div>
         </div>
-        <div class="control-row secondary">
-          <button
-            id="reset-location-btn"
-            onclick="resetAutoStartLocation()"
-            title="Re-detect start location"
-          >
-            📍 Fix Start
-          </button>
-          <button
-            id="reset-all-btn"
-            onclick="resetTripProgress()"
-            title="⚠️ Reset entire trip - use carefully!"
-            class="danger"
-          >
-            🗑️ Reset All
-          </button>
+        <div class="data-box today">
+          <span id="distance-today">0.0 km</span>
+          <div class="label">today</div>
         </div>
-        <div id="action-feedback" class="feedback"></div>
+        <div class="data-box">
+          <span id="distance-remaining">0.00 km</span>
+          <div class="label">remaining</div>
+        </div>
       </div>
     </div>
 
-    <!-- Local Scripts -->
-    <script type="module" src="js/trip-progress.js"></script>
-  </body>
+    <!-- Enhanced control panel for IRLToolkit/cloud environments -->
+    <div id="control-panel" style="display: none;">
+      <div class="control-header">Stream Controls</div>
+      <div class="control-row">
+        <button id="reset-today-btn" onclick="resetTodayDistance()" title="Reset today's distance - most common for daily tours">
+          🔄 Reset Today
+        </button>
+        <button id="export-btn" onclick="exportTripData()" title="Download backup file">
+          💾 Backup
+        </button>
+      </div>
+      <div class="control-row secondary">
+        <button id="reset-location-btn" onclick="resetAutoStartLocation()" title="Re-detect start location">
+          📍 Fix Start
+        </button>
+        <button id="reset-all-btn" onclick="resetTripProgress()" title="⚠️ Reset entire trip - use carefully!" class="danger">
+          🗑️ Reset All
+        </button>
+      </div>
+      <div id="action-feedback" class="feedback"></div>
+    </div>
+  </div>
+
+  <!-- Local Scripts -->
+  <script type="module" src="js/trip-progress.js"></script>
+</body>
+
 </html>

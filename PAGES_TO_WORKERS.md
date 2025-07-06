@@ -51,10 +51,10 @@ When migrating from Pages to Workers, you're essentially:
 
 ```jsonc
 {
-	"name": "project-name",
-	"compatibility_date": "2025-06-05",
-	"assets": { "directory": "./dist" },
-	// Add other fields as needed
+  "name": "project-name",
+  "compatibility_date": "2025-06-05",
+  "assets": { "directory": "./dist" },
+  // Add other fields as needed
 }
 ```
 
@@ -128,9 +128,9 @@ Most static sites fall into this category:
 
 ```jsonc
 {
-	"name": "my-site",
-	"assets": { "directory": "./dist" },
-	"compatibility_date": "2025-06-05",
+  "name": "my-site",
+  "assets": { "directory": "./dist" },
+  "compatibility_date": "2025-06-05",
 }
 ```
 
@@ -140,13 +140,13 @@ Sites with server-side logic or Pages Functions:
 
 ```jsonc
 {
-	"name": "my-app",
-	"main": "./dist/_worker.js",
-	"assets": {
-		"directory": "./dist",
-		"binding": "ASSETS",
-	},
-	"compatibility_date": "2025-06-05",
+  "name": "my-app",
+  "main": "./dist/_worker.js",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+  },
+  "compatibility_date": "2025-06-05",
 }
 ```
 
@@ -154,9 +154,9 @@ Sites with server-side logic or Pages Functions:
 
 ```json
 {
-	"scripts": {
-		"build": "your-framework-build && wrangler pages functions build --outdir=./dist/_worker.js/"
-	}
+  "scripts": {
+    "build": "your-framework-build && wrangler pages functions build --outdir=./dist/_worker.js/"
+  }
 }
 ```
 
