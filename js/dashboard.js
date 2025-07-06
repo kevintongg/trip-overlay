@@ -22,6 +22,7 @@ const dashboardState = {
   rtirtLocationListener: null,
   hasFetchedInitialWeather: false, // Flag to control initial fetch
   lastLocationName: '',
+  wasInDemoMode: false, // Flag to track demo mode transition
 };
 
 // DOM elements cache
@@ -62,6 +63,12 @@ const setClass = (el, cls) => {
     el.className = cls;
   }
 };
+
+// Robustly clear speed display storage
+function clearSpeedDisplayStorage() {
+  localStorage.removeItem('tripOverlaySpeed');
+  localStorage.removeItem('tripOverlayMode');
+}
 
 // --- Debug Utilities ---
 function getStatus() {
@@ -132,6 +139,12 @@ function initializeDashboard() {
 
   cacheDOM();
   handleURLParameters();
+  // Robust: clear speed display storage if not in demo mode
+  const params = new URLSearchParams(window.location.search);
+  const isDemo = params.get('demo') === 'true';
+  if (!isDemo) {
+    clearSpeedDisplayStorage();
+  }
   initTime();
   initRTIRLDashboard();
 
@@ -315,6 +328,12 @@ function handleLocationData(locationUpdate) {
     updateConnectionStatus('Location hidden or streamer offline', 'warning');
     dashboardState.isConnected = false;
     updateSpeedDisplay(0, 'STATIONARY');
+    // Robust: clear speed display storage if not in demo mode
+    const params = new URLSearchParams(window.location.search);
+    const isDemo = params.get('demo') === 'true';
+    if (!isDemo) {
+      clearSpeedDisplayStorage();
+    }
     return;
   }
 
@@ -325,10 +344,39 @@ function handleLocationData(locationUpdate) {
     timestamp: locationUpdate.timestamp,
   };
 
+  // Check if this is demo location data (Vienna coordinates)
+  const isDemoData =
+    locationUpdate.latitude === 48.1465 &&
+    locationUpdate.longitude === 17.1235 &&
+    locationUpdate.speed === 15.5;
+
+  // If this is demo data, set the demo flag
+  if (isDemoData) {
+    dashboardState.wasInDemoMode = true;
+  }
+
+  // If this is real location data (not demo) and we were previously in demo mode, reset speed display
+  if (!isDemoData && dashboardState.wasInDemoMode) {
+    logger(
+      '🔄 Dashboard: Transitioning from demo mode to real location, resetting speed display'
+    );
+    updateSpeedDisplay(0, 'STATIONARY');
+    dashboardState.wasInDemoMode = false;
+    clearSpeedDisplayStorage();
+    return;
+  }
+
   // Simple speed display update - just read current values
   const speed = parseFloat(localStorage.getItem('tripOverlaySpeed')) || 0;
   const currentMode = localStorage.getItem('tripOverlayMode') || 'STATIONARY';
   updateSpeedDisplay(speed, currentMode);
+
+  // Robust: clear speed display storage if not cycling or speed <= 0 and not in demo mode
+  const params = new URLSearchParams(window.location.search);
+  const isDemo = params.get('demo') === 'true';
+  if (!isDemo && (currentMode !== 'CYCLING' || speed <= 0)) {
+    clearSpeedDisplayStorage();
+  }
 
   // Only update connection status if it's changed
   if (!dashboardState.isConnected) {
@@ -747,6 +795,10 @@ function updateConnectionStatus(message, type) {
 }
 function startDemoMode() {
   logger('🎭 Dashboard: Starting demo mode with Vienna coordinates');
+
+  // Set the demo mode flag
+  dashboardState.wasInDemoMode = true;
+
   setTimeout(() => {
     const demoData = {
       latitude: 48.1465,
