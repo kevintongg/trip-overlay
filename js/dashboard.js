@@ -33,6 +33,7 @@ const combinedElements = {
   location: document.getElementById('location-combined'),
   weatherIcon: document.getElementById('weather-icon-combined'),
   weatherTemp: document.getElementById('weather-temp-combined'),
+  weatherHighLow: document.getElementById('weather-high-low'),
   weatherDesc: document.getElementById('weather-desc-combined'),
   date: document.getElementById('date-combined'),
   time: document.getElementById('time-combined'),
@@ -918,6 +919,11 @@ function updateCombinedWeather(weatherIcon, temp, desc) {
   if (combinedElements.weatherTemp) {
     combinedElements.weatherTemp.textContent = temp || '--°';
   }
+  if (combinedElements.weatherHighLow) {
+    // Get high/low from daily forecast if available
+    const highLow = getHighLowTemperatures();
+    combinedElements.weatherHighLow.textContent = highLow;
+  }
   if (combinedElements.weatherDesc) {
     combinedElements.weatherDesc.textContent = desc || 'Loading...';
   }
@@ -991,6 +997,34 @@ function getUviClass(uvi) {
   } else {
     return 'uvi-extreme';
   }
+}
+
+// Helper: Get high/low temperatures from daily forecast
+function getHighLowTemperatures() {
+  const weather = dashboardState.weather;
+  if (
+    !weather ||
+    !weather.daily ||
+    !Array.isArray(weather.daily) ||
+    weather.daily.length === 0
+  ) {
+    return '--° / --°';
+  }
+
+  // Get today's forecast (first item in daily array)
+  const today = weather.daily[0];
+  if (!today || !today.temp) {
+    return '--° / --°';
+  }
+
+  const high = today.temp.max;
+  const low = today.temp.min;
+
+  if (high === undefined || low === undefined) {
+    return '--° / --°';
+  }
+
+  return `${high.toFixed(0)}° / ${low.toFixed(0)}°`;
 }
 
 // --- Speed Display Functions ---
