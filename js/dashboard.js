@@ -202,9 +202,9 @@ function handleURLParameters() {
   }
   if (params.get('demo') === 'true') {
     // Dashboard demo mode: static location for weather/display testing only
-    // Default to Vienna timezone in demo mode unless overridden
+    // Default to UTC timezone in demo mode unless overridden
     if (!dashboardState.timezone) {
-      dashboardState.timezone = 'Europe/Vienna';
+      dashboardState.timezone = 'UTC';
     }
     startDemoMode();
   }
@@ -346,19 +346,17 @@ function handleLocationData(locationUpdate) {
     timestamp: locationUpdate.timestamp,
   };
 
-  // Check if this is demo location data (Vienna coordinates)
-  const isDemoData =
-    locationUpdate.latitude === 48.1465 &&
-    locationUpdate.longitude === 17.1235 &&
-    locationUpdate.speed === 15.5;
+  // Check if we're in demo mode via URL parameter
+  const params = new URLSearchParams(window.location.search);
+  const isDemoMode = params.get('demo') === 'true';
 
-  // If this is demo data, set the demo flag
-  if (isDemoData) {
+  // If we're in demo mode, set the demo flag
+  if (isDemoMode) {
     dashboardState.wasInDemoMode = true;
   }
 
   // If this is real location data (not demo) and we were previously in demo mode, reset speed display
-  if (!isDemoData && dashboardState.wasInDemoMode) {
+  if (!isDemoMode && dashboardState.wasInDemoMode) {
     logger(
       '🔄 Dashboard: Transitioning from demo mode to real location, resetting speed display'
     );
@@ -374,9 +372,7 @@ function handleLocationData(locationUpdate) {
   updateSpeedDisplay(speed, currentMode);
 
   // Robust: clear speed display storage if not cycling or speed <= 0 and not in demo mode
-  const params = new URLSearchParams(window.location.search);
-  const isDemo = params.get('demo') === 'true';
-  if (!isDemo && (currentMode !== 'CYCLING' || speed <= 0)) {
+  if (!isDemoMode && (currentMode !== 'CYCLING' || speed <= 0)) {
     clearSpeedDisplayStorage();
   }
 
@@ -845,8 +841,9 @@ function startDemoMode() {
 
   setTimeout(() => {
     const demoData = {
-      latitude: 48.1465,
-      longitude: 17.1235,
+      // Seattle coordinates
+      latitude: 47.6062,
+      longitude: -122.3321,
       accuracy: 5,
       speed: 15.5, // Add demo speed for testing
     };
