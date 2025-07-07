@@ -2,7 +2,8 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import './index.css';
-import Dashboard from './Dashboard.tsx';
+import DashboardNew from './DashboardNew.tsx';
+import { ErrorBoundary } from './components/ErrorBoundary.tsx';
 
 // Create a client for React Query
 const queryClient = new QueryClient({
@@ -15,9 +16,9 @@ const queryClient = new QueryClient({
 });
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
+  <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
-      <Dashboard />
+      <DashboardNew />
     </QueryClientProvider>
-  </React.StrictMode>
+  </ErrorBoundary>
 );

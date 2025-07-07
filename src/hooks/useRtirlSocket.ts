@@ -9,10 +9,10 @@ declare global {
   interface Window {
     RealtimeIRL?: {
       forStreamer: (
-        platform: string,
-        userId: string
+        _platform: string,
+        _userId: string
       ) => {
-        addLocationListener: (callback: (data: any) => void) => () => void;
+        addLocationListener: (_callback: (data: any) => void) => () => void;
       };
     };
   }
@@ -88,16 +88,29 @@ export function useRtirlSocket() {
       logger('✅ Trip: Streamer location is now live!');
     }
 
+    // Handle speed data - GPS speed often comes in m/s, convert to km/h
+    let speedKmh = 0;
+    if (data.speed !== undefined && data.speed !== null) {
+      if (data.source === 'demo') {
+        // Demo data is already in km/h
+        speedKmh = data.speed;
+      } else {
+        // Real GPS data from RTIRL/geolocation APIs is almost always in m/s
+        // Convert m/s to km/h: multiply by 3.6
+        speedKmh = Math.max(0, data.speed * 3.6);
+      }
+    }
+
     if (isDemo) {
       const state = demoStateRef.current;
       if (state.updateCount === 1 || state.updateCount % 5 === 0) {
         logger(
-          `🎭 Demo update #${state.updateCount} - ${data.latitude.toFixed(4)}, ${data.longitude.toFixed(4)} @ ${data.speed?.toFixed(1) || 0}km/h`
+          `🎭 Demo update #${state.updateCount} - ${data.latitude.toFixed(4)}, ${data.longitude.toFixed(4)} @ ${speedKmh.toFixed(1)}km/h`
         );
       }
     } else {
       logger(
-        `📡 Trip: Location received - ${data.latitude?.toFixed(4) || 'N/A'}, ${data.longitude?.toFixed(4) || 'N/A'}`
+        `📡 Trip: Location received - ${data.latitude?.toFixed(4) || 'N/A'}, ${data.longitude?.toFixed(4) || 'N/A'} @ ${speedKmh.toFixed(1)}km/h`
       );
     }
 
@@ -106,12 +119,12 @@ export function useRtirlSocket() {
     setConnectionStatus('connected');
     resetReconnectAttempts();
 
-    // Dispatch custom event for location update with full data
+    // Dispatch custom event for location update with full data (speed now in km/h)
     const locationData: LocationData = {
       latitude: data.latitude,
       longitude: data.longitude,
       accuracy: data.accuracy || 10,
-      speed: data.speed || 0,
+      speed: speedKmh, // Now guaranteed to be in km/h
       timestamp: Date.now(),
       source: isDemo ? 'demo' : 'rtirl',
     };
@@ -122,10 +135,17 @@ export function useRtirlSocket() {
   };
 
   // Demo mode implementation
+  // NOTE: Demo mode is now handled by useDashboardDemo hook in the new React-first Dashboard
+  // This legacy demo mode is only used for non-dashboard components (like TripOverlay)
   useEffect(() => {
+    // Skip demo mode if dashboard demo is already active
+    if (window.__dashboardDemoActive) {
+      return;
+    }
+
     if (isDemo && !initRef.current) {
       initRef.current = true;
-      logger('🎭 Demo mode enabled, starting demo data');
+      logger('🎭 RTIRL Demo mode enabled, starting demo data');
 
       const generateDemoData = () => {
         const state = demoStateRef.current;

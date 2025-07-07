@@ -14,6 +14,13 @@ import { Card } from './components/ui/card';
 // import { Separator } from './components/ui/separator';
 import { logger } from './utils/logger';
 
+// Global flag type declaration for dashboard demo coordination
+declare global {
+  interface Window {
+    __dashboardDemoActive?: boolean;
+  }
+}
+
 interface URLParams {
   demo: boolean;
   showTime: boolean;
@@ -65,9 +72,13 @@ const Dashboard: React.FC = () => {
 
   // Get GPS coordinates from connection store
   const { lastPosition, isConnected } = useConnectionStore();
+
+  // SAFETY: Don't make weather calls if new dashboard is also running (prevents double API usage)
+  const shouldFetchWeather =
+    !window.__dashboardDemoActive && lastPosition?.lat && lastPosition?.lon;
   const { data: weatherData, isLoading: weatherLoading } = useWeatherData(
-    lastPosition?.lat,
-    lastPosition?.lon
+    shouldFetchWeather ? lastPosition.lat : undefined,
+    shouldFetchWeather ? lastPosition.lon : undefined
   );
 
   // Time state
@@ -283,17 +294,47 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const handleLocationUpdate = (event: CustomEvent) => {
       const locationData = event.detail;
-      throttledLog(
-        'locationUpdate',
-        1000,
-        '🏃 Dashboard: Location update received:',
-        locationData
-      );
+
+      // Skip excessive logging if the new dashboard demo is active
+      if (!window.__dashboardDemoActive) {
+        throttledLog(
+          'locationUpdate',
+          1000,
+          '🏃 Dashboard: Location update received:',
+          locationData
+        );
+      }
 
       if (locationData) {
         // Update location with reverse geocoding
         if (locationData.latitude && locationData.longitude) {
           reverseGeocode(locationData.latitude, locationData.longitude);
+        }
+
+        // Process speed data and store in localStorage for dashboard display
+        if (locationData.speed !== undefined && locationData.speed !== null) {
+          const gpsSpeedKmh = Math.max(0, locationData.speed); // Speed should already be in km/h from useRtirlSocket
+
+          // Determine movement mode based on speed
+          let mode = 'STATIONARY';
+          if (gpsSpeedKmh > 8) {
+            mode = 'CYCLING';
+          } else if (gpsSpeedKmh > 2) {
+            mode = 'WALKING';
+          }
+
+          // Store speed and mode in localStorage
+          localStorage.setItem('tripOverlaySpeed', gpsSpeedKmh.toFixed(1));
+          localStorage.setItem('tripOverlayMode', mode);
+
+          // Skip excessive logging if the new dashboard demo is active
+          if (!window.__dashboardDemoActive) {
+            throttledLog(
+              'speed',
+              3000,
+              `🚴 Dashboard: Processed GPS speed - ${gpsSpeedKmh.toFixed(1)} km/h, mode: ${mode} (source: ${locationData.source})`
+            );
+          }
         }
       }
     };

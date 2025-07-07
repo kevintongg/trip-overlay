@@ -1,4 +1,5 @@
 import type { WeatherResponse } from '../types/weather';
+import { apiMonitor } from './apiMonitor';
 
 /**
  * Direct OpenWeatherMap API call (requires API key in frontend)
@@ -35,7 +36,12 @@ function generateMockWeather(lat: number, lon: number): WeatherResponse {
   const isSummer = new Date().getMonth() >= 5 && new Date().getMonth() <= 7;
 
   // Base temperature on location and season
-  const baseTemp = isNorthern ? (isSummer ? 24 : 8) : isSummer ? 12 : 22;
+  let baseTemp: number;
+  if (isNorthern) {
+    baseTemp = isSummer ? 24 : 8;
+  } else {
+    baseTemp = isSummer ? 12 : 22;
+  }
 
   const currentTemp = baseTemp + (Math.random() - 0.5) * 10;
 
@@ -94,7 +100,7 @@ function generateMockWeather(lat: number, lon: number): WeatherResponse {
     current: {
       temp: currentTemp,
       feels_like: currentTemp + (Math.random() - 0.5) * 5,
-      humidity: Math.round(40 + Math.random() * 40),
+      humidity: Math.round(20 + Math.random() * 65),
       uvi: Math.random() * 10,
       weather: [condition],
       wind_speed: Math.random() * 15,
@@ -129,6 +135,13 @@ export async function fetchWeatherData(
 ): Promise<WeatherResponse> {
   console.log(`🌤️ Fetching weather for ${lat}, ${lon} (${units})`);
 
+  // Check API usage limits before making calls
+  if (!apiMonitor.canMakeApiCall()) {
+    console.log('🎭 Weather: API limit reached, using mock data');
+    apiMonitor.recordApiCall('mock_fallback', lat, lon, true, false);
+    return generateMockWeather(lat, lon);
+  }
+
   // Strategy 1: Try Cloudflare function first
   try {
     const response = await fetch(
@@ -150,8 +163,15 @@ export async function fetchWeatherData(
         try {
           const data = JSON.parse(responseText);
           console.log('✅ Weather: Cloudflare function success');
+          apiMonitor.recordApiCall(
+            'cloudflare_function',
+            lat,
+            lon,
+            true,
+            false
+          );
           return data;
-        } catch (parseError) {
+        } catch {
           console.warn(
             '⚠️ Weather: Cloudflare function returned invalid JSON:',
             responseText.substring(0, 100)
@@ -165,21 +185,26 @@ export async function fetchWeatherData(
         response.status,
         errorText
       );
+      apiMonitor.recordApiCall('cloudflare_function', lat, lon, false, false);
     }
   } catch (error) {
     console.warn('⚠️ Weather: Cloudflare function error:', error);
+    apiMonitor.recordApiCall('cloudflare_function', lat, lon, false, false);
   }
 
   // Strategy 2: Try direct API call (if API key is available)
   try {
     const data = await fetchWeatherDirect(lat, lon, units);
     console.log('✅ Weather: Direct API success');
+    apiMonitor.recordApiCall('direct_api', lat, lon, true, false);
     return data;
   } catch (error) {
     console.warn('⚠️ Weather: Direct API failed:', error);
+    apiMonitor.recordApiCall('direct_api', lat, lon, false, false);
   }
 
   // Strategy 3: Use mock data as final fallback
   console.log('🎭 Weather: Using mock data (all other methods failed)');
+  apiMonitor.recordApiCall('mock_fallback', lat, lon, true, false);
   return generateMockWeather(lat, lon);
 }

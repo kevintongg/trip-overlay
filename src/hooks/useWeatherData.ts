@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import type { WeatherResponse, WeatherError } from '../types/weather';
+import type { WeatherResponse } from '../types/weather';
 import { fetchWeatherData } from '../utils/weatherService';
 
 /**
@@ -24,9 +24,14 @@ export function useWeatherData(
   lon?: number,
   units: string = 'metric'
 ) {
+  // Round coordinates to prevent cache busting from tiny GPS variations
+  // 0.01 degrees ≈ 1.1km, which is reasonable for weather accuracy
+  const roundedLat = lat ? Math.round(lat * 100) / 100 : undefined;
+  const roundedLon = lon ? Math.round(lon * 100) / 100 : undefined;
+
   return useQuery({
-    queryKey: ['weather', lat, lon, units],
-    queryFn: () => fetchWeather(lat!, lon!, units),
+    queryKey: ['weather', roundedLat, roundedLon, units],
+    queryFn: () => fetchWeather(lat!, lon!, units), // Use original coords for API call
     enabled: Boolean(lat && lon && isFinite(lat) && isFinite(lon)),
     refetchInterval: 600000, // 10 minutes
     staleTime: 300000, // 5 minutes

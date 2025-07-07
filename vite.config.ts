@@ -17,6 +17,7 @@ export default defineConfig({
       input: {
         main: 'index-react.html', // React trip overlay
         dashboard: 'dashboard.html', // React dashboard (promoted from dashboard-react.html)
+        landing: 'index.html', // Landing page
       },
     },
   },

@@ -8,6 +8,7 @@ import { useTripProgressStore } from '../store/tripStore';
 import { useConnectionStore } from '../store/connectionStore';
 import { logger } from '../utils/logger';
 import { CONFIG } from '../utils/config';
+import { apiMonitor } from './apiMonitor';
 
 // Global API interface for TypeScript
 declare global {
@@ -275,7 +276,7 @@ export function setupGlobalConsoleAPI() {
    Persistence: ✅ localStorage (auto-save enabled)
    React Version: Modern React + TypeScript + Vite
    Page Type: ${currentPage}
-   
+
 💡 Available Commands: Type showConsoleCommands() for full command list
 🎮 Quick Test: Try addDistance(5) to add 5km to your trip
     `;
@@ -376,6 +377,10 @@ export function setupGlobalConsoleAPI() {
 • TripOverlay.getStatus() - Same as getStatus() (namespaced version)
 • showConsoleCommands() - Show this help
 
+🌤️ WEATHER API MONITORING:
+• owmApiStats() - Show OpenWeatherMap API usage statistics
+• owmApiReset() - Reset API usage tracking (for testing)
+
 📏 DISTANCE MANIPULATION:
 • addDistance(km) - Add/subtract distance (use negative to subtract)
   Example: addDistance(5.5) or addDistance(-2.1)
@@ -407,8 +412,12 @@ Type any function name to use it. Current trip: ${useTripProgressStore.getState(
     logger(help);
   };
 
-  // Set up global API
+  // Set up global API (includes weather API monitoring)
   window.TripOverlay = { controls, getStatus, checkRtirlConnection };
+
+  // Weather API monitoring functions
+  window.owmApiStats = () => apiMonitor.logUsageStats();
+  window.owmApiReset = () => apiMonitor.resetUsage();
 
   // Backward compatibility - individual functions
   window.addDistance = controls.addDistance;
