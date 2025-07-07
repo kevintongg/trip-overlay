@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useWeatherData } from './hooks/useWeatherData';
 import { useConnectionStore } from './store/connectionStore';
 import { useAppInitialization } from './hooks/useAppInitialization';
@@ -7,6 +7,27 @@ import { Card } from './components/ui/card';
 import { Badge } from './components/ui/badge';
 import { Separator } from './components/ui/separator';
 
+interface URLParams {
+  demo: boolean;
+  showTime: boolean;
+  showWeather: boolean;
+  showLocation: boolean;
+  use12Hour: boolean;
+  timezoneOverride?: string;
+}
+
+interface DashboardStatus {
+  connection: {
+    isConnected: boolean;
+    isDemoMode: boolean;
+  };
+  dashboard: {
+    weather: any;
+    lastPosition: any;
+    locationText: string;
+    currentSpeed: number;
+  };
+}
 
 // Using modern Tailwind CSS + shadcn/ui instead of original CSS files
 
@@ -16,6 +37,19 @@ import { Separator } from './components/ui/separator';
  * Now using modern Tailwind CSS + shadcn/ui components
  */
 const Dashboard: React.FC = () => {
+  // Parse URL parameters using useMemo for performance
+  const urlParams = useMemo<URLParams>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return {
+      demo: params.get('demo') === 'true',
+      showTime: params.get('time') !== 'false',
+      showWeather: params.get('weather') !== 'false',
+      showLocation: params.get('location') !== 'false',
+      use12Hour: params.get('format') === '12',
+      timezoneOverride: params.get('timezone') || undefined,
+    };
+  }, []);
+
   // Use centralized app initialization
   useAppInitialization();
   
@@ -36,6 +70,91 @@ const Dashboard: React.FC = () => {
   const [speedKmh, setSpeedKmh] = useState('--');
   const [currentSpeed, setCurrentSpeed] = useState(0);
   const [isReverseGeocoding, setIsReverseGeocoding] = useState(false);
+
+  // Create status object using useMemo for performance
+  const dashboardStatus = useMemo<DashboardStatus>(() => ({
+    connection: {
+      isConnected,
+      isDemoMode: urlParams.demo,
+    },
+    dashboard: {
+      weather: weatherData,
+      lastPosition,
+      locationText,
+      currentSpeed,
+    }
+  }), [isConnected, urlParams.demo, weatherData, lastPosition, locationText, currentSpeed]);
+
+  // Debug/Status functions using useCallback for stable references
+  const getStatus = useCallback(() => {
+    console.log('🔍 Dashboard Status:', dashboardStatus);
+    return dashboardStatus;
+  }, [dashboardStatus]);
+
+  // Expose debug functions to window object (for backward compatibility)
+  useEffect(() => {
+    const windowObj = window as any;
+    windowObj.TripOverlay = windowObj.TripOverlay || {};
+    windowObj.TripOverlay.getStatus = getStatus;
+    windowObj.getStatus = getStatus;
+
+    return () => {
+      // Cleanup on unmount
+      if (windowObj.TripOverlay) {
+        delete windowObj.TripOverlay.getStatus;
+      }
+      delete windowObj.getStatus;
+    };
+  }, [getStatus]);
+
+  // Demo mode implementation using React patterns
+  useEffect(() => {
+    if (!urlParams.demo) return;
+
+    console.log('🎭 Dashboard: Starting demo mode with Vienna coordinates');
+    
+    let updateCount = 0;
+    const demoState = {
+      lat: 48.2082, // Vienna coordinates
+      lon: 16.3738,
+      speed: 15.5,
+    };
+
+    const demoInterval = setInterval(() => {
+      updateCount++;
+
+      // Simulate varying speed
+      const speedVariation = Math.sin(updateCount * 0.1) * 5 + 15;
+      demoState.speed = Math.max(0, speedVariation);
+
+      // Move coordinates slightly (simulate cycling)
+      const movement = 0.0001; // ~11 meters
+      demoState.lat += (Math.random() - 0.5) * movement;
+      demoState.lon += (Math.random() - 0.5) * movement;
+
+      // Store demo speed in localStorage for speed display
+      localStorage.setItem('tripOverlaySpeed', demoState.speed.toFixed(1));
+      localStorage.setItem('tripOverlayMode', 'CYCLING');
+
+      // Dispatch location update event
+      const locationData = {
+        latitude: demoState.lat,
+        longitude: demoState.lon,
+        accuracy: 5,
+        speed: demoState.speed,
+        timestamp: Date.now(),
+        source: 'demo'
+      };
+
+      window.dispatchEvent(new CustomEvent('locationUpdate', { detail: locationData }));
+
+      if (updateCount === 1 || updateCount % 5 === 0) {
+        console.log(`🎭 Demo update #${updateCount} - ${demoState.lat.toFixed(4)}, ${demoState.lon.toFixed(4)} @ ${demoState.speed.toFixed(1)}km/h`);
+      }
+    }, 1000);
+
+    return () => clearInterval(demoInterval);
+  }, [urlParams.demo]);
 
   // Update time every second
   useEffect(() => {
@@ -114,14 +233,9 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const handleLocationUpdate = (event: CustomEvent) => {
       const locationData = event.detail;
+      console.log('🏃 Dashboard: Location update received:', locationData);
+      
       if (locationData) {
-        // Update speed
-        const speedKmh = locationData.speed || 0;
-        const speedMph = speedKmh * 0.621371;
-        setCurrentSpeed(speedKmh);
-        setSpeedKmh(speedKmh.toFixed(1));
-        setSpeedMph(speedMph.toFixed(1));
-        
         // Update location with reverse geocoding
         if (locationData.latitude && locationData.longitude) {
           reverseGeocode(locationData.latitude, locationData.longitude);
@@ -132,6 +246,46 @@ const Dashboard: React.FC = () => {
     window.addEventListener('locationUpdate', handleLocationUpdate as EventListener);
     return () => window.removeEventListener('locationUpdate', handleLocationUpdate as EventListener);
   }, [isReverseGeocoding]);
+
+  // Read speed from localStorage (like original dashboard)
+  useEffect(() => {
+    const updateSpeedFromStorage = () => {
+      const speed = parseFloat(localStorage.getItem('tripOverlaySpeed') || '0') || 0;
+      const mode = localStorage.getItem('tripOverlayMode') || 'STATIONARY';
+      
+      console.log(`🚴 Dashboard: Speed from localStorage - ${speed.toFixed(1)} km/h, mode: ${mode}`);
+      
+      setCurrentSpeed(speed);
+      
+      if (speed > 0) {
+        setSpeedKmh(speed.toFixed(1));
+        setSpeedMph((speed * 0.621371).toFixed(1));
+      } else {
+        setSpeedKmh('0.0');
+        setSpeedMph('0.0');
+      }
+    };
+
+    // Update speed immediately
+    updateSpeedFromStorage();
+
+    // Listen for localStorage changes (when trip-progress updates the speed)
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === 'tripOverlaySpeed' || event.key === 'tripOverlayMode') {
+        updateSpeedFromStorage();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also poll localStorage periodically as fallback (in case storage events don't fire)
+    const pollInterval = setInterval(updateSpeedFromStorage, 1000);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(pollInterval);
+    };
+  }, []);
 
   // Debug weather data loading
   useEffect(() => {
@@ -149,16 +303,21 @@ const Dashboard: React.FC = () => {
     }
   }, [lastPosition, weatherLoading, weatherData]);
 
+  // Debug currentSpeed changes
+  useEffect(() => {
+    console.log(`📊 Dashboard: currentSpeed state changed to: ${currentSpeed}`);
+  }, [currentSpeed]);
+
   // Console API is initialized by useAppInitialization hook
 
   // Format time exactly like original (24-hour format preferred by user)
   const formatTime = () => {
-    // Use weather timezone if available, otherwise fall back to system timezone
+    // Use weather timezone if available, otherwise fall back to system timezone, or URL override
     const weatherTimezone = weatherData?.timezone;
-    const timeZone = weatherTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const timeZone = urlParams.timezoneOverride || weatherTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
     
     const timeStr = currentTime.toLocaleTimeString('en-US', { 
-      hour12: false, 
+      hour12: urlParams.use12Hour, // Use URL parameter for 12/24 hour format
       timeZone: timeZone
     });
     
@@ -199,28 +358,34 @@ const Dashboard: React.FC = () => {
 
   // Weather display helpers
   const getWeatherIcon = () => {
-    if (!weatherData?.current?.weather?.[0]) return '🌤️';
+    if (!weatherData?.current?.weather?.[0]) return null;
     const iconCode = weatherData.current.weather[0].icon;
+    const iconUrl = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
+    const description = weatherData.current.weather[0].description;
     
-    // Map OpenWeather icons to emojis (simplified)
-    const iconMap: { [key: string]: string } = {
-      '01d': '☀️', '01n': '🌙',
-      '02d': '⛅', '02n': '☁️', 
-      '03d': '☁️', '03n': '☁️',
-      '04d': '☁️', '04n': '☁️',
-      '09d': '🌧️', '09n': '🌧️',
-      '10d': '🌦️', '10n': '🌧️',
-      '11d': '⛈️', '11n': '⛈️',
-      '13d': '❄️', '13n': '❄️',
-      '50d': '🌫️', '50n': '🌫️',
-    };
-    
-    return iconMap[iconCode] || '🌤️';
+    return (
+      <img 
+        src={iconUrl} 
+        alt={description}
+        className="h-[2.2em] w-auto"
+        onError={(e) => {
+          // Fallback to emoji if image fails to load
+          const target = e.target as HTMLImageElement;
+          target.style.display = 'none';
+          // Show emoji fallback
+          const parent = target.parentElement;
+          if (parent) {
+            parent.innerHTML = '🌤️';
+            parent.className = 'text-[2.2em] flex items-center leading-none mr-1 font-emoji';
+          }
+        }}
+      />
+    );
   };
 
   const getWeatherTemp = () => {
-    if (!weatherData?.current?.temp) return '--°';
-    return `${Math.round(weatherData.current.temp)}°`;
+    if (!weatherData?.current?.temp) return '--°C';
+    return `${Math.round(weatherData.current.temp)}°C`;
   };
 
   const getWeatherDesc = () => {
@@ -230,15 +395,15 @@ const Dashboard: React.FC = () => {
   };
 
   const getWeatherHighLow = () => {
-    if (!weatherData?.daily?.[0]) return '--° / --°';
+    if (!weatherData?.daily?.[0]) return '--°C / --°C';
     const high = Math.round(weatherData.daily[0].temp.max);
     const low = Math.round(weatherData.daily[0].temp.min);
-    return `${high}° / ${low}°`;
+    return `${high}°C / ${low}°C`;
   };
 
   const getWeatherFeelsLike = () => {
     if (!weatherData?.current?.feels_like) return null;
-    return `${Math.round(weatherData.current.feels_like)}°`;
+    return `${Math.round(weatherData.current.feels_like)}°C`;
   };
 
   const getWeatherHumidity = () => {
@@ -293,94 +458,102 @@ const Dashboard: React.FC = () => {
         {/* Combined Dashboard Card - Solid readable design for streaming */}
         <Card className="flex flex-col items-center bg-gradient-to-br from-zinc-900 to-zinc-800 border-white/20 rounded-2xl p-5 shadow-[0_4px_24px_rgba(0,0,0,0.4)] min-w-[320px] max-w-[420px] backdrop-blur-none">
           
-          {/* Location Section */}
-          <div className="mb-3 w-full text-center">
-            <div className="text-[1.5em] font-bold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] break-words">
-              {getLocationText()}
-            </div>
-          </div>
-
-          {/* Weather Section */}
-          <div className="mb-3 w-full">
-            <div className="flex items-center justify-center">
-              {/* Weather Icon */}
-              <div className="text-[2.2em] flex items-center leading-none mr-1 font-emoji">
-                {getWeatherIcon()}
-              </div>
-              
-              {/* Temperature Container */}
-              <div className="flex flex-col items-center gap-0.5 mx-3">
-                <div className="text-[1.4em] font-extrabold text-white tracking-wide drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] font-inter">
-                  {getWeatherTemp()}
-                </div>
-                <div className="text-[1em] text-white mt-1 font-semibold tracking-wider drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] font-inter whitespace-nowrap">
-                  {getWeatherHighLow()}
-                </div>
-              </div>
-              
-              {/* Weather Description */}
-              <div className="text-[1.1em] text-gray-200 font-medium drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] capitalize ml-3">
-                {getWeatherDesc()}
-              </div>
-              
-              {/* Speed Display */}
-              <div className="flex flex-col items-start ml-2 font-semibold">
-                <div className="flex justify-start items-baseline w-full text-[1.2em] font-bold text-green-500 drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] font-mono tracking-wider">
-                  <span className="text-center min-w-[3.5em]">{speedMph}</span>
-                  <span className="ml-2 text-[1em] text-green-500 font-medium tracking-wider">mph</span>
-                </div>
-                <div className="flex justify-start items-baseline w-full text-[1.2em] font-bold text-green-500 drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] font-mono tracking-wider">
-                  <span className="text-center min-w-[3.5em]">{speedKmh}</span>
-                  <span className="ml-2 text-[1em] text-green-500 font-medium tracking-wider">km/h</span>
-                </div>
+          {/* Location Section - Conditionally rendered */}
+          {urlParams.showLocation && (
+            <div className="mb-3 w-full text-center">
+              <div className="text-[1.5em] font-bold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] break-words">
+                {getLocationText()}
               </div>
             </div>
+          )}
 
-            {/* Additional Weather Details - matching original implementation */}
-            <div className="mt-2 w-full">
-              {/* First line: Feels like and humidity */}
-              {(getWeatherFeelsLike() || getWeatherHumidity()) && (
-                <div className="text-center text-[0.95em] text-gray-300 mb-1">
-                  {[
-                    getWeatherFeelsLike() && `Feels like: ${getWeatherFeelsLike()}`,
-                    getWeatherHumidity() && `Humidity: ${getWeatherHumidity()}`
-                  ].filter(Boolean).join(' · ')}
+          {/* Weather Section - Conditionally rendered */}
+          {urlParams.showWeather && (
+            <div className="mb-3 w-full">
+              <div className="flex items-center justify-center">
+                {/* Weather Icon */}
+                <div className="text-[2.2em] flex items-center leading-none mr-1 font-emoji">
+                  {getWeatherIcon()}
                 </div>
-              )}
+                
+                {/* Temperature Container */}
+                <div className="flex flex-col items-center gap-0.5 mx-3">
+                  <div className="text-[1.4em] font-extrabold text-white tracking-wide drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] font-inter">
+                    {getWeatherTemp()}
+                  </div>
+                  <div className="text-[1em] text-white mt-1 font-semibold tracking-wider drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] font-inter whitespace-nowrap">
+                    {getWeatherHighLow()}
+                  </div>
+                </div>
+                
+                {/* Weather Description */}
+                <div className="text-[1.1em] text-gray-200 font-medium drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] capitalize ml-3">
+                  {getWeatherDesc()}
+                </div>
+                
+                {/* Speed Display - Only show when speed > 0 */}
+                {currentSpeed > 0 && (
+                  <div className="flex flex-col items-start ml-2 font-semibold">
+                    <div className="flex justify-start items-baseline w-full text-[1.2em] font-bold text-green-500 drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] font-mono tracking-wider">
+                      <span className="text-center min-w-[3.5em]">{speedMph}</span>
+                      <span className="ml-2 text-[1em] text-green-500 font-medium tracking-wider">mph</span>
+                    </div>
+                    <div className="flex justify-start items-baseline w-full text-[1.2em] font-bold text-green-500 drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] font-mono tracking-wider">
+                      <span className="text-center min-w-[3.5em]">{speedKmh}</span>
+                      <span className="ml-2 text-[1em] text-green-500 font-medium tracking-wider">km/h</span>
+                    </div>
+                  </div>
+                )}
+              </div>
 
-              {/* Second line: Wind and UV Index */}
-              {(getWeatherWind() || getWeatherUvi()) && (
-                <div className="text-center text-[0.95em] text-gray-300">
-                  {[
-                    getWeatherWind() && `Wind: ${getWeatherWind()}`,
-                    getWeatherUvi() && (
-                      <span key="uvi">
-                        UV Index: <span className={`${getUviClass(parseFloat(getWeatherUvi()!))} font-mono`}>{getWeatherUvi()}</span>
+              {/* Additional Weather Details - matching original implementation */}
+              <div className="mt-2 w-full">
+                {/* First line: Feels like and humidity */}
+                {(getWeatherFeelsLike() || getWeatherHumidity()) && (
+                  <div className="text-center text-[0.95em] text-gray-300 mb-1">
+                    {[
+                      getWeatherFeelsLike() && `Feels like: ${getWeatherFeelsLike()}`,
+                      getWeatherHumidity() && `Humidity: ${getWeatherHumidity()}`
+                    ].filter(Boolean).join(' · ')}
+                  </div>
+                )}
+
+                {/* Second line: Wind and UV Index */}
+                {(getWeatherWind() || getWeatherUvi()) && (
+                  <div className="text-center text-[0.95em] text-gray-300">
+                    {[
+                      getWeatherWind() && `Wind: ${getWeatherWind()}`,
+                      getWeatherUvi() && (
+                        <span key="uvi">
+                          UV Index: <span className={`${getUviClass(parseFloat(getWeatherUvi()!))} font-mono`}>{getWeatherUvi()}</span>
+                        </span>
+                      )
+                    ].filter(Boolean).map((item, index, array) => (
+                      <span key={index}>
+                        {item}
+                        {index < array.length - 1 && ' · '}
                       </span>
-                    )
-                  ].filter(Boolean).map((item, index, array) => (
-                    <span key={index}>
-                      {item}
-                      {index < array.length - 1 && ' · '}
-                    </span>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Time Section */}
-          <div className="flex items-center gap-[18px] text-[1.1em] text-gray-300 w-full justify-center">
-            <span className="text-[1.1em] text-gray-300 font-medium drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]">
-              {dateStr}
-            </span>
-            <span className="font-mono tracking-wider text-[1.1em] text-gray-300 font-medium drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]">
-              {timeStr}
-            </span>
-            <span className="text-[1.1em] text-gray-300 font-medium drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]">
-              {tzStr}
-            </span>
-          </div>
+          {/* Time Section - Conditionally rendered */}
+          {urlParams.showTime && (
+            <div className="flex items-center gap-[18px] text-[1.1em] text-gray-300 w-full justify-center">
+              <span className="text-[1.1em] text-gray-300 font-medium drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]">
+                {dateStr}
+              </span>
+              <span className="font-mono tracking-wider text-[1.1em] text-gray-300 font-medium drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]">
+                {timeStr}
+              </span>
+              <span className="text-[1.1em] text-gray-300 font-medium drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]">
+                {tzStr}
+              </span>
+            </div>
+          )}
           
         </Card>
       </div>

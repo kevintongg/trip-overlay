@@ -299,7 +299,7 @@ export function ProgressBar({
         mode={currentMode} 
         position={percentage}
         className="absolute bottom-0.5 transform -translate-x-1/2"
-        style={{ left: `${percentage}%` }}
+        style={{% raw %}{{ left: `${percentage}%` }}{% endraw %}}
       />
       <span className="absolute inset-0 flex items-center justify-center text-sm font-medium text-white">
         {percentage.toFixed(1)}%
