@@ -114,7 +114,7 @@ function generateMockWeather(lat: number, lon: number): WeatherResponse {
       temp: currentTemp + (Math.random() - 0.5) * 6,
       weather: [condition],
     })),
-    timezone: timezone,
+    timezone,
     timezone_offset: timezoneOffset,
   };
 }

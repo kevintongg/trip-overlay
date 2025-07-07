@@ -172,7 +172,9 @@ export function useRtirlSocket() {
 
   // RTIRL connection setup
   useEffect(() => {
-    if (isDemo) return;
+    if (isDemo) {
+      return;
+    }
 
     // Prevent duplicate initialization in React StrictMode
     if (isRtirlInitialized || initRef.current) {

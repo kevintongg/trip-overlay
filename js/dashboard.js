@@ -235,7 +235,7 @@ function updateTimeDisplay() {
     hour12: !CONFIG.time.use24Hour,
     hour: '2-digit',
     minute: '2-digit',
-    timeZone: timeZone,
+    timeZone,
   };
   if (CONFIG.time.showSeconds) {
     timeOptions.second = '2-digit';
@@ -247,7 +247,7 @@ function updateTimeDisplay() {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
-    timeZone: timeZone,
+    timeZone,
   });
 
   // Prefer abbreviation from API if available
@@ -514,7 +514,7 @@ async function reverseGeocode(lat, lon) {
         data.address.village ||
         data.address.municipality;
 
-      const country = data.address.country;
+      const { country } = data.address;
 
       // Build location string: "District, City, Country" or "City, Country"
       const locationParts = [];
@@ -669,7 +669,7 @@ function updateWeatherDisplay(weather) {
     renderHourlyForecast([]);
     return;
   }
-  const current = weather.current;
+  const { current } = weather;
   const tempUnit = CONFIG.weather.useMetric ? 'C' : 'F';
   const temp = `${current.temp.toFixed(1)}°${tempUnit}`;
   const feelsLike =
@@ -1001,7 +1001,7 @@ function getUviClass(uvi) {
 
 // Helper: Get high/low temperatures from daily forecast
 function getHighLowTemperatures() {
-  const weather = dashboardState.weather;
+  const { weather } = dashboardState;
   if (
     !weather ||
     !weather.daily ||

@@ -26,7 +26,9 @@ const config: LogConfig = {
  * Basic log function that prepends timestamp like original
  */
 function log(level: LogLevel, ...args: unknown[]): void {
-  if (!config.enabled) return;
+  if (!config.enabled) {
+    return;
+  }
 
   const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false });
 

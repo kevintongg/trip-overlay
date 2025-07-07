@@ -40,7 +40,9 @@ export function useTripProgress() {
 
   // Load persisted data on mount (only once)
   useEffect(() => {
-    if (hasLoadedInitialData.current) return;
+    if (hasLoadedInitialData.current) {
+      return;
+    }
 
     // Only load if there's actual persisted data
     const hasPersistedData =
