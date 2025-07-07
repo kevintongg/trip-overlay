@@ -94,7 +94,7 @@ function generateMockWeather(lat: number, lon: number): WeatherResponse {
     current: {
       temp: currentTemp,
       feels_like: currentTemp + (Math.random() - 0.5) * 5,
-      humidity: 40 + Math.random() * 40,
+      humidity: Math.round(40 + Math.random() * 40),
       uvi: Math.random() * 10,
       weather: [condition],
       wind_speed: Math.random() * 15,

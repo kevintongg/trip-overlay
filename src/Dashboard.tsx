@@ -518,7 +518,7 @@ const Dashboard: React.FC = () => {
     if (!weatherData?.current?.humidity) {
       return null;
     }
-    return `${weatherData.current.humidity.toFixed(0)}%`;
+    return `${Math.round(weatherData.current.humidity)}%`;
   };
 
   const getWeatherWind = () => {
