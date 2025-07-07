@@ -16,7 +16,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: 'index-react.html', // React trip overlay
-        dashboard: 'dashboard-react.html', // React dashboard
+        dashboard: 'dashboard.html', // React dashboard (promoted from dashboard-react.html)
       },
     },
   },
