@@ -4,51 +4,51 @@
  * and maintains console command functionality for streaming
  */
 
-import { useTripProgressStore } from '../store/tripStore'
-import { useConnectionStore } from '../store/connectionStore'
-import { logger } from '../utils/logger'
-import { CONFIG } from '../utils/config'
+import { useTripProgressStore } from '../store/tripStore';
+import { useConnectionStore } from '../store/connectionStore';
+import { logger } from '../utils/logger';
+import { CONFIG } from '../utils/config';
 
 // Global API interface for TypeScript
 declare global {
   interface Window {
     TripOverlay: {
       controls: {
-        addDistance: (km: number) => void
-        setDistance: (km: number) => void
-        jumpToProgress: (percentage: number) => void
-        setTotalDistance: (km: number) => void
-        setTodayDistance: (km: number) => void
-        setTotalTraveled: (km: number) => void
-        convertToMiles: () => void
-        convertToKilometers: () => void
-        resetProgress: () => void
-        resetTodayDistance: () => void
-        exportTripData: () => void
-        importTripData: (data?: string) => void
-      }
-      getStatus: () => any
-      checkRtirlConnection: () => boolean
-    }
+        addDistance: (km: number) => void;
+        setDistance: (km: number) => void;
+        jumpToProgress: (percentage: number) => void;
+        setTotalDistance: (km: number) => void;
+        setTodayDistance: (km: number) => void;
+        setTotalTraveled: (km: number) => void;
+        convertToMiles: () => void;
+        convertToKilometers: () => void;
+        resetProgress: () => void;
+        resetTodayDistance: () => void;
+        exportTripData: () => void;
+        importTripData: (data?: string) => void;
+      };
+      getStatus: () => any;
+      checkRtirlConnection: () => boolean;
+    };
     // Backward compatibility functions
-    addDistance: (km: number) => void
-    setDistance: (km: number) => void
-    jumpToProgress: (percentage: number) => void
-    setTotalDistance: (km: number) => void
-    convertToMiles: () => void
-    convertToKilometers: () => void
-    resetTripProgress: () => void
-    resetTodayDistance: () => void
-    exportTripData: () => void
-    importTripData: (data?: string) => void
-    showConsoleCommands: () => void
-    getStatus: () => any
-    checkRtirlConnection: () => boolean
+    addDistance: (km: number) => void;
+    setDistance: (km: number) => void;
+    jumpToProgress: (percentage: number) => void;
+    setTotalDistance: (km: number) => void;
+    convertToMiles: () => void;
+    convertToKilometers: () => void;
+    resetTripProgress: () => void;
+    resetTodayDistance: () => void;
+    exportTripData: () => void;
+    importTripData: (data?: string) => void;
+    showConsoleCommands: () => void;
+    getStatus: () => any;
+    checkRtirlConnection: () => boolean;
   }
 }
 
 // Flag to ensure global API is only initialized once
-let isGlobalAPIInitialized = false
+let isGlobalAPIInitialized = false;
 
 /**
  * Initialize global console API
@@ -58,173 +58,182 @@ let isGlobalAPIInitialized = false
 export function setupGlobalConsoleAPI() {
   // Prevent multiple initializations
   if (isGlobalAPIInitialized) {
-    return
+    return;
   }
-  
-  const store = useTripProgressStore.getState()
+
+  const store = useTripProgressStore.getState();
 
   // Validation helpers
-  const validateNumber = (value: any, min: number, max: number, name: string): number | null => {
-    const num = parseFloat(value?.toString() || '')
+  const validateNumber = (
+    value: any,
+    min: number,
+    max: number,
+    name: string
+  ): number | null => {
+    const num = parseFloat(value?.toString() || '');
     if (!isFinite(num) || num < min || num > max) {
-      logger.warn(`Invalid ${name}: must be ${min}-${max}`)
-      return null
+      logger.warn(`Invalid ${name}: must be ${min}-${max}`);
+      return null;
     }
-    return num
-  }
+    return num;
+  };
 
   // Core controls object
   const controls = {
     addDistance: (km: number) => {
-      const distance = validateNumber(km, -10000, 10000, 'distance')
+      const distance = validateNumber(km, -10000, 10000, 'distance');
       if (distance !== null) {
-        store.addDistance(distance)
+        store.addDistance(distance);
       }
     },
 
     setDistance: (km: number) => {
-      const distance = validateNumber(km, 0, 50000, 'distance')
+      const distance = validateNumber(km, 0, 50000, 'distance');
       if (distance !== null) {
-        store.setDistance(distance)
+        store.setDistance(distance);
       }
     },
 
     jumpToProgress: (percentage: number) => {
-      const percent = validateNumber(percentage, 0, 100, 'percentage')
+      const percent = validateNumber(percentage, 0, 100, 'percentage');
       if (percent !== null) {
-        store.jumpToProgress(percent)
+        store.jumpToProgress(percent);
       }
     },
 
     setTotalDistance: (km: number) => {
-      const distance = validateNumber(km, 1, 50000, 'total distance')
+      const distance = validateNumber(km, 1, 50000, 'total distance');
       if (distance !== null) {
-        store.setTotalDistance(distance)
+        store.setTotalDistance(distance);
       }
     },
 
     setTodayDistance: (km: number) => {
-      const distance = validateNumber(km, 0, 1000, 'today distance')
+      const distance = validateNumber(km, 0, 1000, 'today distance');
       if (distance !== null) {
-        store.setTodayDistance(distance)
+        store.setTodayDistance(distance);
       }
     },
 
     setTotalTraveled: (km: number) => {
-      const distance = validateNumber(km, 0, 50000, 'total traveled')
+      const distance = validateNumber(km, 0, 50000, 'total traveled');
       if (distance !== null) {
-        store.setTotalTraveled(distance)
+        store.setTotalTraveled(distance);
       }
     },
 
     convertToMiles: () => {
-      store.setUnits('miles')
+      store.setUnits('miles');
     },
 
     convertToKilometers: () => {
-      store.setUnits('km')
+      store.setUnits('km');
     },
 
     resetProgress: () => {
-      store.resetProgress()
+      store.resetProgress();
     },
 
     resetTodayDistance: () => {
-      store.resetTodayDistance()
+      store.resetTodayDistance();
     },
 
     exportTripData: () => {
-      store.exportTripData()
+      store.exportTripData();
     },
 
     importTripData: (data?: string) => {
       if (!data) {
         // Show file picker for manual import
-        const input = document.createElement('input')
-        input.type = 'file'
-        input.accept = '.json,application/json'
-        input.onchange = (e) => {
-          const file = (e.target as HTMLInputElement).files?.[0]
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json,application/json';
+        input.onchange = e => {
+          const file = (e.target as HTMLInputElement).files?.[0];
           if (file) {
-            const reader = new FileReader()
-            reader.onload = (event) => {
-              const content = event.target?.result as string
+            const reader = new FileReader();
+            reader.onload = event => {
+              const content = event.target?.result as string;
               if (content) {
-                store.importTripData(content)
+                store.importTripData(content);
               }
-            }
-            reader.readAsText(file)
+            };
+            reader.readAsText(file);
           }
-        }
-        input.click()
-        return
+        };
+        input.click();
+        return;
       }
 
       // Direct data import
       try {
-        store.importTripData(data)
+        store.importTripData(data);
       } catch (error) {
-        logger.error('CONSOLE: Failed to import trip data:', error)
+        logger.error('CONSOLE: Failed to import trip data:', error);
       }
-    }
-  }
+    },
+  };
 
   // Universal status function for debugging (works from any page)
   const getStatus = () => {
-    const state = useTripProgressStore.getState()
-    const connectionState = useConnectionStore.getState()
-    const units = state.units === 'miles' ? 'miles' : 'km'
-    const kmToMiles = 0.621371
-    const unitMultiplier = state.units === 'miles' ? kmToMiles : 1
+    const state = useTripProgressStore.getState();
+    const connectionState = useConnectionStore.getState();
+    const units = state.units === 'miles' ? 'miles' : 'km';
+    const kmToMiles = 0.621371;
+    const unitMultiplier = state.units === 'miles' ? kmToMiles : 1;
 
     // Detect current page
-    const currentPage = window.location.pathname.includes('dashboard') ? 'Dashboard' : 'Trip Overlay'
-    
+    const currentPage = window.location.pathname.includes('dashboard')
+      ? 'Dashboard'
+      : 'Trip Overlay';
+
     // Check RTIRL connection status universally
-    const hasRTIRLLib = typeof window.RealtimeIRL !== 'undefined'
-    const isDemoMode = CONFIG.rtirl.demoMode || new URLSearchParams(window.location.search).get('demo') === 'true'
-    
+    const hasRTIRLLib = typeof window.RealtimeIRL !== 'undefined';
+    const isDemoMode =
+      CONFIG.rtirl.demoMode ||
+      new URLSearchParams(window.location.search).get('demo') === 'true';
+
     // Enhanced RTIRL status
-    let rtirlStatus = '❌ Disconnected'
-    let connectionDetails = ''
-    
+    let rtirlStatus = '❌ Disconnected';
+    let connectionDetails = '';
+
     if (isDemoMode) {
-      rtirlStatus = '🎭 Demo Mode Active'
-      connectionDetails = 'Simulated GPS data'
+      rtirlStatus = '🎭 Demo Mode Active';
+      connectionDetails = 'Simulated GPS data';
     } else if (!hasRTIRLLib) {
-      rtirlStatus = '❌ Library Not Loaded'
-      connectionDetails = 'Add RTIRL script to HTML'
+      rtirlStatus = '❌ Library Not Loaded';
+      connectionDetails = 'Add RTIRL script to HTML';
     } else if (!CONFIG.rtirl.userId) {
-      rtirlStatus = '⚠️ User ID Missing'
-      connectionDetails = 'Configure VITE_RTIRL_USER_ID'
+      rtirlStatus = '⚠️ User ID Missing';
+      connectionDetails = 'Configure VITE_RTIRL_USER_ID';
     } else {
       switch (connectionState.connectionStatus) {
         case 'connected':
-          rtirlStatus = '✅ Connected'
-          connectionDetails = `Receiving live GPS data (${connectionState.reconnectAttempts} previous failures)`
-          break
+          rtirlStatus = '✅ Connected';
+          connectionDetails = `Receiving live GPS data (${connectionState.reconnectAttempts} previous failures)`;
+          break;
         case 'connecting':
-          rtirlStatus = '🔌 Connecting...'
-          connectionDetails = 'Attempting to establish connection'
-          break
+          rtirlStatus = '🔌 Connecting...';
+          connectionDetails = 'Attempting to establish connection';
+          break;
         case 'disconnected':
-          rtirlStatus = '❌ Disconnected'
-          connectionDetails = `${connectionState.reconnectAttempts} connection attempts failed`
-          break
+          rtirlStatus = '❌ Disconnected';
+          connectionDetails = `${connectionState.reconnectAttempts} connection attempts failed`;
+          break;
         case 'error':
-          rtirlStatus = '💥 Error'
-          connectionDetails = `Connection failed (${connectionState.reconnectAttempts} attempts)`
-          break
+          rtirlStatus = '💥 Error';
+          connectionDetails = `Connection failed (${connectionState.reconnectAttempts} attempts)`;
+          break;
         default:
-          rtirlStatus = '❓ Unknown Status'
-          connectionDetails = 'Status not determined'
+          rtirlStatus = '❓ Unknown Status';
+          connectionDetails = 'Status not determined';
       }
     }
 
     // Last position info
-    let positionInfo = 'No position data available'
+    let positionInfo = 'No position data available';
     if (connectionState.lastPosition) {
-      positionInfo = `${connectionState.lastPosition.lat.toFixed(4)}, ${connectionState.lastPosition.lon.toFixed(4)}`
+      positionInfo = `${connectionState.lastPosition.lat.toFixed(4)}, ${connectionState.lastPosition.lon.toFixed(4)}`;
     }
 
     const statusReport = `
@@ -269,9 +278,9 @@ export function setupGlobalConsoleAPI() {
    
 💡 Available Commands: Type showConsoleCommands() for full command list
 🎮 Quick Test: Try addDistance(5) to add 5km to your trip
-    `
-    
-    logger(statusReport)
+    `;
+
+    logger(statusReport);
 
     // Return comprehensive data object for programmatic access
     return {
@@ -279,74 +288,82 @@ export function setupGlobalConsoleAPI() {
       rtirl: {
         libraryLoaded: hasRTIRLLib,
         userId: CONFIG.rtirl.userId,
-        demoMode: isDemoMode
+        demoMode: isDemoMode,
       },
       trip: {
         totalDistanceKm: state.totalDistanceKm,
         currentDistanceKm: state.currentDistanceKm,
         todayDistanceKm: state.todayDistanceKm,
         totalTraveledKm: state.totalTraveledKm,
-        progress: state.totalDistanceKm > 0 ? (state.currentDistanceKm / state.totalDistanceKm) * 100 : 0
+        progress:
+          state.totalDistanceKm > 0
+            ? (state.currentDistanceKm / state.totalDistanceKm) * 100
+            : 0,
       },
       settings: {
         units: state.units,
         isMoving: state.isMoving,
-        currentSpeed: state.currentSpeed
+        currentSpeed: state.currentSpeed,
       },
       system: {
         version: 'React + TypeScript',
         store: 'Zustand',
-        persistence: 'localStorage'
-      }
-    }
-  }
+        persistence: 'localStorage',
+      },
+    };
+  };
 
   // Dedicated RTIRL connection checker
   const checkRtirlConnection = () => {
-    const connectionState = useConnectionStore.getState()
-    const hasRTIRLLib = typeof window.RealtimeIRL !== 'undefined'
-    const isDemoMode = CONFIG.rtirl.demoMode || new URLSearchParams(window.location.search).get('demo') === 'true'
-    
-    let status = ''
-    let connected = false
-    
+    const connectionState = useConnectionStore.getState();
+    const hasRTIRLLib = typeof window.RealtimeIRL !== 'undefined';
+    const isDemoMode =
+      CONFIG.rtirl.demoMode ||
+      new URLSearchParams(window.location.search).get('demo') === 'true';
+
+    let status = '';
+    let connected = false;
+
     if (isDemoMode) {
-      status = '🎭 RTIRL Status: Demo Mode Active - Using simulated GPS data'
-      connected = true
+      status = '🎭 RTIRL Status: Demo Mode Active - Using simulated GPS data';
+      connected = true;
     } else if (!hasRTIRLLib) {
-      status = '❌ RTIRL Status: Library Not Loaded\n💡 Add this to your HTML: <script src="https://cdn.jsdelivr.net/npm/@rtirl/api@latest/lib/index.min.js"></script>'
+      status =
+        '❌ RTIRL Status: Library Not Loaded\n💡 Add this to your HTML: <script src="https://cdn.jsdelivr.net/npm/@rtirl/api@latest/lib/index.min.js"></script>';
     } else if (!CONFIG.rtirl.userId) {
-      status = '⚠️ RTIRL Status: User ID not configured\n💡 Set VITE_RTIRL_USER_ID in your .env.local file'
+      status =
+        '⚠️ RTIRL Status: User ID not configured\n💡 Set VITE_RTIRL_USER_ID in your .env.local file';
     } else {
-      connected = connectionState.isConnected
+      connected = connectionState.isConnected;
       switch (connectionState.connectionStatus) {
         case 'connected':
-          status = `✅ RTIRL Status: Connected to user ${CONFIG.rtirl.userId}\n📡 Receiving live GPS data (${connectionState.reconnectAttempts} previous connection issues)`
+          status = `✅ RTIRL Status: Connected to user ${CONFIG.rtirl.userId}\n📡 Receiving live GPS data (${connectionState.reconnectAttempts} previous connection issues)`;
           if (connectionState.lastPosition) {
-            status += `\n📍 Current Position: ${connectionState.lastPosition.lat.toFixed(4)}, ${connectionState.lastPosition.lon.toFixed(4)}`
+            status += `\n📍 Current Position: ${connectionState.lastPosition.lat.toFixed(4)}, ${connectionState.lastPosition.lon.toFixed(4)}`;
           }
-          break
+          break;
         case 'connecting':
-          status = '🔌 RTIRL Status: Attempting to connect...'
-          break
+          status = '🔌 RTIRL Status: Attempting to connect...';
+          break;
         case 'disconnected':
-          status = `❌ RTIRL Status: Disconnected (${connectionState.reconnectAttempts} connection attempts)`
+          status = `❌ RTIRL Status: Disconnected (${connectionState.reconnectAttempts} connection attempts)`;
           if (connectionState.reconnectAttempts > 0) {
-            status += '\n💡 Streamer may be offline or location sharing disabled'
+            status +=
+              '\n💡 Streamer may be offline or location sharing disabled';
           }
-          break
+          break;
         case 'error':
-          status = `💥 RTIRL Status: Connection Error (${connectionState.reconnectAttempts} failed attempts)`
-          status += '\n💡 Check network connection and RTIRL service status'
-          break
+          status = `💥 RTIRL Status: Connection Error (${connectionState.reconnectAttempts} failed attempts)`;
+          status += '\n💡 Check network connection and RTIRL service status';
+          break;
         default:
-          status = '❓ RTIRL Status: Unknown connection state'
+          status = '❓ RTIRL Status: Unknown connection state';
       }
     }
-    
-    console.log(status)
-    return connected
-  }
+
+    console.log(status);
+    return connected;
+  };
 
   // Help system matching original showConsoleCommands pattern
   const showConsoleCommands = () => {
@@ -386,31 +403,33 @@ export function setupGlobalConsoleAPI() {
 • importTripData(jsonString) - Import backup manually
 
 Type any function name to use it. Current trip: ${useTripProgressStore.getState().currentDistanceKm.toFixed(2)}/${useTripProgressStore.getState().totalDistanceKm}km
-    `
-    logger(help)
-  }
+    `;
+    logger(help);
+  };
 
   // Set up global API
-  window.TripOverlay = { controls, getStatus, checkRtirlConnection }
+  window.TripOverlay = { controls, getStatus, checkRtirlConnection };
 
   // Backward compatibility - individual functions
-  window.addDistance = controls.addDistance
-  window.setDistance = controls.setDistance
-  window.jumpToProgress = controls.jumpToProgress
-  window.setTotalDistance = controls.setTotalDistance
-  window.convertToMiles = controls.convertToMiles
-  window.convertToKilometers = controls.convertToKilometers
-  window.resetTripProgress = controls.resetProgress
-  window.resetTodayDistance = controls.resetTodayDistance
-  window.exportTripData = controls.exportTripData
-  window.importTripData = controls.importTripData
-  window.showConsoleCommands = showConsoleCommands
-  window.getStatus = getStatus
-  window.checkRtirlConnection = checkRtirlConnection
+  window.addDistance = controls.addDistance;
+  window.setDistance = controls.setDistance;
+  window.jumpToProgress = controls.jumpToProgress;
+  window.setTotalDistance = controls.setTotalDistance;
+  window.convertToMiles = controls.convertToMiles;
+  window.convertToKilometers = controls.convertToKilometers;
+  window.resetTripProgress = controls.resetProgress;
+  window.resetTodayDistance = controls.resetTodayDistance;
+  window.exportTripData = controls.exportTripData;
+  window.importTripData = controls.importTripData;
+  window.showConsoleCommands = showConsoleCommands;
+  window.getStatus = getStatus;
+  window.checkRtirlConnection = checkRtirlConnection;
 
   // Mark as initialized
-  isGlobalAPIInitialized = true
+  isGlobalAPIInitialized = true;
 
   // Initialize notification
-  logger('🎮 Trip Overlay Console API initialized. Type showConsoleCommands() for help.')
-} 
+  logger(
+    '🎮 Trip Overlay Console API initialized. Type showConsoleCommands() for help.'
+  );
+}

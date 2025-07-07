@@ -1,14 +1,17 @@
 // Centralized Configuration for Trip Overlay - TypeScript Version
-import type { ConfigType, WeatherIcons } from '../types/config'
+import type { ConfigType, WeatherIcons } from '../types/config';
 
 // Get environment variables with fallbacks
 const getRTIRLUserId = (): string => {
-  return import.meta.env.VITE_RTIRL_USER_ID || '41908566'
-}
+  return import.meta.env.VITE_RTIRL_USER_ID || '41908566';
+};
 
 const isDemoMode = (): boolean => {
-  return import.meta.env.VITE_DEMO_MODE === 'true' || new URLSearchParams(window.location.search).get('demo') === 'true'
-}
+  return (
+    import.meta.env.VITE_DEMO_MODE === 'true' ||
+    new URLSearchParams(window.location.search).get('demo') === 'true'
+  );
+};
 
 // Core application configuration
 export const CONFIG: ConfigType = {
@@ -68,7 +71,7 @@ export const CONFIG: ConfigType = {
     uiUpdateDebounce: 100,
     saveDebounceDelay: 500,
   },
-}
+};
 
 // Weather condition mapping for OpenWeatherMap codes (fallback emojis)
 // Note: In cloud environments, these may not display properly
@@ -128,23 +131,27 @@ export const WEATHER_ICONS: WeatherIcons = {
   802: '⛅',
   803: '☁',
   804: '☁',
-}
+};
 
 // OpenWeatherMap icon base URL
-export const OWM_ICON_BASE_URL = 'https://openweathermap.org/img/wn/'
+export const OWM_ICON_BASE_URL = 'https://openweathermap.org/img/wn/';
 
 // URL parameter utilities
 export const getURLParam = (key: string): string | null => {
-  const urlParams = new URLSearchParams(window.location.search)
-  return urlParams.get(key)
-}
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get(key);
+};
 
 // Validation utilities
 export const validateDistance = (d: number): number => {
-  return typeof d === 'number' && isFinite(d) && d >= 0 ? Math.min(d, 50000) : 0
-}
+  return typeof d === 'number' && isFinite(d) && d >= 0
+    ? Math.min(d, 50000)
+    : 0;
+};
 
-export const validateCoordinates = (c: { lat: number; lon: number } | null): boolean => {
+export const validateCoordinates = (
+  c: { lat: number; lon: number } | null
+): boolean => {
   return (
     c !== null &&
     typeof c.lat === 'number' &&
@@ -155,9 +162,9 @@ export const validateCoordinates = (c: { lat: number; lon: number } | null): boo
     c.lat <= 90 &&
     c.lon >= -180 &&
     c.lon <= 180
-  )
-}
+  );
+};
 
 export const sanitizeUIValue = (v: number): number => {
-  return !isFinite(v) || v < 0 ? 0 : Math.min(v, 999999)
-} 
+  return !isFinite(v) || v < 0 ? 0 : Math.min(v, 999999);
+};

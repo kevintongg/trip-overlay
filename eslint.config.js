@@ -86,7 +86,10 @@ export default [
       'react-hooks/exhaustive-deps': 'warn',
 
       // React Refresh
-      'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
+      'react-refresh/only-export-components': [
+        'warn',
+        { allowConstantExport: true },
+      ],
 
       // Accessibility Rules
       'jsx-a11y/alt-text': 'error',
@@ -108,15 +111,18 @@ export default [
       'jsx-a11y/scope': 'error',
 
       // TypeScript Rules
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_' },
+      ],
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/prefer-const': 'error',
       '@typescript-eslint/no-non-null-assertion': 'warn',
 
       // Enhanced JavaScript Rules
       'no-console': 'off', // Allow console for debugging IRL streams
-      'curly': ['error', 'all'], // Enforce braces for all control statements (user preference)
-      'eqeqeq': ['error', 'always'],
+      curly: ['error', 'all'], // Enforce braces for all control statements (user preference)
+      eqeqeq: ['error', 'always'],
       'no-eval': 'error',
       'no-implied-eval': 'error',
       'no-new-func': 'error',
@@ -124,7 +130,7 @@ export default [
       'no-sequences': 'error',
       'no-throw-literal': 'error',
       'no-with': 'error',
-      'radix': 'error',
+      radix: 'error',
       'wrap-iife': ['error', 'any'],
       'no-delete-var': 'error',
       'no-label-var': 'error',
@@ -136,7 +142,7 @@ export default [
       'no-var': 'error',
       'prefer-const': 'off', // Using TS version
       'prefer-template': 'error',
-      'camelcase': ['error', { properties: 'never' }],
+      camelcase: ['error', { properties: 'never' }],
 
       // Additional modern best practices
       'object-shorthand': 'error',

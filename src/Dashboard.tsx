@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useWeatherData } from './hooks/useWeatherData';
 import { useConnectionStore } from './store/connectionStore';
 import { useAppInitialization } from './hooks/useAppInitialization';
@@ -6,6 +6,7 @@ import { useRtirlSocket } from './hooks/useRtirlSocket';
 import { Card } from './components/ui/card';
 import { Badge } from './components/ui/badge';
 import { Separator } from './components/ui/separator';
+import { logger } from './utils/logger';
 
 interface URLParams {
   demo: boolean;
@@ -52,44 +53,68 @@ const Dashboard: React.FC = () => {
 
   // Use centralized app initialization
   useAppInitialization();
-  
+
   // Connect to RTIRL (with deduplication protection)
   const { isConnected: rtirlConnected } = useRtirlSocket();
-  
+
   // Get GPS coordinates from connection store
   const { lastPosition, isConnected } = useConnectionStore();
   const { data: weatherData, isLoading: weatherLoading } = useWeatherData(
-    lastPosition?.lat, 
+    lastPosition?.lat,
     lastPosition?.lon
   );
-  
+
   // Time state
   const [currentTime, setCurrentTime] = useState(new Date());
   const [locationText, setLocationText] = useState('--');
   const [speedMph, setSpeedMph] = useState('--');
   const [speedKmh, setSpeedKmh] = useState('--');
   const [currentSpeed, setCurrentSpeed] = useState(0);
+  const [currentMode, setCurrentMode] = useState('STATIONARY');
   const [isReverseGeocoding, setIsReverseGeocoding] = useState(false);
 
+  // Throttling refs to prevent spam
+  const lastLogTime = useRef<{ [key: string]: number }>({});
+  const lastWeatherIconLog = useRef<string>('');
+
+  // Throttled logger function
+  const throttledLog = useCallback((key: string, throttleMs: number, message: string, ...args: unknown[]) => {
+    const now = Date.now();
+    if (now - (lastLogTime.current[key] || 0) > throttleMs) {
+      lastLogTime.current[key] = now;
+      logger(message, ...args);
+    }
+  }, []);
+
   // Create status object using useMemo for performance
-  const dashboardStatus = useMemo<DashboardStatus>(() => ({
-    connection: {
+  const dashboardStatus = useMemo<DashboardStatus>(
+    () => ({
+      connection: {
+        isConnected,
+        isDemoMode: urlParams.demo,
+      },
+      dashboard: {
+        weather: weatherData,
+        lastPosition,
+        locationText,
+        currentSpeed,
+      },
+    }),
+    [
       isConnected,
-      isDemoMode: urlParams.demo,
-    },
-    dashboard: {
-      weather: weatherData,
+      urlParams.demo,
+      weatherData,
       lastPosition,
       locationText,
       currentSpeed,
-    }
-  }), [isConnected, urlParams.demo, weatherData, lastPosition, locationText, currentSpeed]);
+    ]
+  );
 
   // Debug/Status functions using useCallback for stable references
   const getStatus = useCallback(() => {
-    console.log('🔍 Dashboard Status:', dashboardStatus);
+    throttledLog('getStatus', 1000, '🔍 Dashboard Status:', dashboardStatus);
     return dashboardStatus;
-  }, [dashboardStatus]);
+  }, [dashboardStatus, throttledLog]);
 
   // Expose debug functions to window object (for backward compatibility)
   useEffect(() => {
@@ -111,8 +136,8 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     if (!urlParams.demo) return;
 
-    console.log('🎭 Dashboard: Starting demo mode with Vienna coordinates');
-    
+    throttledLog('demo', 1000, '🎭 Dashboard: Starting demo mode with Vienna coordinates');
+
     let updateCount = 0;
     const demoState = {
       lat: 48.2082, // Vienna coordinates
@@ -143,18 +168,20 @@ const Dashboard: React.FC = () => {
         accuracy: 5,
         speed: demoState.speed,
         timestamp: Date.now(),
-        source: 'demo'
+        source: 'demo',
       };
 
-      window.dispatchEvent(new CustomEvent('locationUpdate', { detail: locationData }));
+      window.dispatchEvent(
+        new CustomEvent('locationUpdate', { detail: locationData })
+      );
 
-      if (updateCount === 1 || updateCount % 5 === 0) {
-        console.log(`🎭 Demo update #${updateCount} - ${demoState.lat.toFixed(4)}, ${demoState.lon.toFixed(4)} @ ${demoState.speed.toFixed(1)}km/h`);
+      if (updateCount === 1 || updateCount % 10 === 0) {
+        throttledLog('demo', 5000, `🎭 Demo update #${updateCount} - ${demoState.lat.toFixed(4)}, ${demoState.lon.toFixed(4)} @ ${demoState.speed.toFixed(1)}km/h`);
       }
     }, 1000);
 
     return () => clearInterval(demoInterval);
-  }, [urlParams.demo]);
+  }, [urlParams.demo, throttledLog]);
 
   // Update time every second
   useEffect(() => {
@@ -168,7 +195,7 @@ const Dashboard: React.FC = () => {
   // Reverse geocoding function
   const reverseGeocode = async (lat: number, lon: number) => {
     if (isReverseGeocoding) return; // Prevent duplicate requests
-    
+
     setIsReverseGeocoding(true);
     try {
       // Use OpenStreetMap Nominatim for free reverse geocoding
@@ -176,26 +203,28 @@ const Dashboard: React.FC = () => {
         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=14&addressdetails=1`,
         {
           headers: {
-            'User-Agent': 'trip-overlay-dashboard/1.0'
-          }
+            'User-Agent': 'trip-overlay-dashboard/1.0',
+          },
         }
       );
-      
+
       if (response.ok) {
         const data = await response.json();
         const address = data.address;
-        
+
         // Build location string: "District, City, Country" or "City, Country"
-        const district = address.district || 
-          address.borough || 
-          address.neighbourhood || 
-          address.suburb || 
-          address.quarter || 
+        const district =
+          address.district ||
+          address.borough ||
+          address.neighbourhood ||
+          address.suburb ||
+          address.quarter ||
           address.city_district;
 
-        const city = address.city || 
-          address.town || 
-          address.village || 
+        const city =
+          address.city ||
+          address.town ||
+          address.village ||
           address.municipality;
 
         const country = address.country;
@@ -211,17 +240,18 @@ const Dashboard: React.FC = () => {
           locationParts.push(country);
         }
 
-        const locationName = locationParts.filter(Boolean).length > 0 
-          ? locationParts.filter(Boolean).join(', ')
-          : `${lat.toFixed(3)}, ${lon.toFixed(3)}`;
-          
+        const locationName =
+          locationParts.filter(Boolean).length > 0
+            ? locationParts.filter(Boolean).join(', ')
+            : `${lat.toFixed(3)}, ${lon.toFixed(3)}`;
+
         setLocationText(locationName);
       } else {
         // Fallback to coordinates if geocoding fails
         setLocationText(`${lat.toFixed(3)}, ${lon.toFixed(3)}`);
       }
     } catch (error) {
-      console.warn('Reverse geocoding failed:', error);
+      throttledLog('reverseGeocode', 1000, 'Reverse geocoding failed:', error);
       // Fallback to coordinates
       setLocationText(`${lat.toFixed(3)}, ${lon.toFixed(3)}`);
     } finally {
@@ -233,8 +263,8 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const handleLocationUpdate = (event: CustomEvent) => {
       const locationData = event.detail;
-      console.log('🏃 Dashboard: Location update received:', locationData);
-      
+      throttledLog('locationUpdate', 1000, '🏃 Dashboard: Location update received:', locationData);
+
       if (locationData) {
         // Update location with reverse geocoding
         if (locationData.latitude && locationData.longitude) {
@@ -243,20 +273,32 @@ const Dashboard: React.FC = () => {
       }
     };
 
-    window.addEventListener('locationUpdate', handleLocationUpdate as EventListener);
-    return () => window.removeEventListener('locationUpdate', handleLocationUpdate as EventListener);
-  }, [isReverseGeocoding]);
+    window.addEventListener(
+      'locationUpdate',
+      handleLocationUpdate as EventListener
+    );
+    return () =>
+      window.removeEventListener(
+        'locationUpdate',
+        handleLocationUpdate as EventListener
+      );
+  }, [isReverseGeocoding, reverseGeocode, throttledLog]);
 
   // Read speed from localStorage (like original dashboard)
   useEffect(() => {
     const updateSpeedFromStorage = () => {
-      const speed = parseFloat(localStorage.getItem('tripOverlaySpeed') || '0') || 0;
+      const speed =
+        parseFloat(localStorage.getItem('tripOverlaySpeed') || '0') || 0;
       const mode = localStorage.getItem('tripOverlayMode') || 'STATIONARY';
-      
-      console.log(`🚴 Dashboard: Speed from localStorage - ${speed.toFixed(1)} km/h, mode: ${mode}`);
-      
+
+      // Only log when there's an actual change to prevent spam
+      if (mode !== currentMode || Math.abs(speed - currentSpeed) > 0.1) {
+        throttledLog('speed', 3000, `🚴 Dashboard: Speed from localStorage - ${speed.toFixed(1)} km/h, mode: ${mode}`);
+      }
+
       setCurrentSpeed(speed);
-      
+      setCurrentMode(mode);
+
       if (speed > 0) {
         setSpeedKmh(speed.toFixed(1));
         setSpeedMph((speed * 0.621371).toFixed(1));
@@ -277,36 +319,36 @@ const Dashboard: React.FC = () => {
     };
 
     window.addEventListener('storage', handleStorageChange);
-    
+
     // Also poll localStorage periodically as fallback (in case storage events don't fire)
-    const pollInterval = setInterval(updateSpeedFromStorage, 1000);
+    const pollInterval = setInterval(updateSpeedFromStorage, 5000);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       clearInterval(pollInterval);
     };
-  }, []);
+  }, [throttledLog, currentMode, currentSpeed]);
 
   // Debug weather data loading
   useEffect(() => {
     if (lastPosition) {
-      console.log('🌤️ Dashboard: Weather coordinates available:', lastPosition.lat, lastPosition.lon);
+      throttledLog('weather', 1000, '🌤️ Dashboard: Weather coordinates available:', lastPosition.lat, lastPosition.lon);
     }
     if (weatherLoading) {
-      console.log('🌤️ Dashboard: Weather loading...');
+      throttledLog('weather', 1000, '🌤️ Dashboard: Weather loading...');
     }
     if (weatherData) {
-      console.log('🌤️ Dashboard: Weather data received:', weatherData);
+      throttledLog('weather', 1000, '🌤️ Dashboard: Weather data received:', weatherData);
       if (weatherData.timezone) {
-        console.log(`🕒 Dashboard: Using weather timezone: ${weatherData.timezone} (UTC${weatherData.timezone_offset >= 0 ? '+' : ''}${weatherData.timezone_offset / 3600})`);
+                 throttledLog('weather', 1000, `🕒 Dashboard: Using weather timezone: ${weatherData.timezone} (UTC${weatherData.timezone_offset >= 0 ? '+' : ''}${weatherData.timezone_offset / 3600})`);
       }
     }
-  }, [lastPosition, weatherLoading, weatherData]);
+  }, [lastPosition, weatherLoading, weatherData, throttledLog]);
 
   // Debug currentSpeed changes
   useEffect(() => {
-    console.log(`📊 Dashboard: currentSpeed state changed to: ${currentSpeed}`);
-  }, [currentSpeed]);
+         throttledLog('speed', 5000, `📊 Dashboard: currentSpeed state changed to: ${currentSpeed}`);
+  }, [currentSpeed, throttledLog]);
 
   // Console API is initialized by useAppInitialization hook
 
@@ -314,22 +356,25 @@ const Dashboard: React.FC = () => {
   const formatTime = () => {
     // Use weather timezone if available, otherwise fall back to system timezone, or URL override
     const weatherTimezone = weatherData?.timezone;
-    const timeZone = urlParams.timezoneOverride || weatherTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
-    
-    const timeStr = currentTime.toLocaleTimeString('en-US', { 
+    const timeZone =
+      urlParams.timezoneOverride ||
+      weatherTimezone ||
+      Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+    const timeStr = currentTime.toLocaleTimeString('en-US', {
       hour12: urlParams.use12Hour, // Use URL parameter for 12/24 hour format
-      timeZone: timeZone
+      timeZone: timeZone,
     });
-    
+
     // Format date as "Mon, Jul 7, 2024"
-    const dateStr = currentTime.toLocaleDateString('en-US', { 
-      weekday: 'short', 
-      month: 'short', 
+    const dateStr = currentTime.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
       day: 'numeric',
       year: 'numeric',
-      timeZone: timeZone
+      timeZone: timeZone,
     });
-    
+
     // Get timezone offset from weather data or calculate from system
     let tzStr = 'GMT';
     if (weatherData?.timezone_offset !== undefined) {
@@ -356,19 +401,22 @@ const Dashboard: React.FC = () => {
 
   const { timeStr, dateStr, tzStr } = formatTime();
 
-  // Weather display helpers
-  const getWeatherIcon = () => {
+  // Weather display helpers with memoization to prevent flicker
+  const getWeatherIcon = useCallback(() => {
     if (!weatherData?.current?.weather?.[0]) return null;
     const iconCode = weatherData.current.weather[0].icon;
-    const iconUrl = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
+    const weatherId = weatherData.current.weather[0].id;
     const description = weatherData.current.weather[0].description;
     
+    const iconUrl = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
+
     return (
-      <img 
-        src={iconUrl} 
+      <img
+        key={iconCode} // Stable key to prevent flicker
+        src={iconUrl}
         alt={description}
-        className="h-[2.2em] w-auto"
-        onError={(e) => {
+        className="w-[2.2em] h-[2.2em] object-contain flex-shrink-0"
+        onError={e => {
           // Fallback to emoji if image fails to load
           const target = e.target as HTMLImageElement;
           target.style.display = 'none';
@@ -376,30 +424,31 @@ const Dashboard: React.FC = () => {
           const parent = target.parentElement;
           if (parent) {
             parent.innerHTML = '🌤️';
-            parent.className = 'text-[2.2em] flex items-center leading-none mr-1 font-emoji';
+            parent.className =
+              'text-[2.2em] flex items-center leading-none mr-1 font-emoji';
           }
         }}
       />
     );
-  };
+  }, [weatherData?.current?.weather?.[0]?.icon]);
 
-  const getWeatherTemp = () => {
+  const getWeatherTemp = useCallback(() => {
     if (!weatherData?.current?.temp) return '--°C';
     return `${Math.round(weatherData.current.temp)}°C`;
-  };
+  }, [weatherData?.current?.temp]);
 
-  const getWeatherDesc = () => {
+  const getWeatherDesc = useCallback(() => {
     if (weatherLoading) return 'Loading...';
     if (!weatherData?.current?.weather?.[0]) return 'No weather data';
     return weatherData.current.weather[0].description;
-  };
+  }, [weatherLoading, weatherData?.current?.weather?.[0]?.description]);
 
-  const getWeatherHighLow = () => {
+  const getWeatherHighLow = useCallback(() => {
     if (!weatherData?.daily?.[0]) return '--°C / --°C';
     const high = Math.round(weatherData.daily[0].temp.max);
     const low = Math.round(weatherData.daily[0].temp.min);
     return `${high}°C / ${low}°C`;
-  };
+  }, [weatherData?.daily?.[0]?.temp]);
 
   const getWeatherFeelsLike = () => {
     if (!weatherData?.current?.feels_like) return null;
@@ -415,7 +464,7 @@ const Dashboard: React.FC = () => {
     if (!weatherData?.current?.wind_speed) return null;
     const windSpeed = (weatherData.current.wind_speed * 3.6).toFixed(1); // Convert m/s to km/h
     let wind = `${windSpeed} km/h`;
-    
+
     if (weatherData.current.wind_deg !== undefined) {
       const direction = degToCompass(weatherData.current.wind_deg);
       wind += ` ${direction}`;
@@ -438,7 +487,24 @@ const Dashboard: React.FC = () => {
 
   const degToCompass = (deg: number) => {
     const val = Math.floor(deg / 22.5 + 0.5);
-    const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+    const directions = [
+      'N',
+      'NNE',
+      'NE',
+      'ENE',
+      'E',
+      'ESE',
+      'SE',
+      'SSE',
+      'S',
+      'SSW',
+      'SW',
+      'WSW',
+      'W',
+      'WNW',
+      'NW',
+      'NNW',
+    ];
     return directions[val % 16];
   };
 
@@ -453,11 +519,9 @@ const Dashboard: React.FC = () => {
   return (
     <>
       {/* Main Dashboard Container - Right-aligned professional layout */}
-      <div className="w-screen h-screen flex flex-col items-end justify-start gap-[18px] pr-[18px] pt-[18px] pointer-events-none">
-        
+      <div className="w-screen h-screen flex flex-col items-end justify-start gap-[18px] pr-[24px] pt-[24px] pointer-events-none">
         {/* Combined Dashboard Card - Solid readable design for streaming */}
-        <Card className="flex flex-col items-center bg-gradient-to-br from-zinc-900 to-zinc-800 border-white/20 rounded-2xl p-5 shadow-[0_4px_24px_rgba(0,0,0,0.4)] min-w-[320px] max-w-[420px] backdrop-blur-none">
-          
+        <Card className="flex flex-col items-center bg-gradient-to-br from-zinc-900 to-zinc-800 border-white/20 rounded-2xl p-5 shadow-[0_4px_24px_rgba(0,0,0,0.4)] min-w-[320px] max-w-[520px] backdrop-blur-none">
           {/* Location Section - Conditionally rendered */}
           {urlParams.showLocation && (
             <div className="mb-3 w-full text-center">
@@ -469,38 +533,46 @@ const Dashboard: React.FC = () => {
 
           {/* Weather Section - Conditionally rendered */}
           {urlParams.showWeather && (
-            <div className="mb-3 w-full">
+            <div key="weather-section" className="mb-3 w-full">
               <div className="flex items-center justify-center">
                 {/* Weather Icon */}
-                <div className="text-[2.2em] flex items-center leading-none mr-1 font-emoji">
+                <div key="weather-icon" className="text-[2.2em] flex items-center leading-none mr-1 font-emoji">
                   {getWeatherIcon()}
                 </div>
-                
+
                 {/* Temperature Container */}
-                <div className="flex flex-col items-center gap-0.5 mx-3">
-                  <div className="text-[1.4em] font-extrabold text-white tracking-wide drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] font-inter">
+                <div key="temperature" className="flex flex-col items-center gap-1 mx-3">
+                  <div className="text-[2em] font-black text-white tracking-wide drop-shadow-[0_3px_12px_rgba(0,0,0,0.9)] font-inter leading-none">
                     {getWeatherTemp()}
                   </div>
-                  <div className="text-[1em] text-white mt-1 font-semibold tracking-wider drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] font-inter whitespace-nowrap">
+                  <div className="text-[0.85em] text-gray-300 font-medium tracking-wide drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] font-inter whitespace-nowrap opacity-80">
                     {getWeatherHighLow()}
                   </div>
                 </div>
-                
+
                 {/* Weather Description */}
-                <div className="text-[1.1em] text-gray-200 font-medium drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] capitalize ml-3">
+                <div key="weather-desc" className="text-[1.1em] text-gray-200 font-medium drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] capitalize ml-3 text-left leading-tight">
                   {getWeatherDesc()}
                 </div>
-                
-                {/* Speed Display - Only show when speed > 0 */}
-                {currentSpeed > 0 && (
-                  <div className="flex flex-col items-start ml-2 font-semibold">
+
+                {/* Speed Display - Only show when cycling */}
+                {currentMode === 'CYCLING' && (
+                  <div key="speed-display" className="flex flex-col items-start ml-2 font-semibold">
                     <div className="flex justify-start items-baseline w-full text-[1.2em] font-bold text-green-500 drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] font-mono tracking-wider">
-                      <span className="text-center min-w-[3.5em]">{speedMph}</span>
-                      <span className="ml-2 text-[1em] text-green-500 font-medium tracking-wider">mph</span>
+                      <span className="text-center min-w-[3.5em]">
+                        {speedMph}
+                      </span>
+                      <span className="ml-2 text-[1em] text-green-500 font-medium tracking-wider">
+                        mph
+                      </span>
                     </div>
                     <div className="flex justify-start items-baseline w-full text-[1.2em] font-bold text-green-500 drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] font-mono tracking-wider">
-                      <span className="text-center min-w-[3.5em]">{speedKmh}</span>
-                      <span className="ml-2 text-[1em] text-green-500 font-medium tracking-wider">km/h</span>
+                      <span className="text-center min-w-[3.5em]">
+                        {speedKmh}
+                      </span>
+                      <span className="ml-2 text-[1em] text-green-500 font-medium tracking-wider">
+                        km/h
+                      </span>
                     </div>
                   </div>
                 )}
@@ -512,9 +584,13 @@ const Dashboard: React.FC = () => {
                 {(getWeatherFeelsLike() || getWeatherHumidity()) && (
                   <div className="text-center text-[0.95em] text-gray-300 mb-1">
                     {[
-                      getWeatherFeelsLike() && `Feels like: ${getWeatherFeelsLike()}`,
-                      getWeatherHumidity() && `Humidity: ${getWeatherHumidity()}`
-                    ].filter(Boolean).join(' · ')}
+                      getWeatherFeelsLike() &&
+                        `Feels like: ${getWeatherFeelsLike()}`,
+                      getWeatherHumidity() &&
+                        `Humidity: ${getWeatherHumidity()}`,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
                   </div>
                 )}
 
@@ -525,15 +601,22 @@ const Dashboard: React.FC = () => {
                       getWeatherWind() && `Wind: ${getWeatherWind()}`,
                       getWeatherUvi() && (
                         <span key="uvi">
-                          UV Index: <span className={`${getUviClass(parseFloat(getWeatherUvi()!))} font-mono`}>{getWeatherUvi()}</span>
+                          UV Index:{' '}
+                          <span
+                            className={`${getUviClass(parseFloat(getWeatherUvi()!))} font-mono`}
+                          >
+                            {getWeatherUvi()}
+                          </span>
                         </span>
-                      )
-                    ].filter(Boolean).map((item, index, array) => (
-                      <span key={index}>
-                        {item}
-                        {index < array.length - 1 && ' · '}
-                      </span>
-                    ))}
+                      ),
+                    ]
+                      .filter(Boolean)
+                      .map((item, index, array) => (
+                        <span key={index}>
+                          {item}
+                          {index < array.length - 1 && ' · '}
+                        </span>
+                      ))}
                   </div>
                 )}
               </div>
@@ -554,11 +637,10 @@ const Dashboard: React.FC = () => {
               </span>
             </div>
           )}
-          
         </Card>
       </div>
     </>
   );
 };
 
-export default Dashboard; 
+export default Dashboard;

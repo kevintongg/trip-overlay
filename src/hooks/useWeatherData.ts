@@ -1,12 +1,16 @@
-import { useQuery } from '@tanstack/react-query'
-import type { WeatherResponse, WeatherError } from '../types/weather'
-import { fetchWeatherData } from '../utils/weatherService'
+import { useQuery } from '@tanstack/react-query';
+import type { WeatherResponse, WeatherError } from '../types/weather';
+import { fetchWeatherData } from '../utils/weatherService';
 
 /**
  * Fetch weather data with multiple fallback strategies
  */
-async function fetchWeather(lat: number, lon: number, units: string = 'metric'): Promise<WeatherResponse> {
-  return fetchWeatherData(lat, lon, units)
+async function fetchWeather(
+  lat: number,
+  lon: number,
+  units: string = 'metric'
+): Promise<WeatherResponse> {
+  return fetchWeatherData(lat, lon, units);
 }
 
 /**
@@ -15,7 +19,11 @@ async function fetchWeather(lat: number, lon: number, units: string = 'metric'):
  * @param lon - Longitude coordinate
  * @param units - Temperature units ('metric', 'imperial', 'standard')
  */
-export function useWeatherData(lat?: number, lon?: number, units: string = 'metric') {
+export function useWeatherData(
+  lat?: number,
+  lon?: number,
+  units: string = 'metric'
+) {
   return useQuery({
     queryKey: ['weather', lat, lon, units],
     queryFn: () => fetchWeather(lat!, lon!, units),
@@ -25,32 +33,38 @@ export function useWeatherData(lat?: number, lon?: number, units: string = 'metr
     retry: (failureCount, error) => {
       // Don't retry on 4xx errors (bad coordinates, missing API key)
       if (error.message.includes('400') || error.message.includes('401')) {
-        return false
+        return false;
       }
-      return failureCount < 2
+      return failureCount < 2;
     },
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-  })
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
+  });
 }
 
 /**
  * Get appropriate weather icon from OpenWeatherMap
  */
-export function getWeatherIconUrl(iconCode: string, size: '2x' | '4x' = '2x'): string {
-  return `https://openweathermap.org/img/wn/${iconCode}@${size}.png`
+export function getWeatherIconUrl(
+  iconCode: string,
+  size: '2x' | '4x' = '2x'
+): string {
+  return `https://openweathermap.org/img/wn/${iconCode}@${size}.png`;
 }
 
 /**
  * Format temperature with unit
  */
-export function formatTemperature(temp: number, units: string = 'metric'): string {
-  const rounded = Math.round(temp)
+export function formatTemperature(
+  temp: number,
+  units: string = 'metric'
+): string {
+  const rounded = Math.round(temp);
   switch (units) {
     case 'imperial':
-      return `${rounded}°F`
+      return `${rounded}°F`;
     case 'kelvin':
-      return `${rounded}K`
+      return `${rounded}K`;
     default:
-      return `${rounded}°C`
+      return `${rounded}°C`;
   }
-} 
+}

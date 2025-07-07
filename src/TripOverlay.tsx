@@ -1,13 +1,13 @@
-import React, { useEffect } from 'react'
-import { useTripProgress } from './hooks/useTripProgress'
-import { useRtirlSocket } from './hooks/useRtirlSocket'
-import { useConsoleCommands } from './hooks/useConsoleCommands'
-import { useURLParameters } from './hooks/useURLParameters'
-import { useAppInitialization } from './hooks/useAppInitialization'
-import { Button } from './components/ui/button'
-import { Progress } from './components/ui/progress'
-import { Card } from './components/ui/card'
-import { Badge } from './components/ui/badge'
+import React, { useEffect } from 'react';
+import { useTripProgress } from './hooks/useTripProgress';
+import { useRtirlSocket } from './hooks/useRtirlSocket';
+import { useConsoleCommands } from './hooks/useConsoleCommands';
+import { useURLParameters } from './hooks/useURLParameters';
+import { useAppInitialization } from './hooks/useAppInitialization';
+import { Button } from './components/ui/button';
+import { Progress } from './components/ui/progress';
+import { Card } from './components/ui/card';
+import { Badge } from './components/ui/badge';
 
 // Using modern Tailwind CSS + shadcn/ui instead of original CSS files
 
@@ -28,47 +28,47 @@ const TripOverlay: React.FC = () => {
     getUnitLabel,
     resetTrip,
     resetToday,
-  } = useTripProgress()
+  } = useTripProgress();
 
-  const { isConnected } = useRtirlSocket()
-  useConsoleCommands()
-  useURLParameters()
-  useAppInitialization()
+  const { isConnected } = useRtirlSocket();
+  useConsoleCommands();
+  useURLParameters();
+  useAppInitialization();
 
   // Avatar image mapping exactly like original
   const getAvatarImage = () => {
     switch (currentMode) {
       case 'WALKING':
-        return '/walking.gif'
+        return '/walking.gif';
       case 'CYCLING':
-        return '/cycling.gif'
+        return '/cycling.gif';
       default:
-        return '/stationary.png'
+        return '/stationary.png';
     }
-  }
+  };
 
   // Mock functions for control panel (will be implemented properly later)
   const resetTripProgress = () => {
-    resetTrip()
-  }
+    resetTrip();
+  };
 
   const resetAutoStartLocation = () => {
     // TODO: Implement reset auto start location
     // Reset auto start location - handled by store logging
-  }
+  };
 
   const resetTodayDistance = () => {
-    resetToday()
-  }
+    resetToday();
+  };
 
   const exportTripData = () => {
     // TODO: Implement export trip data
     // Export trip data - handled by store logging
-  }
+  };
 
   // Mock values for now
-  const showControlPanel = false
-  const feedback = null
+  const showControlPanel = false;
+  const feedback = null;
 
   // Console API is initialized by useAppInitialization hook
 
@@ -80,26 +80,26 @@ const TripOverlay: React.FC = () => {
         <div className="w-full">
           {/* Custom Progress Bar with Avatar */}
           <div className="relative w-full max-w-[600px] mx-auto mb-2 h-[11px] bg-black/30 border border-white/30 rounded-[7px]">
-            <div 
+            <div
               className="h-full bg-white rounded-[10px] transition-all duration-300 ease-out"
               style={{ width: `${progressPercent}%` }}
             />
             {/* Progress Percentage Badge */}
-            <Badge 
-              variant="secondary" 
+            <Badge
+              variant="secondary"
               className="absolute top-[-2px] right-2 text-xs bg-black/50 text-white border-white/20"
             >
               {progressPercent.toFixed(1)}%
             </Badge>
             {/* Avatar positioned on progress bar */}
-            <img 
-              src={getAvatarImage()} 
+            <img
+              src={getAvatarImage()}
               alt="peeguu"
               className="absolute h-[60px] bottom-[2px] transform -translate-x-1/2 transition-all duration-300 ease-out"
               style={{ left: `${progressPercent}%` }}
             />
           </div>
-          
+
           {/* Distance Data Container - Tailwind flexbox layout */}
           <div className="w-full max-w-[600px] mx-auto flex justify-between items-start mt-1.5 px-4 pb-2">
             {/* Traveled Distance - Left aligned */}
@@ -142,7 +142,7 @@ const TripOverlay: React.FC = () => {
               <div className="text-center text-sm font-bold text-white mb-3 uppercase tracking-wider">
                 Stream Controls
               </div>
-              
+
               {/* Primary Control Row */}
               <div className="flex gap-3 mb-2.5 justify-center">
                 <Button
@@ -189,11 +189,15 @@ const TripOverlay: React.FC = () => {
 
               {/* Feedback Messages */}
               {feedback && (
-                <div className={`mt-3 p-2 rounded text-sm text-center ${
-                  (feedback as any).type === 'success' ? 'bg-green-600/20 border-green-600/40 text-green-200' :
-                  (feedback as any).type === 'warning' ? 'bg-yellow-600/20 border-yellow-600/40 text-yellow-200' :
-                  'bg-red-600/20 border-red-600/40 text-red-200'
-                } border`}>
+                <div
+                  className={`mt-3 p-2 rounded text-sm text-center ${
+                    (feedback as any).type === 'success'
+                      ? 'bg-green-600/20 border-green-600/40 text-green-200'
+                      : (feedback as any).type === 'warning'
+                        ? 'bg-yellow-600/20 border-yellow-600/40 text-yellow-200'
+                        : 'bg-red-600/20 border-red-600/40 text-red-200'
+                  } border`}
+                >
                   {(feedback as any).message}
                 </div>
               )}
@@ -202,7 +206,7 @@ const TripOverlay: React.FC = () => {
         )}
       </div>
     </>
-  )
-}
+  );
+};
 
-export default TripOverlay 
+export default TripOverlay;

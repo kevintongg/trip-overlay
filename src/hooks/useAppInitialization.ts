@@ -14,13 +14,12 @@ export function useAppInitialization() {
     if (isAppInitialized) {
       return;
     }
-    
+
     isAppInitialized = true;
-    
+
     // Initialize console API once
     setupGlobalConsoleAPI();
-    
+
     // Any other global initialization can go here
-    
   }, []);
-} 
+}

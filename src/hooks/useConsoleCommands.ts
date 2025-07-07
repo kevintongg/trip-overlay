@@ -1,78 +1,82 @@
-import { useTripProgressStore } from '../store/tripStore'
-import { useLocalStorage } from './useLocalStorage'
-import type { TripProgress } from '../types/trip'
+import { useTripProgressStore } from '../store/tripStore';
+import { useLocalStorage } from './useLocalStorage';
+import type { TripProgress } from '../types/trip';
 
 /**
  * Console commands hook - provides all console API functionality
  * CRITICAL for streaming compatibility and manual control
  */
 export function useConsoleCommands() {
-  const tripStore = useTripProgressStore()
+  const tripStore = useTripProgressStore();
   const [, setStoredData] = useLocalStorage<TripProgress>('tripProgress', {
     totalDistanceTraveled: 0,
     todayDistanceTraveled: 0,
-    lastActiveDate: new Date().toDateString()
-  })
+    lastActiveDate: new Date().toDateString(),
+  });
 
   // Console command implementations with feedback
   const consoleCommands = {
     addDistance: (km: number): string => {
-      tripStore.addDistance(km)
-      setStoredData(prev => ({ ...prev, lastUpdate: Date.now() }))
-      const action = km >= 0 ? 'Added' : 'Adjusted'
-      return `${action} ${Math.abs(km).toFixed(1)}km`
+      tripStore.addDistance(km);
+      setStoredData(prev => ({ ...prev, lastUpdate: Date.now() }));
+      const action = km >= 0 ? 'Added' : 'Adjusted';
+      return `${action} ${Math.abs(km).toFixed(1)}km`;
     },
 
     setDistance: (km: number): string => {
-      tripStore.setDistance(km)
-      setStoredData(prev => ({ ...prev, lastUpdate: Date.now() }))
-      return `Set to ${km.toFixed(1)}km`
+      tripStore.setDistance(km);
+      setStoredData(prev => ({ ...prev, lastUpdate: Date.now() }));
+      return `Set to ${km.toFixed(1)}km`;
     },
 
     jumpToProgress: (percent: number): string => {
-      tripStore.jumpToProgress(percent)
-      setStoredData(prev => ({ ...prev, lastUpdate: Date.now() }))
-      const targetDistance = (percent / 100) * tripStore.totalDistanceKm
-      return `${percent}% progress (${targetDistance.toFixed(1)}km)`
+      tripStore.jumpToProgress(percent);
+      setStoredData(prev => ({ ...prev, lastUpdate: Date.now() }));
+      const targetDistance = (percent / 100) * tripStore.totalDistanceKm;
+      return `${percent}% progress (${targetDistance.toFixed(1)}km)`;
     },
 
     setTotalDistance: (km: number): string => {
-      tripStore.setTotalDistance(km)
-      return `Trip distance: ${km.toFixed(1)}km`
+      tripStore.setTotalDistance(km);
+      return `Trip distance: ${km.toFixed(1)}km`;
     },
 
     convertToMiles: (): string => {
       if (tripStore.units !== 'miles') {
-        tripStore.setUnits('miles')
-        return 'Units: Kilometers → Miles'
+        tripStore.setUnits('miles');
+        return 'Units: Kilometers → Miles';
       }
-      return 'Already using miles'
+      return 'Already using miles';
     },
 
     convertToKilometers: (): string => {
       if (tripStore.units !== 'km') {
-        tripStore.setUnits('km')
-        return 'Units: Miles → Kilometers'
+        tripStore.setUnits('km');
+        return 'Units: Miles → Kilometers';
       }
-      return 'Already using kilometers'
+      return 'Already using kilometers';
     },
 
     resetTripProgress: (): string => {
-      tripStore.resetProgress()
+      tripStore.resetProgress();
       setStoredData({
         totalDistanceTraveled: 0,
         todayDistanceTraveled: 0,
-        lastActiveDate: new Date().toDateString()
-      })
-      console.log('CONSOLE: Reset all trip progress')
-      return 'Trip progress reset'
+        lastActiveDate: new Date().toDateString(),
+      });
+      console.log('CONSOLE: Reset all trip progress');
+      return 'Trip progress reset';
     },
 
     resetTodayDistance: (): string => {
-      tripStore.resetTodayDistance()
-      setStoredData(prev => ({ ...prev, todayDistance: 0, lastUpdate: Date.now() }))
-      console.log('CONSOLE: Reset today\'s distance')
-      return 'Today\'s distance reset'
+      tripStore.resetTodayDistance();
+      setStoredData(prev => ({
+        ...prev,
+        todayDistance: 0,
+        lastUpdate: Date.now(),
+      }));
+      console.log("CONSOLE: Reset today's distance");
+      return "Today's distance reset";
     },
 
     exportTripData: (): string => {
@@ -81,55 +85,57 @@ export function useConsoleCommands() {
         todayDistanceTraveled: tripStore.todayDistanceKm,
         useImperialUnits: tripStore.units === 'miles',
         totalDistance: tripStore.totalDistanceKm,
-        exportDate: new Date().toISOString()
-      }
-      
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `trip-overlay-backup-${new Date().toISOString().split('T')[0]}.json`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
-      
-      console.log('CONSOLE: Trip data exported')
-      return 'Trip data downloaded'
+        exportDate: new Date().toISOString(),
+      };
+
+      const blob = new Blob([JSON.stringify(data, null, 2)], {
+        type: 'application/json',
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `trip-overlay-backup-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      console.log('CONSOLE: Trip data exported');
+      return 'Trip data downloaded';
     },
 
     importTripData: (jsonString: string): string => {
       try {
-        const data = JSON.parse(jsonString)
+        const data = JSON.parse(jsonString);
         if (data.totalDistanceTraveled !== undefined) {
-          tripStore.setTotalTraveled(data.totalDistanceTraveled)
+          tripStore.setTotalTraveled(data.totalDistanceTraveled);
         }
         if (data.todayDistanceTraveled !== undefined) {
-          tripStore.setTodayDistance(data.todayDistanceTraveled)
+          tripStore.setTodayDistance(data.todayDistanceTraveled);
         }
         if (data.useImperialUnits !== undefined) {
-          tripStore.setUnits(data.useImperialUnits ? 'miles' : 'km')
+          tripStore.setUnits(data.useImperialUnits ? 'miles' : 'km');
         }
         if (data.totalDistance !== undefined) {
-          tripStore.setTotalDistance(data.totalDistance)
+          tripStore.setTotalDistance(data.totalDistance);
         }
-        setStoredData(data)
-        console.log('CONSOLE: Trip data imported successfully')
-        return 'Trip data imported'
+        setStoredData(data);
+        console.log('CONSOLE: Trip data imported successfully');
+        return 'Trip data imported';
       } catch (error) {
-        console.error('CONSOLE: Failed to import trip data:', error)
-        return 'Import failed - invalid JSON'
+        console.error('CONSOLE: Failed to import trip data:', error);
+        return 'Import failed - invalid JSON';
       }
     },
 
     setTodayDistance: (km: number): string => {
-      tripStore.setTodayDistance(km)
-      return `Today's distance: ${km.toFixed(1)}km`
+      tripStore.setTodayDistance(km);
+      return `Today's distance: ${km.toFixed(1)}km`;
     },
 
     setTotalTraveled: (km: number): string => {
-      tripStore.setTotalTraveled(km)
-      return `Total traveled: ${km.toFixed(1)}km`
+      tripStore.setTotalTraveled(km);
+      return `Total traveled: ${km.toFixed(1)}km`;
     },
 
     showConsoleCommands: (): string => {
@@ -181,23 +187,24 @@ TripOverlay.getStatus()           - Shows the current status of the overlay.
 ?setTotalTraveled=<km>- Sets total traveled distance on load.
 
 ------------------------------------
-      `
-      console.log(help)
-      return 'Console commands displayed'
+      `;
+      console.log(help);
+      return 'Console commands displayed';
     },
 
     getStatus: () => {
-      const state = tripStore
+      const state = tripStore;
       return {
         traveledDistance: state.currentDistanceKm,
         todayDistance: state.todayDistanceKm,
         totalDistance: state.totalDistanceKm,
-        progressPercent: (state.currentDistanceKm / state.totalDistanceKm) * 100,
+        progressPercent:
+          (state.currentDistanceKm / state.totalDistanceKm) * 100,
         currentMode: state.isMoving ? 'MOVING' : 'STATIONARY',
-        useImperialUnits: state.units === 'miles'
-      }
-    }
-  }
+        useImperialUnits: state.units === 'miles',
+      };
+    },
+  };
 
-  return consoleCommands
-} 
+  return consoleCommands;
+}
