@@ -32,7 +32,7 @@ export function useConsoleCommands() {
     jumpToProgress: (percent: number): string => {
       tripStore.jumpToProgress(percent)
       setStoredData(prev => ({ ...prev, lastUpdate: Date.now() }))
-      const targetDistance = (percent / 100) * tripStore.totalDistance
+      const targetDistance = (percent / 100) * tripStore.totalDistanceKm
       return `${percent}% progress (${targetDistance.toFixed(1)}km)`
     },
 
@@ -42,23 +42,23 @@ export function useConsoleCommands() {
     },
 
     convertToMiles: (): string => {
-      if (!tripStore.useImperialUnits) {
-        tripStore.convertToMiles()
+      if (tripStore.units !== 'miles') {
+        tripStore.setUnits('miles')
         return 'Units: Kilometers → Miles'
       }
       return 'Already using miles'
     },
 
     convertToKilometers: (): string => {
-      if (tripStore.useImperialUnits) {
-        tripStore.convertToKilometers()
+      if (tripStore.units !== 'km') {
+        tripStore.setUnits('km')
         return 'Units: Miles → Kilometers'
       }
       return 'Already using kilometers'
     },
 
     resetTripProgress: (): string => {
-      tripStore.resetTrip()
+      tripStore.resetProgress()
       setStoredData({
         totalDistanceTraveled: 0,
         todayDistanceTraveled: 0,
@@ -69,7 +69,7 @@ export function useConsoleCommands() {
     },
 
     resetTodayDistance: (): string => {
-      tripStore.resetToday()
+      tripStore.resetTodayDistance()
       setStoredData(prev => ({ ...prev, todayDistance: 0, lastUpdate: Date.now() }))
       console.log('CONSOLE: Reset today\'s distance')
       return 'Today\'s distance reset'
@@ -77,10 +77,10 @@ export function useConsoleCommands() {
 
     exportTripData: (): string => {
       const data = {
-        totalDistanceTraveled: tripStore.traveledDistance,
-        todayDistanceTraveled: tripStore.todayDistance,
-        useImperialUnits: tripStore.useImperialUnits,
-        totalDistance: tripStore.totalDistance,
+        totalDistanceTraveled: tripStore.currentDistanceKm,
+        todayDistanceTraveled: tripStore.todayDistanceKm,
+        useImperialUnits: tripStore.units === 'miles',
+        totalDistance: tripStore.totalDistanceKm,
         exportDate: new Date().toISOString()
       }
       
@@ -108,7 +108,7 @@ export function useConsoleCommands() {
           tripStore.setTodayDistance(data.todayDistanceTraveled)
         }
         if (data.useImperialUnits !== undefined) {
-          data.useImperialUnits ? tripStore.convertToMiles() : tripStore.convertToKilometers()
+          tripStore.setUnits(data.useImperialUnits ? 'miles' : 'km')
         }
         if (data.totalDistance !== undefined) {
           tripStore.setTotalDistance(data.totalDistance)
@@ -189,12 +189,12 @@ TripOverlay.getStatus()           - Shows the current status of the overlay.
     getStatus: () => {
       const state = tripStore
       return {
-        traveledDistance: state.traveledDistance,
-        todayDistance: state.todayDistance,
-        totalDistance: state.totalDistance,
-        progressPercent: (state.traveledDistance / state.totalDistance) * 100,
-        currentMode: state.currentMode,
-        useImperialUnits: state.useImperialUnits
+        traveledDistance: state.currentDistanceKm,
+        todayDistance: state.todayDistanceKm,
+        totalDistance: state.totalDistanceKm,
+        progressPercent: (state.currentDistanceKm / state.totalDistanceKm) * 100,
+        currentMode: state.isMoving ? 'MOVING' : 'STATIONARY',
+        useImperialUnits: state.units === 'miles'
       }
     }
   }
