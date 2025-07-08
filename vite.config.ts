@@ -15,9 +15,9 @@ export default defineConfig({
     emptyOutDir: true,
     rollupOptions: {
       input: {
-        main: 'index-react.html', // React trip overlay
-        dashboard: 'dashboard.html', // React dashboard (promoted from dashboard-react.html)
-        landing: 'index.html', // Landing page
+        main: path.resolve(__dirname, 'index-react.html'), // React trip overlay
+        dashboard: path.resolve(__dirname, 'dashboard.html'), // React dashboard
+        landing: path.resolve(__dirname, 'index.html'), // Landing page
       },
     },
   },

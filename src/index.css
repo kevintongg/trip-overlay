@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 /* OBS Browser Source Compatibility - CRITICAL for streaming */
 body {
@@ -151,7 +149,13 @@ body {
 
 @layer base {
   * {
-    @apply border-border;
+    border-color: rgb(228 228 231);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    * {
+      border-color: rgb(39 39 42);
+    }
   }
   body {
     @apply bg-transparent text-white;

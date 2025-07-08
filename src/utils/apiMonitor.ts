@@ -66,7 +66,9 @@ class ApiMonitor {
     const remaining = DAILY_LIMIT - usage.totalCalls;
 
     if (remaining <= 0) {
-      logger('🚫 API Monitor: Daily limit reached! No more API calls allowed today.');
+      logger(
+        '🚫 API Monitor: Daily limit reached! No more API calls allowed today.'
+      );
       return false;
     }
 
@@ -115,11 +117,17 @@ class ApiMonitor {
     // Log the call
     const remaining = DAILY_LIMIT - usage.totalCalls;
     if (fromCache) {
-      logger(`📈 API Monitor: Cache hit for ${coordinates} (${remaining} calls remaining)`);
+      logger(
+        `📈 API Monitor: Cache hit for ${coordinates} (${remaining} calls remaining)`
+      );
     } else if (success) {
-      logger(`📈 API Monitor: API call successful for ${coordinates} (${remaining} calls remaining)`);
+      logger(
+        `📈 API Monitor: API call successful for ${coordinates} (${remaining} calls remaining)`
+      );
     } else {
-      logger(`❌ API Monitor: API call failed for ${coordinates} (${remaining} calls remaining)`);
+      logger(
+        `❌ API Monitor: API call failed for ${coordinates} (${remaining} calls remaining)`
+      );
     }
   }
 

@@ -18,7 +18,8 @@ export interface LocationData {
 export function useLocationData(): LocationData {
   const [locationText, setLocationText] = useState('--');
   const [isReverseGeocoding, setIsReverseGeocoding] = useState(false);
-    // Get connection data from stores
+
+  // TESTING: Now testing useRtirlSocket
   const { lastPosition, isConnected } = useConnectionStore();
   const { isConnected: rtirlConnected } = useRtirlSocket();
 

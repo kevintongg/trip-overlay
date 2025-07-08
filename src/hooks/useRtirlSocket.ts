@@ -9,12 +9,13 @@ declare global {
   interface Window {
     RealtimeIRL?: {
       forStreamer: (
-        _platform: string,
-        _userId: string
+        platform: string,
+        userId: string
       ) => {
-        addLocationListener: (_callback: (data: any) => void) => () => void;
+        addLocationListener: (callback: (data: any) => void) => () => void;
       };
     };
+    __dashboardDemoActive?: boolean;
   }
 }
 
@@ -48,7 +49,7 @@ export function useRtirlSocket() {
   } = useConnectionStore();
 
   const [rtirl, setRtirl] = useState<any>(null);
-  const intervalRef = useRef<number>();
+  const intervalRef = useRef<number | undefined>(undefined);
   const initRef = useRef<boolean>(false);
   const demoStateRef = useRef<DemoState>({
     updateCount: 0,
@@ -138,16 +139,22 @@ export function useRtirlSocket() {
   // NOTE: Demo mode is now handled by useDashboardDemo hook in the new React-first Dashboard
   // This legacy demo mode is only used for non-dashboard components (like TripOverlay)
   useEffect(() => {
-    // Skip demo mode if dashboard demo is already active
-    if (window.__dashboardDemoActive) {
-      return;
-    }
-
     if (isDemo && !initRef.current) {
       initRef.current = true;
       logger('🎭 RTIRL Demo mode enabled, starting demo data');
 
       const generateDemoData = () => {
+        // Check global flag before each demo update
+        if (window.__dashboardDemoActive) {
+          // Dashboard demo is active, stop this demo mode
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = undefined;
+          }
+          logger('🛑 RTIRL demo mode stopped - dashboard demo is active');
+          return;
+        }
+
         const state = demoStateRef.current;
         state.updateCount++;
 
@@ -178,9 +185,11 @@ export function useRtirlSocket() {
         });
       };
 
-      // Start demo data updates
-      intervalRef.current = window.setInterval(generateDemoData, 1000); // Match original 1s interval
-      generateDemoData(); // Initial update
+      // Start demo data updates only if dashboard demo is not already active
+      if (!window.__dashboardDemoActive) {
+        intervalRef.current = window.setInterval(generateDemoData, 1000); // Match original 1s interval
+        generateDemoData(); // Initial update
+      }
 
       return () => {
         if (intervalRef.current) {
@@ -188,6 +197,28 @@ export function useRtirlSocket() {
         }
       };
     }
+  }, [isDemo]);
+
+  // Monitor dashboard demo flag and stop RTIRL demo if needed
+  useEffect(() => {
+    if (!isDemo) {
+      return;
+    }
+
+    const checkDashboardDemo = () => {
+      if (window.__dashboardDemoActive && intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = undefined;
+        logger('🛑 RTIRL demo mode stopped - dashboard demo is active');
+      }
+    };
+
+    // Check every 100ms for dashboard demo activation
+    const monitorInterval = setInterval(checkDashboardDemo, 100);
+
+    return () => {
+      clearInterval(monitorInterval);
+    };
   }, [isDemo]);
 
   // RTIRL connection setup
