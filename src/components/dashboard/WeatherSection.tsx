@@ -39,7 +39,7 @@ export function WeatherSection({
         {/* Weather Icon */}
         <div
           key="weather-icon"
-          className="text-[2.2em] flex items-center leading-none mr-1 font-emoji drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)]"
+          className="text-[2.1em] flex items-center leading-none mr-1 font-emoji drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)]"
         >
           {getWeatherIcon(weatherData)}
         </div>
@@ -49,10 +49,10 @@ export function WeatherSection({
           key="temperature"
           className="flex flex-col items-center gap-1 mx-3"
         >
-          <div className="text-[2.2em] font-black text-white tracking-wide drop-shadow-[0_3px_12px_rgba(0,0,0,0.9)] font-inter leading-none">
+          <div className="text-[1.7em] font-black text-white tracking-wide drop-shadow-[0_3px_12px_rgba(0,0,0,0.9)] font-inter leading-none">
             {getWeatherTemp(weatherData)}
           </div>
-          <div className="text-[1.0em] text-gray-300 font-medium tracking-wide drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] font-inter whitespace-nowrap opacity-80">
+          <div className="text-[0.95em] text-gray-300 font-medium tracking-wide drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] font-inter whitespace-nowrap opacity-80">
             {getWeatherHighLow(weatherData)}
           </div>
         </div>
@@ -60,7 +60,7 @@ export function WeatherSection({
         {/* Weather Description */}
         <div
           key="weather-desc"
-          className="text-[1.2em] text-gray-200 font-medium drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] capitalize ml-3 text-left leading-tight"
+          className="text-[1.1em] text-gray-200 font-medium drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] capitalize ml-3 text-left leading-tight"
         >
           {getWeatherDesc(weatherData)}
         </div>
@@ -71,7 +71,7 @@ export function WeatherSection({
             key="speed-display"
             className="flex flex-col items-start ml-2 font-semibold"
           >
-            <div className="flex justify-start items-baseline w-full text-[1.2em] font-bold text-green-500 drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] font-mono tracking-wider">
+            <div className="flex justify-start items-baseline w-full text-[1.15em] font-bold text-green-500 drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] font-mono tracking-wider">
               <span className="text-center min-w-[3.5em]">
                 {speedDisplay.speedMph}
               </span>
@@ -79,7 +79,7 @@ export function WeatherSection({
                 mph
               </span>
             </div>
-            <div className="flex justify-start items-baseline w-full text-[1.2em] font-bold text-green-500 drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] font-mono tracking-wider">
+            <div className="flex justify-start items-baseline w-full text-[1.15em] font-bold text-green-500 drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] font-mono tracking-wider">
               <span className="text-center min-w-[3.5em]">
                 {speedDisplay.speedKmh}
               </span>

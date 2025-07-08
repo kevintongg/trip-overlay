@@ -157,6 +157,14 @@ body {
       border-color: rgb(39 39 42);
     }
   }
+
+  /* Prevent Dark Reader from overriding dashboard card borders */
+  .dashboard-card,
+  [data-radix-scroll-area-viewport],
+  [class*="border-white"] {
+    border-color: rgba(255, 255, 255, 0.2) !important;
+  }
+
   body {
     @apply bg-transparent text-white;
   }
