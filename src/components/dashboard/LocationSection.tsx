@@ -7,33 +7,27 @@ interface LocationSectionProps {
 }
 
 /**
- * Location Section Component
- * Displays current location with connection status fallbacks
- * Maintains exact styling and logic from original Dashboard
+ * Location Section Component - Optimized Version
+ * Displays current location with progressive loading states and better UX
  */
 export function LocationSection({ locationData, show }: LocationSectionProps) {
   if (!show) {
     return null;
   }
 
-  // Show connection status in location when no GPS (extracted from original)
-  const getLocationText = (): string => {
-    if (locationData.locationText !== '--') {
-      return locationData.locationText;
-    }
-    if (locationData.isConnected && locationData.lastPosition) {
-      return 'GPS Connected';
-    }
-    if (locationData.rtirlConnected) {
-      return 'RTIRL Connected';
-    }
-    return 'Waiting for GPS...';
-  };
+  // The hook now handles all the smart location text logic
+  // We can trust the locationText from the hook directly
+  const displayText = locationData.locationText;
 
   return (
     <div className="mb-3 w-full text-center">
-      <div className="text-[1.6em] font-bold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] break-words">
-        {getLocationText()}
+      <div className="text-[1.6em] font-bold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] break-words flex items-center justify-center gap-2">
+        {displayText}
+        {locationData.isLoadingLocation && (
+          <div className="inline-block">
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin opacity-70" />
+          </div>
+        )}
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ import {
   type Coordinates,
 } from '../../store/connectionStore';
 import { useRtirlSocket } from '../useRtirlSocket';
+import { locationService } from '../../utils/locationService';
 import { logger } from '../../utils/logger';
 
 export interface LocationData {
@@ -11,124 +12,156 @@ export interface LocationData {
   isConnected: boolean;
   lastPosition: Coordinates | null;
   rtirlConnected: boolean;
+  isLoadingLocation: boolean; // New state for loading indicator
 }
 
 /**
- * Location Data Hook
- * Handles GPS data, reverse geocoding, and location text display
- * Maintains exact compatibility with original location logic
+ * Location Data Hook - Optimized Version
+ * Handles GPS data, reverse geocoding with caching, debouncing, and timeouts
+ * Provides improved user experience with progressive loading states
  */
 export function useLocationData(): LocationData {
   const [locationText, setLocationText] = useState('--');
-  const [isReverseGeocoding, setIsReverseGeocoding] = useState(false);
+  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
 
-  // TESTING: Now testing useRtirlSocket
   const { lastPosition, isConnected } = useConnectionStore();
   const { isConnected: rtirlConnected } = useRtirlSocket();
 
-  // Throttling ref to prevent spam
-  const lastLogTime = useRef<{ [key: string]: number }>({});
+  // Track last processed coordinates to avoid unnecessary requests
+  const lastProcessedCoords = useRef<string | null>(null);
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Throttled logger function (extracted from original)
-  const throttledLog = useCallback(
-    (key: string, throttleMs: number, message: string, ...args: unknown[]) => {
-      const now = Date.now();
-      if (now - (lastLogTime.current[key] || 0) > throttleMs) {
-        lastLogTime.current[key] = now;
-        logger(message, ...args);
+  /**
+   * Get display text based on current state
+   * Provides progressive user feedback during loading
+   */
+  const getDisplayText = useCallback(
+    (position: Coordinates | null, loading: boolean, known: string): string => {
+      if (!position) return 'Waiting for GPS...';
+      if (!loading) return known;
+
+      // During loading, show helpful progress messages
+      if (known !== '--') {
+        return known; // Keep showing last known location while updating
       }
+      return 'GPS Connected - Getting location...';
     },
     []
   );
 
-  // Reverse geocoding function (extracted from original)
-  const reverseGeocode = useCallback(
-    async (lat: number, lon: number) => {
-      if (isReverseGeocoding) {
-        return; // Prevent duplicate requests
-      }
+  /**
+   * Optimized reverse geocoding with caching and error handling
+   */
+  const performReverseGeocode = useCallback(async (coordinates: Coordinates) => {
+    const coordsKey = `${coordinates.lat.toFixed(6)},${coordinates.lon.toFixed(6)}`;
 
-      setIsReverseGeocoding(true);
-      try {
-        // Use OpenStreetMap Nominatim for free reverse geocoding
-        const response = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=14&addressdetails=1`,
-          {
-            headers: {
-              'User-Agent': 'trip-overlay-dashboard/1.0',
-            },
-          }
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-          const { address } = data;
-
-          // Build location string: "District, City, Country" or "City, Country"
-          const district =
-            address.district ||
-            address.borough ||
-            address.neighbourhood ||
-            address.suburb ||
-            address.quarter ||
-            address.city_district;
-
-          const city =
-            address.city ||
-            address.town ||
-            address.village ||
-            address.municipality;
-
-          const { country } = address;
-
-          const locationParts = [];
-          if (district && district !== city) {
-            locationParts.push(district);
-          }
-          if (city) {
-            locationParts.push(city);
-          }
-          if (country) {
-            locationParts.push(country);
-          }
-
-          const locationName =
-            locationParts.filter(Boolean).length > 0
-              ? locationParts.filter(Boolean).join(', ')
-              : `${lat.toFixed(3)}, ${lon.toFixed(3)}`;
-
-          setLocationText(locationName);
-        } else {
-          // Fallback to coordinates if geocoding fails
-          setLocationText(`${lat.toFixed(3)}, ${lon.toFixed(3)}`);
-        }
-      } catch (error) {
-        throttledLog(
-          'reverseGeocode',
-          1000,
-          'Reverse geocoding failed:',
-          error
-        );
-        // Fallback to coordinates
-        setLocationText(`${lat.toFixed(3)}, ${lon.toFixed(3)}`);
-      } finally {
-        setIsReverseGeocoding(false);
-      }
-    },
-    [isReverseGeocoding, throttledLog]
-  );
-
-  // Update location when position changes
-  useEffect(() => {
-    if (lastPosition?.lat && lastPosition?.lon) {
-      reverseGeocode(lastPosition.lat, lastPosition.lon);
+    // Skip if we already processed these exact coordinates
+    if (lastProcessedCoords.current === coordsKey) {
+      return;
     }
-  }, [lastPosition, reverseGeocode]);
+
+    lastProcessedCoords.current = coordsKey;
+    setIsLoadingLocation(true);
+
+    try {
+      logger(`[useLocationData] Starting reverse geocode for ${coordsKey}`);
+      const result = await locationService.reverseGeocode({
+        lat: coordinates.lat,
+        lon: coordinates.lon,
+      });
+
+      logger(`[useLocationData] Reverse geocode successful: ${result}`);
+      setLocationText(result);
+    } catch (error) {
+      logger('[useLocationData] Reverse geocoding failed:', error);
+
+      // Fallback to coordinates if all else fails
+      const fallback = `${coordinates.lat.toFixed(3)}, ${coordinates.lon.toFixed(3)}`;
+      setLocationText(fallback);
+    } finally {
+      setIsLoadingLocation(false);
+    }
+  }, []);
+
+  /**
+   * Debounced version to prevent excessive API calls
+   * 1 second delay ensures we don't spam the API during rapid GPS updates
+   */
+  const debouncedReverseGeocode = useCallback((coordinates: Coordinates) => {
+    // Clear existing timer
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+    }
+
+    // Set new timer
+    debounceTimer.current = setTimeout(() => {
+      performReverseGeocode(coordinates);
+    }, 1000);
+  }, [performReverseGeocode]);
+
+  /**
+   * Handle position changes with smart updates
+   */
+  useEffect(() => {
+    if (!lastPosition?.lat || !lastPosition?.lon) {
+      // Reset state when GPS is lost
+      if (locationText !== '--' && locationText !== 'Waiting for GPS...') {
+        setLocationText('--');
+        setIsLoadingLocation(false);
+        lastProcessedCoords.current = null;
+      }
+      return;
+    }
+
+    // Calculate if this is a significant position change (>50 meters)
+    // This prevents unnecessary API calls for minor GPS drift
+    if (lastProcessedCoords.current) {
+      const [lastLat, lastLon] = lastProcessedCoords.current.split(',').map(Number);
+      const distance = calculateDistance(
+        { lat: lastLat, lon: lastLon },
+        { lat: lastPosition.lat, lon: lastPosition.lon }
+      );
+
+      // Only update if moved more than 50 meters
+      if (distance < 50) {
+        return;
+      }
+    }
+
+    // Trigger debounced reverse geocoding
+    debouncedReverseGeocode({
+      lat: lastPosition.lat,
+      lon: lastPosition.lon,
+    });
+  }, [lastPosition, debouncedReverseGeocode, locationText]);
+
+  /**
+   * Calculate distance between two coordinates in meters
+   * Uses Haversine formula for accuracy
+   */
+  function calculateDistance(coord1: Coordinates, coord2: Coordinates): number {
+    const R = 6371e3; // Earth's radius in meters
+    const φ1 = (coord1.lat * Math.PI) / 180;
+    const φ2 = (coord2.lat * Math.PI) / 180;
+    const Δφ = ((coord2.lat - coord1.lat) * Math.PI) / 180;
+    const Δλ = ((coord2.lon - coord1.lon) * Math.PI) / 180;
+
+    const a =
+      Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+      Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c;
+  }
+
+  // Calculate final display text
+  const finalLocationText = getDisplayText(lastPosition, isLoadingLocation, locationText);
 
   return {
-    locationText,
+    locationText: finalLocationText,
     isConnected,
     lastPosition,
     rtirlConnected,
+    isLoadingLocation,
   };
 }
