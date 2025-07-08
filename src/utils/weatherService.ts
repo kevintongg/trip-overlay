@@ -73,7 +73,7 @@ function generateMockWeather(lat: number, lon: number): WeatherResponse {
   const condition =
     weatherConditions[Math.floor(Math.random() * weatherConditions.length)];
 
-    // Calculate timezone for any coordinates (mock data)
+  // Calculate timezone for any coordinates (mock data)
   let timezone = 'UTC';
   let timezoneOffset = 0;
 
@@ -99,9 +99,9 @@ function generateMockWeather(lat: number, lon: number): WeatherResponse {
     timezone = 'UTC'; // Fallback
   }
 
-    // Simple UV Index for mock data (real API provides accurate values)
+  // Simple UV Index for mock data (real API provides accurate values)
   const hour = now.getHours();
-  const uvi = (hour >= 6 && hour <= 18) ? Math.random() * 5 : 0; // Basic day/night
+  const uvi = hour >= 6 && hour <= 18 ? Math.random() * 5 : 0; // Basic day/night
 
   return {
     current: {

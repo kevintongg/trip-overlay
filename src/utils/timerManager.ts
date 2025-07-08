@@ -45,7 +45,9 @@ class TimerManager {
       description,
     });
 
-    logger.debug(`[TimerManager] Timeout created: ${id} (${delay}ms)${description ? ` - ${description}` : ''}`);
+    logger.debug(
+      `[TimerManager] Timeout created: ${id} (${delay}ms)${description ? ` - ${description}` : ''}`
+    );
     return id;
   }
 
@@ -71,7 +73,9 @@ class TimerManager {
       description,
     });
 
-    logger.debug(`[TimerManager] Interval created: ${id} (${delay}ms)${description ? ` - ${description}` : ''}`);
+    logger.debug(
+      `[TimerManager] Interval created: ${id} (${delay}ms)${description ? ` - ${description}` : ''}`
+    );
     return id;
   }
 
@@ -110,7 +114,9 @@ class TimerManager {
     }
 
     if (cleared > 0) {
-      logger.debug(`[TimerManager] Cleared ${cleared} timers with prefix: ${prefix}`);
+      logger.debug(
+        `[TimerManager] Cleared ${cleared} timers with prefix: ${prefix}`
+      );
     }
 
     return cleared;
@@ -154,13 +160,23 @@ class TimerManager {
     timeouts: number;
     intervals: number;
     oldestTimer: number | null;
-    timerList: Array<{ id: string; type: string; age: number; description?: string }>;
+    timerList: Array<{
+      id: string;
+      type: string;
+      age: number;
+      description?: string;
+    }>;
   } {
     const now = Date.now();
     let timeouts = 0;
     let intervals = 0;
     let oldestTimer: number | null = null;
-    const timerList: Array<{ id: string; type: string; age: number; description?: string }> = [];
+    const timerList: Array<{
+      id: string;
+      type: string;
+      age: number;
+      description?: string;
+    }> = [];
 
     for (const timer of this.timers.values()) {
       const age = now - timer.created;
@@ -213,7 +229,9 @@ class TimerManager {
     }
 
     if (staleTimes.length > 0) {
-      logger.warn(`[TimerManager] Cleaned up ${staleTimes.length} stale timeouts`);
+      logger.warn(
+        `[TimerManager] Cleaned up ${staleTimes.length} stale timeouts`
+      );
     }
   }
 
@@ -226,15 +244,17 @@ class TimerManager {
     logger('[TimerManager] Current Status:');
     console.table({
       'Total Timers': stats.totalTimers,
-      'Timeouts': stats.timeouts,
-      'Intervals': stats.intervals,
+      Timeouts: stats.timeouts,
+      Intervals: stats.intervals,
       'Oldest Timer (ms)': stats.oldestTimer,
     });
 
     if (stats.timerList.length > 0) {
       logger('[TimerManager] Active Timers:');
       stats.timerList.forEach(timer => {
-        logger(`  ${timer.id} (${timer.type}): ${timer.age}ms old${timer.description ? ` - ${timer.description}` : ''}`);
+        logger(
+          `  ${timer.id} (${timer.type}): ${timer.age}ms old${timer.description ? ` - ${timer.description}` : ''}`
+        );
       });
     }
   }

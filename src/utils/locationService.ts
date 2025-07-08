@@ -96,8 +96,10 @@ class LocationService {
    */
   private getCacheKey(coordinates: Coordinates): string {
     const radiusInDegrees = this.CACHE_RADIUS / 111000; // Convert meters to degrees
-    const latKey = Math.round(coordinates.lat / radiusInDegrees) * radiusInDegrees;
-    const lonKey = Math.round(coordinates.lon / radiusInDegrees) * radiusInDegrees;
+    const latKey =
+      Math.round(coordinates.lat / radiusInDegrees) * radiusInDegrees;
+    const lonKey =
+      Math.round(coordinates.lon / radiusInDegrees) * radiusInDegrees;
     return `${latKey.toFixed(5)},${lonKey.toFixed(5)}`;
   }
 
@@ -118,7 +120,10 @@ class LocationService {
   /**
    * Cache a successful geocoding result
    */
-  private setCachedResult(coordinates: Coordinates, locationText: string): void {
+  private setCachedResult(
+    coordinates: Coordinates,
+    locationText: string
+  ): void {
     const cacheKey = this.getCacheKey(coordinates);
     this.cache.set(cacheKey, {
       locationText,
@@ -258,7 +263,9 @@ class LocationService {
    * OpenStreetMap Nominatim geocoding provider (fallback)
    */
   private async geocodeNominatim(coordinates: Coordinates): Promise<string> {
-    logger(`[LocationService] Nominatim: Requesting geocode for ${coordinates.lat}, ${coordinates.lon}`);
+    logger(
+      `[LocationService] Nominatim: Requesting geocode for ${coordinates.lat}, ${coordinates.lon}`
+    );
 
     const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${coordinates.lat}&lon=${coordinates.lon}&zoom=14&addressdetails=1`;
     logger(`[LocationService] Nominatim: URL: ${url}`);
@@ -269,10 +276,14 @@ class LocationService {
       },
     });
 
-    logger(`[LocationService] Nominatim: Response status: ${response.status} ${response.statusText}`);
+    logger(
+      `[LocationService] Nominatim: Response status: ${response.status} ${response.statusText}`
+    );
 
     if (!response.ok) {
-      throw new Error(`Nominatim API error: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `Nominatim API error: ${response.status} ${response.statusText}`
+      );
     }
 
     const data: NominatimResponse = await response.json();
@@ -308,14 +319,13 @@ class LocationService {
       address.city_district;
 
     const city =
-      address.city ||
-      address.town ||
-      address.village ||
-      address.municipality;
+      address.city || address.town || address.village || address.municipality;
 
     const { country } = address;
 
-    logger(`[LocationService] Nominatim: Parsed components - district: ${district}, city: ${city}, country: ${country}`);
+    logger(
+      `[LocationService] Nominatim: Parsed components - district: ${district}, city: ${city}, country: ${country}`
+    );
 
     const locationParts = [];
     if (district && district !== city) {
@@ -328,10 +338,14 @@ class LocationService {
       locationParts.push(country);
     }
 
-    logger(`[LocationService] Nominatim: Location parts: [${locationParts.join(', ')}]`);
+    logger(
+      `[LocationService] Nominatim: Location parts: [${locationParts.join(', ')}]`
+    );
 
     if (locationParts.length === 0) {
-      logger.error('[LocationService] Nominatim: No valid location parts found');
+      logger.error(
+        '[LocationService] Nominatim: No valid location parts found'
+      );
       throw new Error('No valid location parts found');
     }
 
@@ -356,20 +370,20 @@ class LocationService {
     if (import.meta.env.VITE_OPENCAGE_API_KEY) {
       providers.push({
         name: 'OpenCage',
-        geocode: (coords) => this.geocodeOpenCage(coords),
+        geocode: coords => this.geocodeOpenCage(coords),
       });
     }
 
     // Secondary: Nominatim (free fallback)
     providers.push({
       name: 'Nominatim',
-      geocode: (coords) => this.geocodeNominatim(coords),
+      geocode: coords => this.geocodeNominatim(coords),
     });
 
     // Final fallback: Coordinates
     providers.push({
       name: 'Fallback',
-      geocode: (coords) => this.geocodeFallback(coords),
+      geocode: coords => this.geocodeFallback(coords),
     });
 
     return providers;
@@ -378,7 +392,9 @@ class LocationService {
   /**
    * Try multiple geocoding providers with fallback
    */
-  private async tryMultipleProviders(coordinates: Coordinates): Promise<string> {
+  private async tryMultipleProviders(
+    coordinates: Coordinates
+  ): Promise<string> {
     const providers = this.getProviders();
     let lastError: Error | null = null;
 
@@ -391,7 +407,9 @@ class LocationService {
           this.createTimeoutPromise(this.REQUEST_TIMEOUT),
         ]);
 
-        logger(`[LocationService] ${provider.name} provider succeeded: ${result}`);
+        logger(
+          `[LocationService] ${provider.name} provider succeeded: ${result}`
+        );
         return result;
       } catch (error) {
         lastError = error as Error;
@@ -436,7 +454,10 @@ class LocationService {
         return result;
       })
       .catch(error => {
-        logger(`[LocationService] All providers failed for ${requestKey}:`, error);
+        logger(
+          `[LocationService] All providers failed for ${requestKey}:`,
+          error
+        );
         // Return formatted coordinates as final fallback
         const fallback = `${coordinates.lat.toFixed(3)}, ${coordinates.lon.toFixed(3)}`;
         this.setCachedResult(coordinates, fallback);
@@ -457,14 +478,20 @@ class LocationService {
     const testCoords = coordinates || { lat: 48.2082, lon: 16.3738 }; // Vienna
 
     logger('[LocationService] === DEBUG INFO ===');
-    logger(`[LocationService] OpenCage API Key configured: ${!!import.meta.env.VITE_OPENCAGE_API_KEY}`);
+    logger(
+      `[LocationService] OpenCage API Key configured: ${!!import.meta.env.VITE_OPENCAGE_API_KEY}`
+    );
     logger(`[LocationService] Cache size: ${this.cache.size} entries`);
     logger(`[LocationService] Pending requests: ${this.pendingRequests.size}`);
 
     const providers = this.getProviders();
-    logger(`[LocationService] Available providers: ${providers.map(p => p.name).join(', ')}`);
+    logger(
+      `[LocationService] Available providers: ${providers.map(p => p.name).join(', ')}`
+    );
 
-    logger(`[LocationService] Testing geocoding for ${testCoords.lat}, ${testCoords.lon}...`);
+    logger(
+      `[LocationService] Testing geocoding for ${testCoords.lat}, ${testCoords.lon}...`
+    );
 
     try {
       const result = await this.reverseGeocode(testCoords);

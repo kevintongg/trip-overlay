@@ -107,6 +107,7 @@ Displays a list of all available console commands.
 **NEW:** Comprehensive debugging tool for location service issues.
 
 Tests the location geocoding service and displays:
+
 - Available providers (OpenCage, Nominatim, Fallback)
 - API key configuration status
 - Cache statistics

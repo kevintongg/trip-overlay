@@ -327,6 +327,7 @@ The project now includes several optimization services that should be used for n
 - **`timerManager`**: Centralized timer management with automatic cleanup
 
 When adding features that involve:
+
 - **Location data**: Use `locationService.reverseGeocode()`
 - **Speed updates**: Use `speedUpdateService.updateSpeed()`
 - **localStorage**: Use `localStorageService.setItem()`/`getItem()`

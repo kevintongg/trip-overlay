@@ -33,17 +33,16 @@ class SpeedUpdateService {
     mode: string,
     options: SpeedUpdateOptions = {}
   ): void {
-    const {
-      force = false,
-      throttleMs = this.DEFAULT_THROTTLE_MS
-    } = options;
+    const { force = false, throttleMs = this.DEFAULT_THROTTLE_MS } = options;
 
     const now = Date.now();
     const newUpdate: SpeedData = { speed, mode, timestamp: now };
 
     // Check if this is a significant change
     if (!force && !this.isSignificantChange(newUpdate)) {
-      logger.debug(`[SpeedUpdate] Skipping insignificant change: ${speed.toFixed(1)} km/h, ${mode}`);
+      logger.debug(
+        `[SpeedUpdate] Skipping insignificant change: ${speed.toFixed(1)} km/h, ${mode}`
+      );
       return;
     }
 
@@ -147,8 +146,12 @@ class SpeedUpdateService {
     try {
       // Batch the localStorage updates
       await Promise.all([
-        optimizedSetItem(this.STORAGE_KEYS.speed, update.speed.toFixed(1), { throttleMs: 100 }),
-        optimizedSetItem(this.STORAGE_KEYS.mode, update.mode, { throttleMs: 100 }),
+        optimizedSetItem(this.STORAGE_KEYS.speed, update.speed.toFixed(1), {
+          throttleMs: 100,
+        }),
+        optimizedSetItem(this.STORAGE_KEYS.mode, update.mode, {
+          throttleMs: 100,
+        }),
       ]);
 
       // Dispatch storage events for components that listen
@@ -236,7 +239,10 @@ class SpeedUpdateService {
     // Fallback to localStorage
     try {
       const speed = optimizedGetItem<string>(this.STORAGE_KEYS.speed, '0');
-      const mode = optimizedGetItem<string>(this.STORAGE_KEYS.mode, 'STATIONARY');
+      const mode = optimizedGetItem<string>(
+        this.STORAGE_KEYS.mode,
+        'STATIONARY'
+      );
 
       return {
         speed: parseFloat(speed) || 0,

@@ -157,30 +157,30 @@ const TripOverlay: React.FC = () => {
               <div className="text-[10px] font-normal text-[#cccccc] uppercase text-right">
                 remaining
               </div>
-              </div>
             </div>
           </div>
         </div>
+      </div>
 
       {/* Enhanced Control Panel - Conditional overlay like original */}
-        {showControlPanel && (
+      {showControlPanel && (
         <div className="mt-5 p-[15px] bg-black/60 border border-white/20 rounded-[10px] backdrop-blur-[5px] min-w-[300px]">
-              {/* Control Header */}
-              <div className="text-center text-sm font-bold text-white mb-3 uppercase tracking-wider">
-                Stream Controls
-              </div>
+          {/* Control Header */}
+          <div className="text-center text-sm font-bold text-white mb-3 uppercase tracking-wider">
+            Stream Controls
+          </div>
 
-              {/* Primary Control Row */}
-              <div className="flex gap-3 mb-2.5 justify-center">
+          {/* Primary Control Row */}
+          <div className="flex gap-3 mb-2.5 justify-center">
             <button
-                  onClick={resetTodayDistance}
+              onClick={resetTodayDistance}
               className="bg-white/15 border border-white/30 text-white px-4 py-2.5 rounded-lg cursor-pointer
                        text-[13px] font-medium transition-all duration-200 min-w-[110px] text-center
                        hover:bg-white/25 hover:border-white/50 hover:-translate-y-0.5
                        active:bg-white/35 active:translate-y-0"
-                  title="Reset today's distance - most common for daily tours"
-                >
-                  🔄 Reset Today
+              title="Reset today's distance - most common for daily tours"
+            >
+              🔄 Reset Today
             </button>
             <button
               onClick={handleExportTripData}
@@ -188,43 +188,43 @@ const TripOverlay: React.FC = () => {
                        text-[13px] font-medium transition-all duration-200 min-w-[110px] text-center
                        hover:bg-white/25 hover:border-white/50 hover:-translate-y-0.5
                        active:bg-white/35 active:translate-y-0"
-                  title="Download backup file"
-                >
-                  💾 Backup
+              title="Download backup file"
+            >
+              💾 Backup
             </button>
-              </div>
+          </div>
 
-              {/* Secondary Control Row */}
-              <div className="flex gap-3 mb-4 justify-center">
+          {/* Secondary Control Row */}
+          <div className="flex gap-3 mb-4 justify-center">
             <button
-                  onClick={resetAutoStartLocation}
+              onClick={resetAutoStartLocation}
               className="bg-white/15 border border-white/30 text-white px-4 py-2.5 rounded-lg cursor-pointer
                        text-[13px] font-medium transition-all duration-200 min-w-[110px] text-center
                        hover:bg-white/25 hover:border-white/50 hover:-translate-y-0.5
                        active:bg-white/35 active:translate-y-0"
-                  title="Re-detect start location"
-                >
-                  📍 Fix Start
+              title="Re-detect start location"
+            >
+              📍 Fix Start
             </button>
             <button
-                  onClick={resetTripProgress}
+              onClick={resetTripProgress}
               className="bg-red-600/30 border border-red-600/50 text-white px-4 py-2.5 rounded-lg cursor-pointer
                        text-[13px] font-medium transition-all duration-200 min-w-[110px] text-center
                        hover:bg-red-600/50 hover:border-red-600/70 hover:-translate-y-0.5
                        active:bg-red-600/60 active:translate-y-0"
-                  title="⚠️ Reset entire trip - use carefully!"
-                >
-                  🗑️ Reset All
+              title="⚠️ Reset entire trip - use carefully!"
+            >
+              🗑️ Reset All
             </button>
-              </div>
+          </div>
 
           {/* Feedback area */}
           <div className="text-center text-xs p-2 rounded-md mt-1 min-h-[20px] flex items-center justify-center">
             {/* Feedback messages would go here */}
           </div>
-                </div>
-              )}
-            </div>
+        </div>
+      )}
+    </div>
   );
 };
 

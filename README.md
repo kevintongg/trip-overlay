@@ -728,11 +728,11 @@ pnpm run format:check
    ```bash
    # Copy environment template
    cp env-template .env.local
-   
+
    # Edit .env.local with your values:
    # - VITE_RTIRL_USER_ID=your_rtirl_user_id (required)
    # - VITE_OPENCAGE_API_KEY=your_opencage_api_key (optional - improves location accuracy)
-   
+
    # Weather API (for Cloudflare Functions only)
    # Edit .dev.vars with your OpenWeatherMap API key
    ```
@@ -752,7 +752,7 @@ pnpm run format:check
    ```bash
    # Start development server
    pnpm run dev
-   
+
    # Or test with static files:
    # Double-click dashboard.html or trip.html
    ```

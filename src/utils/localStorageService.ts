@@ -33,7 +33,7 @@ class LocalStorageService {
   ): Promise<void> {
     const {
       throttleMs = this.DEFAULT_THROTTLE_MS,
-      batchSize = this.DEFAULT_BATCH_SIZE
+      batchSize = this.DEFAULT_BATCH_SIZE,
     } = options;
 
     // Add to pending writes
@@ -119,7 +119,9 @@ class LocalStorageService {
   /**
    * Batch write all pending operations to localStorage
    */
-  private async flushPendingWrites(retryAttempts = this.DEFAULT_RETRY_ATTEMPTS): Promise<void> {
+  private async flushPendingWrites(
+    retryAttempts = this.DEFAULT_RETRY_ATTEMPTS
+  ): Promise<void> {
     if (this.pendingWrites.size === 0) {
       return;
     }
@@ -150,7 +152,10 @@ class LocalStorageService {
               localStorage.setItem(write.key, write.value);
               continue; // Success after recovery
             } catch (retryError) {
-              logger.error(`[LocalStorage] Failed to write "${write.key}" after cleanup:`, retryError);
+              logger.error(
+                `[LocalStorage] Failed to write "${write.key}" after cleanup:`,
+                retryError
+              );
             }
           }
         } else {
@@ -163,7 +168,9 @@ class LocalStorageService {
 
     // Retry failed writes if we have attempts remaining
     if (failedWrites.length > 0 && retryAttempts > 0) {
-      logger.warn(`[LocalStorage] Retrying ${failedWrites.length} failed writes (${retryAttempts} attempts left)`);
+      logger.warn(
+        `[LocalStorage] Retrying ${failedWrites.length} failed writes (${retryAttempts} attempts left)`
+      );
 
       // Re-add failed writes to pending queue
       failedWrites.forEach(write => {
@@ -182,9 +189,9 @@ class LocalStorageService {
    */
   private async attemptQuotaRecovery(): Promise<boolean> {
     const cleanupTargets = [
-      'owm_api_usage',  // Old API usage data
-      'weatherCache',   // Expired weather cache
-      'locationCache',  // Old location cache
+      'owm_api_usage', // Old API usage data
+      'weatherCache', // Expired weather cache
+      'locationCache', // Old location cache
     ];
 
     let freedSpace = false;
@@ -194,7 +201,9 @@ class LocalStorageService {
         const existing = localStorage.getItem(key);
         if (existing) {
           localStorage.removeItem(key);
-          logger.debug(`[LocalStorage] Cleaned up key "${key}" for quota recovery`);
+          logger.debug(
+            `[LocalStorage] Cleaned up key "${key}" for quota recovery`
+          );
           freedSpace = true;
         }
       } catch {
@@ -237,7 +246,10 @@ class LocalStorageService {
   /**
    * Set multiple items efficiently
    */
-  async setItems(items: Record<string, string>, _options: StorageOptions = {}): Promise<void> {
+  async setItems(
+    items: Record<string, string>,
+    _options: StorageOptions = {}
+  ): Promise<void> {
     for (const [key, value] of Object.entries(items)) {
       // Add to pending without triggering individual flushes
       this.pendingWrites.set(key, {
@@ -306,7 +318,11 @@ class LocalStorageService {
 export const localStorageService = new LocalStorageService();
 
 // Helper functions for common operations
-export const optimizedSetItem = (key: string, value: unknown, options?: StorageOptions): Promise<void> => {
+export const optimizedSetItem = (
+  key: string,
+  value: unknown,
+  options?: StorageOptions
+): Promise<void> => {
   return localStorageService.setItem(key, JSON.stringify(value), options);
 };
 

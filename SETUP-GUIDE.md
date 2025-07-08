@@ -35,6 +35,7 @@ VITE_OPENCAGE_API_KEY=your_opencage_key_here  # Optional but recommended
 ```
 
 **Why OpenCage API?**
+
 - **Faster location updates**: 5-10x faster than free alternatives
 - **Better accuracy**: More reliable city/country detection
 - **Free tier**: 2,500 requests/day (plenty for streaming)

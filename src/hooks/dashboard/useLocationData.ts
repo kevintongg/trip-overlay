@@ -58,52 +58,58 @@ export function useLocationData(): LocationData {
   /**
    * Optimized reverse geocoding with caching and error handling
    */
-  const performReverseGeocode = useCallback(async (coordinates: Coordinates) => {
-    const coordsKey = `${coordinates.lat.toFixed(6)},${coordinates.lon.toFixed(6)}`;
+  const performReverseGeocode = useCallback(
+    async (coordinates: Coordinates) => {
+      const coordsKey = `${coordinates.lat.toFixed(6)},${coordinates.lon.toFixed(6)}`;
 
-    // Skip if we already processed these exact coordinates
-    if (lastProcessedCoords.current === coordsKey) {
-      return;
-    }
+      // Skip if we already processed these exact coordinates
+      if (lastProcessedCoords.current === coordsKey) {
+        return;
+      }
 
-    lastProcessedCoords.current = coordsKey;
-    setIsLoadingLocation(true);
+      lastProcessedCoords.current = coordsKey;
+      setIsLoadingLocation(true);
 
-    try {
-      logger(`[useLocationData] Starting reverse geocode for ${coordsKey}`);
-      const result = await locationService.reverseGeocode({
-        lat: coordinates.lat,
-        lon: coordinates.lon,
-      });
+      try {
+        logger(`[useLocationData] Starting reverse geocode for ${coordsKey}`);
+        const result = await locationService.reverseGeocode({
+          lat: coordinates.lat,
+          lon: coordinates.lon,
+        });
 
-      logger(`[useLocationData] Reverse geocode successful: ${result}`);
-      setLocationText(result);
-    } catch (error) {
-      logger('[useLocationData] Reverse geocoding failed:', error);
+        logger(`[useLocationData] Reverse geocode successful: ${result}`);
+        setLocationText(result);
+      } catch (error) {
+        logger('[useLocationData] Reverse geocoding failed:', error);
 
-      // Fallback to coordinates if all else fails
-      const fallback = `${coordinates.lat.toFixed(3)}, ${coordinates.lon.toFixed(3)}`;
-      setLocationText(fallback);
-    } finally {
-      setIsLoadingLocation(false);
-    }
-  }, []);
+        // Fallback to coordinates if all else fails
+        const fallback = `${coordinates.lat.toFixed(3)}, ${coordinates.lon.toFixed(3)}`;
+        setLocationText(fallback);
+      } finally {
+        setIsLoadingLocation(false);
+      }
+    },
+    []
+  );
 
   /**
    * Debounced version to prevent excessive API calls
    * 1 second delay ensures we don't spam the API during rapid GPS updates
    */
-  const debouncedReverseGeocode = useCallback((coordinates: Coordinates) => {
-    // Clear existing timer
-    if (debounceTimer.current) {
-      clearTimeout(debounceTimer.current);
-    }
+  const debouncedReverseGeocode = useCallback(
+    (coordinates: Coordinates) => {
+      // Clear existing timer
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+      }
 
-    // Set new timer
-    debounceTimer.current = setTimeout(() => {
-      performReverseGeocode(coordinates);
-    }, 1000);
-  }, [performReverseGeocode]);
+      // Set new timer
+      debounceTimer.current = setTimeout(() => {
+        performReverseGeocode(coordinates);
+      }, 1000);
+    },
+    [performReverseGeocode]
+  );
 
   /**
    * Handle position changes with smart updates
@@ -122,7 +128,9 @@ export function useLocationData(): LocationData {
     // Calculate if this is a significant position change (>50 meters)
     // This prevents unnecessary API calls for minor GPS drift
     if (lastProcessedCoords.current) {
-      const [lastLat, lastLon] = lastProcessedCoords.current.split(',').map(Number);
+      const [lastLat, lastLon] = lastProcessedCoords.current
+        .split(',')
+        .map(Number);
       const distance = calculateDistance(
         { lat: lastLat, lon: lastLon },
         { lat: lastPosition.lat, lon: lastPosition.lon }
@@ -161,7 +169,11 @@ export function useLocationData(): LocationData {
   }
 
   // Calculate final display text
-  const finalLocationText = getDisplayText(lastPosition, isLoadingLocation, locationText);
+  const finalLocationText = getDisplayText(
+    lastPosition,
+    isLoadingLocation,
+    locationText
+  );
 
   return {
     locationText: finalLocationText,
