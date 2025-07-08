@@ -45,7 +45,7 @@ export function useTimeDisplay(
       timeZone,
     });
 
-    // Format date as "Mon, Jul 7, 2024" (matches original exactly)
+    // Format date as "Mon Jul 7" (compact for overlays)
     const formattedDate = currentTime.toLocaleDateString('en-US', {
       weekday: 'short',
       month: 'short',
