@@ -51,7 +51,7 @@ export const CONFIG: ConfigType = {
         avatar: '/stationary.png',
       },
       WALKING: {
-        maxSpeed: 7.5, // Up to 7.5 km/h (robust walking/cycling threshold)
+        maxSpeed: 8.0, // Up to 8.0 km/h (robust walking/cycling threshold)
         minMovementM: 0.5, // More sensitive to small movements
         gpsThrottle: 2000,
         avatar: '/walking.gif',
@@ -63,7 +63,7 @@ export const CONFIG: ConfigType = {
         avatar: '/cycling.gif',
       },
     },
-    modeSwitchDelay: 10000, // 10 seconds
+    modeSwitchDelay: 7500, // 7.5 seconds
   },
 
   // Performance Configuration

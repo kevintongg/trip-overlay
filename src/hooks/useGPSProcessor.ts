@@ -51,7 +51,7 @@ export function useGPSProcessor() {
     (speed: number, _currentMode: string) => {
       const WALKING_THRESHOLD = 0.5; // km/h - Much more sensitive for walking
       // Realistic speed thresholds for human movement
-      if (speed > 10) { // 10 km/h = 6.2 mph - reasonable cycling threshold
+      if (speed > 8.0) { // 8.0 km/h = 4.9 mph - reasonable cycling threshold
         return 'CYCLING';
       } else if (speed > WALKING_THRESHOLD) {
         return 'WALKING';
