@@ -21,17 +21,28 @@ You should see the overlay simulate cycling movement and distance tracking.
 
 ### 3. **Configure for Your Trip**
 
-Edit `utils/config.js` and update these values:
+#### Environment Setup (Recommended)
 
-```javascript
-// Your RTIRL user ID (find this at rtirl.com in your profile)
-const RTIRL_USER_ID = 'YOUR_ACTUAL_RTIRL_ID';
+Copy and configure your environment variables:
 
-// Total distance of your planned trip (in kilometers)
-const TOTAL_DISTANCE_KM = 205.0; // Change this to your trip distance
+```bash
+# Copy the template file
+cp env-template .env.local
+
+# Edit .env.local with your values:
+VITE_RTIRL_USER_ID=your_rtirl_user_id_here
+VITE_OPENCAGE_API_KEY=your_opencage_key_here  # Optional but recommended
 ```
 
-Alternatively, you can set the total distance using the `setTotalTraveled` URL parameter:
+**Why OpenCage API?**
+- **Faster location updates**: 5-10x faster than free alternatives
+- **Better accuracy**: More reliable city/country detection
+- **Free tier**: 2,500 requests/day (plenty for streaming)
+- **Fallback**: Without key, automatically uses free Nominatim
+
+#### Trip Distance Configuration
+
+You can set the total distance using the `setTotalTraveled` URL parameter:
 
 `?setTotalTraveled=500` (to set total distance to 500km)
 

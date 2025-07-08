@@ -33,14 +33,14 @@ interface TripProgressState {
 }
 
 export const useTripProgressStore = create<TripProgressState>((set, get) => ({
-  // Initial state
+      // Initial state
   totalDistanceKm: 371, // Distance from Vienna to Zagreb (matches CONFIG)
-  currentDistanceKm: 0,
-  todayDistanceKm: 0,
-  totalTraveledKm: 0,
-  units: 'km',
-  isMoving: false,
-  currentSpeed: 0,
+      currentDistanceKm: 0,
+      todayDistanceKm: 0,
+      totalTraveledKm: 0,
+      units: 'km',
+      isMoving: false,
+      currentSpeed: 0,
 
   // Distance manipulation actions
   addDistance: (km: number) =>
@@ -85,9 +85,9 @@ export const useTripProgressStore = create<TripProgressState>((set, get) => ({
   setUnits: (units: 'km' | 'miles') => set({ units }),
 
   resetProgress: () =>
-    set({
-      currentDistanceKm: 0,
-      todayDistanceKm: 0,
+        set({
+          currentDistanceKm: 0,
+          todayDistanceKm: 0,
       totalTraveledKm: 0,
     }),
 
@@ -106,15 +106,15 @@ export const useTripProgressStore = create<TripProgressState>((set, get) => ({
   setMoving: (moving: boolean) => set({ isMoving: moving }),
 
   // Data import/export
-  exportTripData: () => {
-    const state = get();
+      exportTripData: () => {
+        const state = get();
     const data = {
       totalDistanceTraveled: state.totalTraveledKm,
       todayDistanceTraveled: state.todayDistanceKm,
       useImperialUnits: state.units === 'miles',
       totalDistance: state.totalDistanceKm,
       exportDate: new Date().toISOString(),
-    };
+        };
 
     const blob = new Blob([JSON.stringify(data, null, 2)], {
       type: 'application/json',
@@ -129,28 +129,28 @@ export const useTripProgressStore = create<TripProgressState>((set, get) => ({
     URL.revokeObjectURL(url);
 
     return 'Trip data downloaded';
-  },
+      },
 
-  importTripData: (data: any) => {
-    try {
+      importTripData: (data: any) => {
+        try {
       if (data.totalDistanceTraveled !== undefined) {
         get().setTotalTraveled(data.totalDistanceTraveled);
-      }
+          }
       if (data.todayDistanceTraveled !== undefined) {
         get().setTodayDistance(data.todayDistanceTraveled);
-      }
+          }
       if (data.useImperialUnits !== undefined) {
         get().setUnits(data.useImperialUnits ? 'miles' : 'km');
-      }
+          }
       if (data.totalDistance !== undefined) {
         get().setTotalDistance(data.totalDistance);
-      }
+          }
       return 'Trip data imported';
-    } catch (error) {
+        } catch (error) {
       console.error('Failed to import trip data:', error);
       return 'Import failed - invalid data';
-    }
-  },
+        }
+      },
 }));
 
 // Keep the old export for backward compatibility with the new trip overlay
