@@ -81,6 +81,8 @@ _The overlay in action - showing real-time distance tracking with animated cycli
 ## Features
 
 - **Real-time GPS tracking** via RTIRL WebSocket API
+- **Enhanced location services** with OpenCage geocoding API for accurate city/country display
+- **Smart reverse geocoding** with caching, fallback providers, and sub-second performance
 - **Animated cycling avatar** that moves along the progress bar
 - **Distance tracking**: Total traveled, daily distance, and remaining distance
 - **GPS drift protection** - filters out stationary GPS noise
@@ -718,17 +720,31 @@ pnpm run format:check
    pnpm install
    ```
 
-2. **Test Locally:**
+2. **Environment Configuration:**
 
    ```bash
-   # Simple approach - just open the file:
-   # Double-click index.html or use file:// URL in browser
-
-   # Or run a server if needed:
-   python -m http.server 8000
+   # Copy environment template
+   cp env-template .env.local
+   
+   # Edit .env.local with your values:
+   # - VITE_RTIRL_USER_ID=your_rtirl_user_id
+   # - VITE_OPENCAGE_API_KEY=your_opencage_api_key (optional)
+   
+   # Weather API (for Cloudflare Functions only)
+   # Edit .dev.vars with your OpenWeatherMap API key
    ```
 
-3. **Code Quality:**
+3. **Test Locally:**
+
+   ```bash
+   # Start development server
+   pnpm run dev
+   
+   # Or test with static files:
+   # Double-click dashboard.html or trip.html
+   ```
+
+4. **Code Quality:**
    ```bash
    pnpm run lint     # Check for issues
    pnpm run format   # Auto-fix formatting

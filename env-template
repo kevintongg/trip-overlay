@@ -1,0 +1,16 @@
+# Environment variables template - copy to .env.local and fill in your values
+
+# RTIRL Integration (Required)
+VITE_RTIRL_USER_ID=your_rtirl_user_id_here
+VITE_DEMO_MODE=false
+
+# OpenCage Geocoding API (Optional - improves location accuracy)
+# Get your free API key from: https://opencagedata.com/
+# Free tier: 2,500 requests/day - more than enough for personal use
+# If not configured, falls back to free Nominatim (slower, less reliable)
+VITE_OPENCAGE_API_KEY=your_opencage_api_key_here
+
+# Notes:
+# - Copy this file to .env.local (which is gitignored)
+# - Replace the placeholder values with your actual keys
+# - Weather API key is configured separately in .dev.vars for Cloudflare Functions

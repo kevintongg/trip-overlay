@@ -15,6 +15,52 @@ interface GeocodeProvider {
   geocode: (coordinates: Coordinates) => Promise<string>;
 }
 
+// OpenCage API response interfaces
+interface OpenCageComponents {
+  city?: string;
+  town?: string;
+  village?: string;
+  municipality?: string;
+  district?: string;
+  borough?: string;
+  neighbourhood?: string;
+  suburb?: string;
+  quarter?: string;
+  city_district?: string;
+  _normalized_city?: string;
+  state?: string;
+  state_code?: string;
+  country?: string;
+  country_code?: string;
+  continent?: string;
+  _category?: string;
+  _type?: string;
+}
+
+interface OpenCageResult {
+  components: OpenCageComponents;
+  formatted: string;
+  geometry: {
+    lat: number;
+    lng: number;
+  };
+  confidence: number;
+}
+
+interface OpenCageResponse {
+  results: OpenCageResult[];
+  status: {
+    code: number;
+    message: string;
+  };
+  rate?: {
+    limit: number;
+    remaining: number;
+    reset: number;
+  };
+}
+
+// Legacy Nominatim interfaces (kept as fallback)
 interface NominatimAddress {
   district?: string;
   borough?: string;
@@ -107,7 +153,109 @@ class LocationService {
   }
 
   /**
-   * OpenStreetMap Nominatim geocoding provider
+   * OpenCage geocoding provider (primary)
+   */
+  private async geocodeOpenCage(coordinates: Coordinates): Promise<string> {
+    const apiKey = import.meta.env.VITE_OPENCAGE_API_KEY;
+
+    if (!apiKey) {
+      throw new Error('OpenCage API key not configured');
+    }
+
+    const query = `${coordinates.lat},${coordinates.lon}`;
+    const url = `https://api.opencagedata.com/geocode/v1/json?key=${apiKey}&q=${encodeURIComponent(query)}&no_annotations=1&language=en&limit=1`;
+
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'trip-overlay-dashboard/1.0',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`OpenCage API error: ${response.status}`);
+    }
+
+    const data: OpenCageResponse = await response.json();
+
+    if (data.status.code !== 200) {
+      throw new Error(`OpenCage API error: ${data.status.message}`);
+    }
+
+    return this.extractLocationFromOpenCage(data);
+  }
+
+  /**
+   * Extract location text from OpenCage response
+   */
+  private extractLocationFromOpenCage(data: OpenCageResponse): string {
+    if (!data.results || data.results.length === 0) {
+      throw new Error('No results in OpenCage response');
+    }
+
+    const result = data.results[0];
+    const { components } = result;
+
+    // Build location string with priority order: "District, City, Country"
+    const district =
+      components.district ||
+      components.borough ||
+      components.neighbourhood ||
+      components.suburb ||
+      components.quarter ||
+      components.city_district;
+
+    const city =
+      components._normalized_city ||
+      components.city ||
+      components.town ||
+      components.village ||
+      components.municipality;
+
+    const { country } = components;
+
+    const locationParts = [];
+
+    // Add district if it's different from city and not too generic
+    if (district && district !== city && !this.isGenericDistrict(district)) {
+      locationParts.push(district);
+    }
+
+    if (city) {
+      locationParts.push(city);
+    }
+
+    if (country) {
+      locationParts.push(country);
+    }
+
+    if (locationParts.length === 0) {
+      // Fallback to formatted address if no components available
+      return result.formatted;
+    }
+
+    return locationParts.join(', ');
+  }
+
+  /**
+   * Check if district name is too generic to be useful
+   */
+  private isGenericDistrict(district: string): boolean {
+    const genericTerms = [
+      'district',
+      'area',
+      'region',
+      'zone',
+      'sector',
+      'division',
+      'administrative',
+    ];
+
+    const lowerDistrict = district.toLowerCase();
+    return genericTerms.some(term => lowerDistrict.includes(term));
+  }
+
+  /**
+   * OpenStreetMap Nominatim geocoding provider (fallback)
    */
   private async geocodeNominatim(coordinates: Coordinates): Promise<string> {
     const response = await fetch(
@@ -183,16 +331,29 @@ class LocationService {
    * Get all available geocoding providers in order of preference
    */
   private getProviders(): GeocodeProvider[] {
-    return [
-      {
-        name: 'Nominatim',
-        geocode: (coords) => this.geocodeNominatim(coords),
-      },
-      {
-        name: 'Fallback',
-        geocode: (coords) => this.geocodeFallback(coords),
-      },
-    ];
+    const providers: GeocodeProvider[] = [];
+
+    // Primary: OpenCage (if API key is configured)
+    if (import.meta.env.VITE_OPENCAGE_API_KEY) {
+      providers.push({
+        name: 'OpenCage',
+        geocode: (coords) => this.geocodeOpenCage(coords),
+      });
+    }
+
+    // Secondary: Nominatim (free fallback)
+    providers.push({
+      name: 'Nominatim',
+      geocode: (coords) => this.geocodeNominatim(coords),
+    });
+
+    // Final fallback: Coordinates
+    providers.push({
+      name: 'Fallback',
+      geocode: (coords) => this.geocodeFallback(coords),
+    });
+
+    return providers;
   }
 
   /**
