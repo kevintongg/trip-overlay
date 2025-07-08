@@ -39,7 +39,7 @@ export function WeatherSection({
         {/* Weather Icon */}
         <div
           key="weather-icon"
-          className="text-[2.2em] flex items-center leading-none mr-1 font-emoji"
+          className="text-[2.2em] flex items-center leading-none mr-1 font-emoji drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)]"
         >
           {getWeatherIcon(weatherData)}
         </div>
@@ -49,10 +49,10 @@ export function WeatherSection({
           key="temperature"
           className="flex flex-col items-center gap-1 mx-3"
         >
-          <div className="text-[2em] font-black text-white tracking-wide drop-shadow-[0_3px_12px_rgba(0,0,0,0.9)] font-inter leading-none">
+          <div className="text-[2.2em] font-black text-white tracking-wide drop-shadow-[0_3px_12px_rgba(0,0,0,0.9)] font-inter leading-none">
             {getWeatherTemp(weatherData)}
           </div>
-          <div className="text-[0.85em] text-gray-300 font-medium tracking-wide drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] font-inter whitespace-nowrap opacity-80">
+          <div className="text-[1.0em] text-gray-300 font-medium tracking-wide drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] font-inter whitespace-nowrap opacity-80">
             {getWeatherHighLow(weatherData)}
           </div>
         </div>
@@ -60,7 +60,7 @@ export function WeatherSection({
         {/* Weather Description */}
         <div
           key="weather-desc"
-          className="text-[1.1em] text-gray-200 font-medium drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] capitalize ml-3 text-left leading-tight"
+          className="text-[1.2em] text-gray-200 font-medium drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] capitalize ml-3 text-left leading-tight"
         >
           {getWeatherDesc(weatherData)}
         </div>
@@ -96,7 +96,7 @@ export function WeatherSection({
         {/* First line: Feels like and humidity */}
         {(getWeatherFeelsLike(weatherData) ||
           getWeatherHumidity(weatherData)) && (
-          <div className="text-center text-[0.95em] text-gray-300 mb-1">
+          <div className="text-center text-[1.0em] text-gray-300 mb-1">
             {[
               getWeatherFeelsLike(weatherData) &&
                 `Feels like: ${getWeatherFeelsLike(weatherData)}`,
@@ -110,7 +110,7 @@ export function WeatherSection({
 
         {/* Second line: Wind and UV Index */}
         {(getWeatherWind(weatherData) || getWeatherUvi(weatherData)) && (
-          <div className="text-center text-[0.95em] text-gray-300">
+          <div className="text-center text-[1.0em] text-gray-300">
             {[
               getWeatherWind(weatherData) &&
                 `Wind: ${getWeatherWind(weatherData)}`,

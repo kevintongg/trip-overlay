@@ -32,7 +32,7 @@ export function LocationSection({ locationData, show }: LocationSectionProps) {
 
   return (
     <div className="mb-3 w-full text-center">
-      <div className="text-[1.5em] font-bold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] break-words">
+      <div className="text-[1.6em] font-bold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] break-words">
         {getLocationText()}
       </div>
     </div>

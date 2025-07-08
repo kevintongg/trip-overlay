@@ -111,7 +111,7 @@ const TripOverlay: React.FC = () => {
             {/* Progress Percentage Badge */}
             <span
               className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2
-                           text-white text-sm font-semibold z-10 pointer-events-none
+                           text-white text-xs font-semibold z-10 pointer-events-none
                            [text-shadow:1px_1px_3px_rgba(0,0,0,0.8)]
                            bg-black/55 px-2.5 py-0.5 rounded-lg"
             >
@@ -131,30 +131,30 @@ const TripOverlay: React.FC = () => {
           <div className="w-full max-w-[600px] mx-auto flex justify-between items-start mt-1.5">
             {/* Traveled Distance - Left aligned */}
             <div className="flex-1 flex flex-col items-start text-left">
-              <span className="text-[21px] font-bold text-white [text-shadow:1px_1px_3px_rgba(0,0,0,0.8)]">
+              <span className="text-[19px] font-bold text-white [text-shadow:1px_1px_3px_rgba(0,0,0,0.8)]">
                 {traveledDistance.toFixed(2)} {getUnitLabel()}
               </span>
-              <div className="text-[11px] font-normal text-[#cccccc] uppercase text-left">
+              <div className="text-[10px] font-normal text-[#cccccc] uppercase text-left">
                 traveled
               </div>
             </div>
 
             {/* Today's Distance - Center aligned */}
             <div className="flex-1 flex flex-col items-center text-center">
-              <span className="text-[21px] font-bold text-white [text-shadow:1px_1px_3px_rgba(0,0,0,0.8)]">
+              <span className="text-[19px] font-bold text-white [text-shadow:1px_1px_3px_rgba(0,0,0,0.8)]">
                 {todayDistance.toFixed(1)} {getUnitLabel()}
               </span>
-              <div className="text-[11px] font-normal text-[#cccccc] uppercase text-center">
+              <div className="text-[10px] font-normal text-[#cccccc] uppercase text-center">
                 today
               </div>
             </div>
 
             {/* Remaining Distance - Right aligned */}
             <div className="flex-1 flex flex-col items-end text-right">
-              <span className="text-[21px] font-bold text-white [text-shadow:1px_1px_3px_rgba(0,0,0,0.8)]">
+              <span className="text-[19px] font-bold text-white [text-shadow:1px_1px_3px_rgba(0,0,0,0.8)]">
                 {remainingDistance.toFixed(2)} {getUnitLabel()}
               </span>
-              <div className="text-[11px] font-normal text-[#cccccc] uppercase text-right">
+              <div className="text-[10px] font-normal text-[#cccccc] uppercase text-right">
                 remaining
               </div>
             </div>
