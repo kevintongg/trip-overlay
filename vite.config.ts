@@ -9,7 +9,7 @@ function copyFunctionsPlugin() {
     name: 'copy-functions',
     writeBundle() {
       const sourceDir = 'functions';
-      const targetDir = 'dist/_functions'; // Cloudflare Pages requires _functions
+      const targetDir = 'dist/functions'; // Back to functions/ as per Cloudflare docs
 
       if (existsSync(sourceDir)) {
         if (!existsSync(targetDir)) {
@@ -22,14 +22,13 @@ function copyFunctionsPlugin() {
 
         if (existsSync(sourceFile)) {
           copyFileSync(sourceFile, targetFile);
-          console.log('✅ Copied functions/weather.js to dist/_functions/');
+          console.log('✅ Copied functions/weather.js to dist/functions/');
         }
       }
-    }
+    },
   };
 }
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), copyFunctionsPlugin()],
   resolve: {
@@ -38,16 +37,12 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: 'dist',
-    emptyOutDir: true,
     rollupOptions: {
       input: {
-        main: path.resolve(__dirname, 'index.html'), // Landing page (default)
-        trip: path.resolve(__dirname, 'trip.html'), // React trip overlay
-        dashboard: path.resolve(__dirname, 'dashboard.html'), // React dashboard
+        main: path.resolve(__dirname, 'index.html'),
+        trip: path.resolve(__dirname, 'trip.html'),
+        dashboard: path.resolve(__dirname, 'dashboard.html'),
       },
     },
   },
-  // Serve assets and css from public directory
-  publicDir: 'public',
 });
