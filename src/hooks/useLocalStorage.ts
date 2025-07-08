@@ -36,8 +36,8 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
         logger.debug(`Removed localStorage key "${key}"`);
       } else {
         try {
-        window.localStorage.setItem(key, JSON.stringify(valueToStore));
-        logger.debug(`Saved to localStorage key "${key}"`);
+          window.localStorage.setItem(key, JSON.stringify(valueToStore));
+          logger.debug(`Saved to localStorage key "${key}"`);
         } catch (storageError: any) {
           if (storageError.name === 'QuotaExceededError') {
             logger.warn(

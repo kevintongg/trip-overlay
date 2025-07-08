@@ -182,8 +182,8 @@ export function useRtirlSocket() {
 
       // Start demo data updates only if dashboard demo is not already active
       if (!isDashboardDemoActive) {
-      intervalRef.current = window.setInterval(generateDemoData, 1000); // Match original 1s interval
-      generateDemoData(); // Initial update
+        intervalRef.current = window.setInterval(generateDemoData, 1000); // Match original 1s interval
+        generateDemoData(); // Initial update
       }
 
       return () => {

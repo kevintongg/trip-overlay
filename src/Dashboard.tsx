@@ -51,7 +51,7 @@ const Dashboard: React.FC = () => {
   useDashboardConsole(locationData, speedDisplay, timeDisplay, weatherData);
 
   return (
-      <div className="w-screen h-screen flex flex-col items-end justify-start gap-[18px] pr-[24px] pt-[24px] pointer-events-none">
+    <div className="w-screen h-screen flex flex-col items-end justify-start gap-[18px] pr-[24px] pt-[24px] pointer-events-none">
       <Card className="flex flex-col items-center bg-gradient-to-br from-zinc-900 to-zinc-800 border-white/20 rounded-2xl p-5 shadow-[0_4px_24px_rgba(0,0,0,0.4)] min-w-[320px] max-w-[600px] backdrop-blur-none">
         <CardContent className="p-0 w-full">
           {/* Location Section */}
@@ -70,8 +70,8 @@ const Dashboard: React.FC = () => {
           {/* Time Section */}
           <TimeSection timeDisplay={timeDisplay} show={config.showTime} />
         </CardContent>
-        </Card>
-      </div>
+      </Card>
+    </div>
   );
 };
 

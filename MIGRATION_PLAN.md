@@ -1490,7 +1490,7 @@ This is a real-time GPS tracking overlay for live streaming cycling/bike trips b
 
 ### Technology Stack
 
-- **React 18**: Component-based UI with hooks
+- **React 19**: Component-based UI with hooks
 - **TypeScript**: Full type safety and IntelliSense
 - **Vite**: Fast development and optimized builds
 - **Zustand**: Lightweight state management
@@ -1698,7 +1698,7 @@ This is a real-time GPS tracking overlay for live streaming cycling/bike trips b
 
 ### Technology Stack
 
-- **React 18**: Component-based UI with modern hooks
+- **React 19**: Component-based UI with modern hooks
 - **TypeScript**: Full type safety and developer experience
 - **Vite**: Lightning-fast development and optimized builds
 - **Zustand**: Lightweight, intuitive state management
@@ -1887,7 +1887,7 @@ This is a React + TypeScript + Vite project for real-time GPS tracking overlays 
 
 ## Technology Stack
 
-- React 18 with hooks
+- React 19 with hooks
 - TypeScript with strict mode
 - Vite for development and builds
 - Zustand for state management
@@ -2389,7 +2389,7 @@ echo "OWM_API_KEY=your_api_key" > .dev.vars
 
 ### Technology Stack
 
-- **React 18**: Component-based UI with hooks
+- **React 19**: Component-based UI with hooks
 - **TypeScript**: Type safety and better DX
 - **Vite**: Fast development and optimized builds
 - **Zustand**: Lightweight state management
