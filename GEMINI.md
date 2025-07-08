@@ -65,6 +65,9 @@ src/
 - **Client State (Zustand)**: `tripStore`, `weatherStore`, and `connectionStore` manage the application's UI and session state. State is persisted to `localStorage` where necessary.
 - **Server State (React Query)**: Manages asynchronous operations like fetching weather data, with automatic caching, retries, and background updates.
 
+- **Client State (Zustand)**: `tripStore`, `weatherStore`, and `connectionStore` manage the application's UI and session state. State is persisted to `localStorage` where necessary.
+- **Server State (React Query)**: Manages asynchronous operations like fetching weather data, with automatic caching, retries, and background updates.
+
 ### Key Features
 
 - **Component-Based Architecture**: UI is built with reusable React components.
