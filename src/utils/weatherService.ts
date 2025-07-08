@@ -73,52 +73,42 @@ function generateMockWeather(lat: number, lon: number): WeatherResponse {
   const condition =
     weatherConditions[Math.floor(Math.random() * weatherConditions.length)];
 
-  // Get proper timezone based on coordinates with DST support
+    // Calculate timezone for any coordinates (mock data)
   let timezone = 'UTC';
   let timezoneOffset = 0;
 
-  // Map coordinates to likely timezone (accounting for DST)
-  if (lon >= -10 && lon <= 40 && lat >= 35 && lat <= 70) {
-    // Europe
-    if (lon >= 5 && lon <= 25) {
-      timezone = 'Europe/Vienna'; // Central Europe (includes CEST in summer)
-      // Get current offset for Vienna timezone (accounts for CEST automatically)
-      const now = new Date();
-      const utc = new Date(now.getTime() + now.getTimezoneOffset() * 60000);
-      const viennaTime = new Date(
-        utc.toLocaleString('en-US', { timeZone: 'Europe/Vienna' })
-      );
-      timezoneOffset = (viennaTime.getTime() - utc.getTime()) / 1000;
-    } else if (lon >= -5 && lon <= 5) {
-      timezone = 'Europe/London';
-      // Similar calculation for London (BST in summer)
-      const now = new Date();
-      const utc = new Date(now.getTime() + now.getTimezoneOffset() * 60000);
-      const londonTime = new Date(
-        utc.toLocaleString('en-US', { timeZone: 'Europe/London' })
-      );
-      timezoneOffset = (londonTime.getTime() - utc.getTime()) / 1000;
-    }
-  } else if (lon >= -130 && lon <= -60 && lat >= 25 && lat <= 70) {
-    // North America
-    timezone = 'America/New_York';
-    const now = new Date();
-    const utc = new Date(now.getTime() + now.getTimezoneOffset() * 60000);
-    const nyTime = new Date(
-      utc.toLocaleString('en-US', { timeZone: 'America/New_York' })
-    );
-    timezoneOffset = (nyTime.getTime() - utc.getTime()) / 1000;
+  // Calculate base timezone offset from longitude (15 degrees = 1 hour)
+  const baseOffset = Math.round(lon / 15) * 3600;
+
+  // Simple DST detection for Northern Hemisphere (roughly March-October)
+  const now = new Date();
+  const month = now.getMonth(); // 0-11
+  const isDSTSeason = month >= 2 && month <= 9 && lat > 0; // March-October, Northern Hemisphere only
+
+  // Apply DST (+1 hour) if in DST season and Northern Hemisphere
+  timezoneOffset = isDSTSeason ? baseOffset + 3600 : baseOffset;
+
+  // Set appropriate timezone name for display
+  if (baseOffset === 3600) {
+    timezone = 'Europe/Vienna'; // Central European Time zone
+  } else if (baseOffset === -28800) {
+    timezone = 'America/Los_Angeles'; // Pacific Time zone
+  } else if (baseOffset === 0) {
+    timezone = 'Europe/London'; // GMT/UTC
   } else {
-    // Fallback: simple longitude-based offset (no DST)
-    timezoneOffset = Math.round(lon / 15) * 3600;
+    timezone = 'UTC'; // Fallback
   }
+
+    // Simple UV Index for mock data (real API provides accurate values)
+  const hour = now.getHours();
+  const uvi = (hour >= 6 && hour <= 18) ? Math.random() * 5 : 0; // Basic day/night
 
   return {
     current: {
       temp: currentTemp,
       feels_like: currentTemp + (Math.random() - 0.5) * 5,
       humidity: Math.round(20 + Math.random() * 65),
-      uvi: Math.random() * 10,
+      uvi: uvi,
       weather: [condition],
       wind_speed: Math.random() * 15,
       wind_deg: Math.random() * 360,
