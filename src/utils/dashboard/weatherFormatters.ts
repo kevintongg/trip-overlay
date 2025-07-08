@@ -65,7 +65,7 @@ export function getWeatherTemp(weatherData: any): string {
   if (!weatherData?.current?.temp) {
     return '--°';
   }
-  return `${Math.round(weatherData.current.temp)}°`;
+  return `${weatherData.current.temp.toFixed(1)}°`;
 }
 
 // High/Low temperature formatting (extracted from original)
@@ -73,8 +73,8 @@ export function getWeatherHighLow(weatherData: any): string {
   if (!weatherData?.daily?.[0]) {
     return '';
   }
-  const high = Math.round(weatherData.daily[0].temp.max);
-  const low = Math.round(weatherData.daily[0].temp.min);
+  const high = weatherData.daily[0].temp.max.toFixed(1);
+  const low = weatherData.daily[0].temp.min.toFixed(1);
   return `${high}° / ${low}°`;
 }
 
@@ -91,7 +91,7 @@ export function getWeatherFeelsLike(weatherData: any): string | null {
   if (weatherData?.current?.feels_like === undefined) {
     return null;
   }
-  return `${Math.round(weatherData.current.feels_like)}°`;
+  return `${weatherData.current.feels_like.toFixed(1)}°`;
 }
 
 // Humidity formatting (extracted from original)
@@ -99,7 +99,7 @@ export function getWeatherHumidity(weatherData: any): string | null {
   if (weatherData?.current?.humidity === undefined) {
     return null;
   }
-  return `${weatherData.current.humidity}%`;
+  return `${weatherData.current.humidity.toFixed(1)}%`;
 }
 
 // Wind formatting with direction (extracted from original)
