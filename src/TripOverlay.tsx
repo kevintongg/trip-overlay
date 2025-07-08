@@ -4,18 +4,13 @@ import { useRtirlSocket } from './hooks/useRtirlSocket';
 import { useConsoleCommands } from './hooks/useConsoleCommands';
 import { useURLParameters } from './hooks/useURLParameters';
 import { useAppInitialization } from './hooks/useAppInitialization';
-import { Button } from './components/ui/button';
-import { Progress } from './components/ui/progress';
-import { Card, CardContent } from './components/ui/card';
-import { Badge } from './components/ui/badge';
-import { Separator } from './components/ui/separator';
-
-// Using modern Tailwind CSS + shadcn/ui instead of original CSS files
+import { useGPSProcessor } from './hooks/useGPSProcessor';
+import { useTripProgressStore } from './store/tripStore';
 
 /**
- * Main Trip Overlay Component
- * Displays trip progress, distance tracking, and movement avatars
- * Using modern Tailwind CSS + shadcn/ui components optimized for 1080p streaming
+ * Trip Overlay Component - Clean minimalist design for streaming
+ * Matches original vanilla JS design but with React + Tailwind
+ * Optimized for 1080p streaming with clean typography and minimal footprint
  */
 const TripOverlay: React.FC = () => {
   const {
@@ -23,26 +18,34 @@ const TripOverlay: React.FC = () => {
     todayDistance,
     remainingDistance,
     progressPercent,
-    currentMode,
     getUnitLabel,
     resetTrip,
     resetToday,
   } = useTripProgress();
 
-  const { isConnected } = useRtirlSocket();
+  // Get export function from store
+  const { exportTripData } = useTripProgressStore();
+
+  useRtirlSocket(); // Still needed for GPS data updates
   useConsoleCommands();
   useURLParameters();
   useAppInitialization();
 
-  // Avatar image mapping exactly like original
+  // Use robust GPS processor for movement detection
+  const gpsProcessor = useGPSProcessor();
+
+  // Get current mode from GPS processor (which includes hysteresis and delays)
+  const currentMode = gpsProcessor.getCurrentMode();
+
+  // Avatar image mapping - using assets/ directory like original
   const getAvatarImage = () => {
     switch (currentMode) {
       case 'WALKING':
-        return '/walking.gif';
+        return 'assets/walking.gif';
       case 'CYCLING':
-        return '/cycling.gif';
+        return 'assets/cycling.gif';
       default:
-        return '/stationary.png';
+        return 'assets/stationary.png';
     }
   };
 
@@ -58,7 +61,12 @@ const TripOverlay: React.FC = () => {
     console.log(
       `[${new Date().toISOString()}] TripOverlay: Reset auto start location triggered`
     );
-    // TODO: Implement reset auto start location
+    // Clear localStorage GPS data to force re-detection
+    localStorage.removeItem('tripOverlayStartLocation');
+    localStorage.removeItem('tripOverlayLastPosition');
+    console.log(
+      `[${new Date().toISOString()}] TripOverlay: Auto start location cleared - will re-detect on next GPS update`
+    );
   };
 
   const resetTodayDistance = () => {
@@ -68,195 +76,153 @@ const TripOverlay: React.FC = () => {
     resetToday();
   };
 
-  const exportTripData = () => {
+  const handleExportTripData = () => {
     console.log(
       `[${new Date().toISOString()}] TripOverlay: Export trip data triggered`
     );
-    // TODO: Implement export trip data
+    try {
+      const result = exportTripData();
+      console.log(`[${new Date().toISOString()}] TripOverlay: ${result}`);
+    } catch (error) {
+      console.error(
+        `[${new Date().toISOString()}] TripOverlay: Export failed:`,
+        error
+      );
+    }
   };
 
-  // Mock values for now
+  // Control panel visibility (for development/testing)
   const showControlPanel = false;
-  const feedback = null;
-
-  // Helper function to get feedback styling classes
-  const getFeedbackClasses = (feedbackType: string) => {
-    if (feedbackType === 'success') {
-      return 'bg-green-600/20 border-green-600/40 text-green-200';
-    }
-    if (feedbackType === 'warning') {
-      return 'bg-yellow-600/20 border-yellow-600/40 text-yellow-200';
-    }
-    return 'bg-red-600/20 border-red-600/40 text-red-200';
-  };
-
-  // Console API is initialized by useAppInitialization hook
 
   return (
-    <div className="fixed bottom-[60px] left-1/2 transform -translate-x-1/2 z-50">
-      {/* Main Trip Progress Card */}
-      <Card className="w-[720px] bg-gradient-to-br from-black/40 to-black/60 border-white/20 backdrop-blur-md shadow-2xl">
-        <CardContent className="p-8 space-y-6">
-          {/* Progress Section with Custom Avatar */}
-          <div className="relative space-y-4">
-            {/* Progress Bar with shadcn/ui Progress component */}
-            <div className="relative">
-              <Progress
-                value={progressPercent}
-                className="h-6 bg-black/40 border border-white/30"
-              />
+    <div className="absolute bottom-[60px] left-1/2 transform -translate-x-1/2 w-[600px]">
+      {/* Main overlay container - matches original styling */}
+      <div className="bg-black/30 p-0 rounded-xl shadow-lg">
+        {/* Progress Section */}
+        <div className="mx-auto p-5 px-6 pb-[18px] rounded-[15px]">
+          {/* Progress Bar Container */}
+          <div className="relative w-full max-w-[600px] mx-auto mb-2 h-[11px] bg-black/30 border border-white/30 rounded-[7px]">
+            {/* Progress Bar Fill */}
+            <div
+              className="h-full bg-white rounded-[10px] transition-all duration-500 ease-out"
+              style={{ width: `${progressPercent}%` }}
+            />
 
-              {/* Progress Percentage Badge */}
-              <Badge
-                variant="secondary"
-                className="absolute -top-2 right-3 text-sm bg-black/70 text-white border-white/30 font-bold px-3 py-1"
-              >
-                {progressPercent.toFixed(1)}%
-              </Badge>
-
-              {/* Avatar positioned on progress bar */}
-              <div
-                className="absolute -bottom-10 transform -translate-x-1/2 transition-all duration-500 ease-out"
-                style={{
-                  left: `${Math.max(5, Math.min(95, progressPercent))}%`,
-                }}
-              >
-                <img
-                  src={getAvatarImage()}
-                  alt="Trip Avatar"
-                  className="h-20 w-auto drop-shadow-lg"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Spacing for avatar */}
-          <div className="h-6" />
-
-          {/* Distance Data Grid */}
-          <div className="grid grid-cols-3 gap-8 text-center">
-            {/* Traveled Distance */}
-            <div className="space-y-2">
-              <div className="text-4xl font-bold text-white text-shadow-heavy">
-                {traveledDistance.toFixed(2)}
-              </div>
-              <div className="text-lg font-semibold text-white/90">
-                {getUnitLabel()}
-              </div>
-              <div className="text-sm font-medium text-gray-300 uppercase tracking-wider">
-                Traveled
-              </div>
-            </div>
-
-            {/* Today's Distance - Emphasized */}
-            <div className="space-y-2">
-              <div className="text-4xl font-bold text-blue-200 text-shadow-heavy">
-                {todayDistance.toFixed(1)}
-              </div>
-              <div className="text-lg font-semibold text-blue-200/90">
-                {getUnitLabel()}
-              </div>
-              <div className="text-sm font-medium text-blue-300 uppercase tracking-wider">
-                Today
-              </div>
-            </div>
-
-            {/* Remaining Distance */}
-            <div className="space-y-2">
-              <div className="text-4xl font-bold text-white text-shadow-heavy">
-                {remainingDistance.toFixed(2)}
-              </div>
-              <div className="text-lg font-semibold text-white/90">
-                {getUnitLabel()}
-              </div>
-              <div className="text-sm font-medium text-gray-300 uppercase tracking-wider">
-                Remaining
-              </div>
-            </div>
-          </div>
-
-          {/* Connection Status Indicator */}
-          <div className="flex justify-center">
-            <Badge
-              variant={isConnected ? 'default' : 'destructive'}
-              className={`text-sm font-medium px-4 py-2 ${
-                isConnected
-                  ? 'bg-green-600/30 border-green-500/50 text-green-200'
-                  : 'bg-red-600/30 border-red-500/50 text-red-200'
-              }`}
+            {/* Progress Percentage Badge */}
+            <span
+              className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2
+                           text-white text-sm font-semibold z-10 pointer-events-none
+                           [text-shadow:1px_1px_3px_rgba(0,0,0,0.8)]
+                           bg-black/55 px-2.5 py-0.5 rounded-lg"
             >
-              {isConnected ? '🟢 Connected' : '🔴 Disconnected'}
-            </Badge>
+              {progressPercent.toFixed(2)}%
+            </span>
+
+            {/* Avatar positioned on progress bar */}
+            <img
+              src={getAvatarImage()}
+              alt="Trip Avatar"
+              className="absolute h-[60px] bottom-0.5 transform -translate-x-1/2 transition-all duration-500 ease-out"
+              style={{ left: `${progressPercent}%` }}
+            />
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Enhanced Control Panel */}
-      {showControlPanel && (
-        <Card className="mt-6 w-[720px] bg-black/70 border-white/20 backdrop-blur-md">
-          <CardContent className="p-6 space-y-4">
-            {/* Control Header */}
-            <div className="text-center">
-              <h3 className="text-lg font-bold text-white mb-2 uppercase tracking-wider">
-                Stream Controls
-              </h3>
-              <Separator className="bg-white/20" />
-            </div>
-
-            {/* Primary Control Row */}
-            <div className="flex gap-4 justify-center">
-              <Button
-                variant="outline"
-                size="default"
-                onClick={resetTodayDistance}
-                className="stream-button text-sm font-medium min-w-[140px]"
-                title="Reset today's distance - most common for daily tours"
-              >
-                🔄 Reset Today
-              </Button>
-              <Button
-                variant="outline"
-                size="default"
-                onClick={exportTripData}
-                className="stream-button text-sm font-medium min-w-[140px]"
-                title="Download backup file"
-              >
-                💾 Backup
-              </Button>
-            </div>
-
-            {/* Secondary Control Row */}
-            <div className="flex gap-4 justify-center">
-              <Button
-                variant="outline"
-                size="default"
-                onClick={resetAutoStartLocation}
-                className="stream-button text-sm font-medium min-w-[140px]"
-                title="Re-detect start location"
-              >
-                📍 Fix Start
-              </Button>
-              <Button
-                variant="outline"
-                size="default"
-                onClick={resetTripProgress}
-                className="stream-button-danger text-sm font-medium min-w-[140px]"
-                title="⚠️ Reset entire trip - use carefully!"
-              >
-                🗑️ Reset All
-              </Button>
-            </div>
-
-            {/* Feedback Messages */}
-            {feedback && (
-              <div
-                className={`p-4 rounded-lg text-base text-center border font-medium ${getFeedbackClasses((feedback as any).type)}`}
-              >
-                {(feedback as any).message}
+          {/* Distance Data Container - Three column layout */}
+          <div className="w-full max-w-[600px] mx-auto flex justify-between items-start mt-1.5">
+            {/* Traveled Distance - Left aligned */}
+            <div className="flex-1 flex flex-col items-start text-left">
+              <span className="text-[21px] font-bold text-white [text-shadow:1px_1px_3px_rgba(0,0,0,0.8)]">
+                {traveledDistance.toFixed(2)} {getUnitLabel()}
+              </span>
+              <div className="text-[11px] font-normal text-[#cccccc] uppercase text-left">
+                traveled
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </div>
+
+            {/* Today's Distance - Center aligned */}
+            <div className="flex-1 flex flex-col items-center text-center">
+              <span className="text-[21px] font-bold text-white [text-shadow:1px_1px_3px_rgba(0,0,0,0.8)]">
+                {todayDistance.toFixed(1)} {getUnitLabel()}
+              </span>
+              <div className="text-[11px] font-normal text-[#cccccc] uppercase text-center">
+                today
+              </div>
+            </div>
+
+            {/* Remaining Distance - Right aligned */}
+            <div className="flex-1 flex flex-col items-end text-right">
+              <span className="text-[21px] font-bold text-white [text-shadow:1px_1px_3px_rgba(0,0,0,0.8)]">
+                {remainingDistance.toFixed(2)} {getUnitLabel()}
+              </span>
+              <div className="text-[11px] font-normal text-[#cccccc] uppercase text-right">
+                remaining
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Enhanced Control Panel - Conditional overlay like original */}
+      {showControlPanel && (
+        <div className="mt-5 p-[15px] bg-black/60 border border-white/20 rounded-[10px] backdrop-blur-[5px] min-w-[300px]">
+          {/* Control Header */}
+          <div className="text-center text-sm font-bold text-white mb-3 uppercase tracking-wider">
+            Stream Controls
+          </div>
+
+          {/* Primary Control Row */}
+          <div className="flex gap-3 mb-2.5 justify-center">
+            <button
+              onClick={resetTodayDistance}
+              className="bg-white/15 border border-white/30 text-white px-4 py-2.5 rounded-lg cursor-pointer
+                       text-[13px] font-medium transition-all duration-200 min-w-[110px] text-center
+                       hover:bg-white/25 hover:border-white/50 hover:-translate-y-0.5
+                       active:bg-white/35 active:translate-y-0"
+              title="Reset today's distance - most common for daily tours"
+            >
+              🔄 Reset Today
+            </button>
+            <button
+              onClick={handleExportTripData}
+              className="bg-white/15 border border-white/30 text-white px-4 py-2.5 rounded-lg cursor-pointer
+                       text-[13px] font-medium transition-all duration-200 min-w-[110px] text-center
+                       hover:bg-white/25 hover:border-white/50 hover:-translate-y-0.5
+                       active:bg-white/35 active:translate-y-0"
+              title="Download backup file"
+            >
+              💾 Backup
+            </button>
+          </div>
+
+          {/* Secondary Control Row */}
+          <div className="flex gap-3 mb-4 justify-center">
+            <button
+              onClick={resetAutoStartLocation}
+              className="bg-white/15 border border-white/30 text-white px-4 py-2.5 rounded-lg cursor-pointer
+                       text-[13px] font-medium transition-all duration-200 min-w-[110px] text-center
+                       hover:bg-white/25 hover:border-white/50 hover:-translate-y-0.5
+                       active:bg-white/35 active:translate-y-0"
+              title="Re-detect start location"
+            >
+              📍 Fix Start
+            </button>
+            <button
+              onClick={resetTripProgress}
+              className="bg-red-600/30 border border-red-600/50 text-white px-4 py-2.5 rounded-lg cursor-pointer
+                       text-[13px] font-medium transition-all duration-200 min-w-[110px] text-center
+                       hover:bg-red-600/50 hover:border-red-600/70 hover:-translate-y-0.5
+                       active:bg-red-600/60 active:translate-y-0"
+              title="⚠️ Reset entire trip - use carefully!"
+            >
+              🗑️ Reset All
+            </button>
+          </div>
+
+          {/* Feedback area */}
+          <div className="text-center text-xs p-2 rounded-md mt-1 min-h-[20px] flex items-center justify-center">
+            {/* Feedback messages would go here */}
+          </div>
+        </div>
       )}
     </div>
   );

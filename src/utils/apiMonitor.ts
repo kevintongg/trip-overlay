@@ -21,7 +21,12 @@ const STORAGE_KEY = 'owm_api_usage';
 
 class ApiMonitor {
   private getTodayKey(): string {
-    return new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    // Use local timezone instead of UTC for proper daily resets
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   private getUsageData(): DailyUsage {
@@ -101,6 +106,11 @@ class ApiMonitor {
     };
 
     usage.calls.push(record);
+
+    // Keep only the last 100 calls to prevent unbounded growth
+    if (usage.calls.length > 100) {
+      usage.calls = usage.calls.slice(-100);
+    }
 
     if (!fromCache) {
       usage.totalCalls++;

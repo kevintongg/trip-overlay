@@ -1,37 +1,45 @@
 import { create } from 'zustand';
-import type { ConnectionState } from '../types/rtirl';
+
+export interface Coordinates {
+  lat: number;
+  lon: number;
+}
+
+interface ConnectionState {
+  isConnected: boolean;
+  lastPosition: Coordinates | null;
+  connectionStatus: 'disconnected' | 'connecting' | 'connected' | 'error';
+  reconnectAttempts: number;
+  isDashboardDemoActive: boolean; // Replace global window flag
+
+  // Actions
+  setConnected: (connected: boolean) => void;
+  setPosition: (position: Coordinates) => void;
+  setConnectionStatus: (
+    status: 'disconnected' | 'connecting' | 'connected' | 'error'
+  ) => void;
+  incrementReconnectAttempts: () => void;
+  resetReconnectAttempts: () => void;
+  setDashboardDemoActive: (active: boolean) => void;
+}
 
 export const useConnectionStore = create<ConnectionState>(set => ({
-  // Initial state
   isConnected: false,
   lastPosition: null,
   connectionStatus: 'disconnected',
   reconnectAttempts: 0,
+  isDashboardDemoActive: false,
 
-  // Actions
-  setConnected: connected =>
-    set({
-      isConnected: connected,
-      connectionStatus: connected ? 'connected' : 'disconnected',
-    }),
-
-  setPosition: position =>
-    set({
-      lastPosition: position,
-      isConnected: true,
-      connectionStatus: 'connected',
-    }),
-
-  setConnectionStatus: status =>
-    set({
-      connectionStatus: status,
-      isConnected: status === 'connected',
-    }),
-
+  setConnected: (_connected: boolean) => set({ isConnected: _connected }),
+  setPosition: (_position: Coordinates) => set({ lastPosition: _position }),
+  setConnectionStatus: (
+    _status: 'disconnected' | 'connecting' | 'connected' | 'error'
+  ) => set({ connectionStatus: _status }),
   incrementReconnectAttempts: () =>
     set(state => ({
       reconnectAttempts: state.reconnectAttempts + 1,
     })),
-
   resetReconnectAttempts: () => set({ reconnectAttempts: 0 }),
+  setDashboardDemoActive: (_active: boolean) =>
+    set({ isDashboardDemoActive: _active }),
 }));

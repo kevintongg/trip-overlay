@@ -34,7 +34,7 @@ interface TripProgressState {
 
 export const useTripProgressStore = create<TripProgressState>((set, get) => ({
   // Initial state
-  totalDistanceKm: 100, // Default trip length
+  totalDistanceKm: 371, // Distance from Vienna to Zagreb (matches CONFIG)
   currentDistanceKm: 0,
   todayDistanceKm: 0,
   totalTraveledKm: 0,
@@ -44,21 +44,21 @@ export const useTripProgressStore = create<TripProgressState>((set, get) => ({
 
   // Distance manipulation actions
   addDistance: (km: number) =>
-    set((state) => ({
+    set(state => ({
       currentDistanceKm: Math.max(0, state.currentDistanceKm + km),
       todayDistanceKm: Math.max(0, state.todayDistanceKm + km),
       totalTraveledKm: Math.max(0, state.totalTraveledKm + km),
     })),
 
   setDistance: (km: number) =>
-    set((state) => ({
+    set(_state => ({
       currentDistanceKm: Math.max(0, km),
       todayDistanceKm: Math.max(0, km),
       totalTraveledKm: Math.max(0, km),
     })),
 
   jumpToProgress: (percent: number) =>
-    set((state) => {
+    set(state => {
       const targetDistance = (percent / 100) * state.totalDistanceKm;
       return {
         currentDistanceKm: Math.max(0, targetDistance),
@@ -82,8 +82,7 @@ export const useTripProgressStore = create<TripProgressState>((set, get) => ({
       currentDistanceKm: Math.max(0, km),
     }),
 
-  setUnits: (units: 'km' | 'miles') =>
-    set({ units }),
+  setUnits: (units: 'km' | 'miles') => set({ units }),
 
   resetProgress: () =>
     set({
@@ -104,8 +103,7 @@ export const useTripProgressStore = create<TripProgressState>((set, get) => ({
       isMoving: speed > 0,
     }),
 
-  setMoving: (moving: boolean) =>
-    set({ isMoving: moving }),
+  setMoving: (moving: boolean) => set({ isMoving: moving }),
 
   // Data import/export
   exportTripData: () => {

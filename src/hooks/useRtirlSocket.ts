@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useConnectionStore } from '../store/connectionStore';
 import { logger } from '../utils/logger';
-import { CONFIG } from '../utils/config';
+import { CONFIG, validateCoordinates } from '../utils/config';
 import type { Coordinates } from '../types/config';
 import type { LocationData } from '../types/rtirl';
 
@@ -9,13 +9,12 @@ declare global {
   interface Window {
     RealtimeIRL?: {
       forStreamer: (
-        platform: string,
-        userId: string
+        _platform: string,
+        _userId: string
       ) => {
-        addLocationListener: (callback: (data: any) => void) => () => void;
+        addLocationListener: (_callback: (_data: any) => void) => () => void;
       };
     };
-    __dashboardDemoActive?: boolean;
   }
 }
 
@@ -46,6 +45,7 @@ export function useRtirlSocket() {
     lastPosition,
     connectionStatus,
     reconnectAttempts,
+    isDashboardDemoActive,
   } = useConnectionStore();
 
   const [rtirl, setRtirl] = useState<any>(null);
@@ -68,21 +68,16 @@ export function useRtirlSocket() {
       return;
     }
 
-    // Validate coordinates
-    if (
-      !data.latitude ||
-      !data.longitude ||
-      typeof data.latitude !== 'number' ||
-      typeof data.longitude !== 'number'
-    ) {
-      logger.warn('⚠️ Trip: Invalid GPS coordinates received:', data);
-      return;
-    }
-
+    // Validate coordinates using centralized validation
     const coordinates: Coordinates = {
       lat: data.latitude,
       lon: data.longitude,
     };
+
+    if (!validateCoordinates(coordinates)) {
+      logger.warn('⚠️ Trip: Invalid GPS coordinates received:', data);
+      return;
+    }
 
     const isFirstConnection = !isConnected;
     if (isFirstConnection) {
@@ -145,7 +140,7 @@ export function useRtirlSocket() {
 
       const generateDemoData = () => {
         // Check global flag before each demo update
-        if (window.__dashboardDemoActive) {
+        if (isDashboardDemoActive) {
           // Dashboard demo is active, stop this demo mode
           if (intervalRef.current) {
             clearInterval(intervalRef.current);
@@ -186,7 +181,7 @@ export function useRtirlSocket() {
       };
 
       // Start demo data updates only if dashboard demo is not already active
-      if (!window.__dashboardDemoActive) {
+      if (!isDashboardDemoActive) {
         intervalRef.current = window.setInterval(generateDemoData, 1000); // Match original 1s interval
         generateDemoData(); // Initial update
       }
@@ -194,10 +189,21 @@ export function useRtirlSocket() {
       return () => {
         if (intervalRef.current) {
           clearInterval(intervalRef.current);
+          intervalRef.current = undefined;
         }
       };
     }
-  }, [isDemo]);
+  }, [isDemo, isDashboardDemoActive]);
+
+  // Cleanup interval on unmount
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = undefined;
+      }
+    };
+  }, []);
 
   // Monitor dashboard demo flag and stop RTIRL demo if needed
   useEffect(() => {
@@ -206,7 +212,7 @@ export function useRtirlSocket() {
     }
 
     const checkDashboardDemo = () => {
-      if (window.__dashboardDemoActive && intervalRef.current) {
+      if (isDashboardDemoActive && intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = undefined;
         logger('🛑 RTIRL demo mode stopped - dashboard demo is active');
@@ -219,7 +225,7 @@ export function useRtirlSocket() {
     return () => {
       clearInterval(monitorInterval);
     };
-  }, [isDemo]);
+  }, [isDemo, isDashboardDemoActive]);
 
   // RTIRL connection setup
   useEffect(() => {

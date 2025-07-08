@@ -1,13 +1,7 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { logger } from '../../utils/logger';
+import { useConnectionStore } from '../../store/connectionStore';
 import type { DashboardConfig } from './useDashboardConfig';
-
-// Global flag to prevent useRtirlSocket demo mode when dashboard demo is active
-declare global {
-  interface Window {
-    __dashboardDemoActive?: boolean;
-  }
-}
 
 /**
  * Dashboard Demo Mode Hook
@@ -15,6 +9,8 @@ declare global {
  * Maintains exact compatibility with original demo logic
  */
 export function useDashboardDemo(config: DashboardConfig): void {
+  const { setDashboardDemoActive } = useConnectionStore();
+
   // Throttling ref to prevent spam
   const lastLogTime = useRef<{ [key: string]: number }>({});
 
@@ -68,12 +64,12 @@ export function useDashboardDemo(config: DashboardConfig): void {
       }
 
       // Ensure global flag is cleared when not in demo mode
-      window.__dashboardDemoActive = false;
+      setDashboardDemoActive(false);
       return;
     }
 
     // Set global flag to prevent useRtirlSocket demo mode
-    window.__dashboardDemoActive = true;
+    setDashboardDemoActive(true);
 
     throttledLog(
       'demo',
@@ -135,7 +131,7 @@ export function useDashboardDemo(config: DashboardConfig): void {
     return () => {
       clearInterval(demoInterval);
       // Clear the global flag when demo mode stops
-      window.__dashboardDemoActive = false;
+      setDashboardDemoActive(false);
 
       // Get old values before clearing for proper storage event
       const oldSpeed = localStorage.getItem('tripOverlaySpeed');
@@ -164,5 +160,5 @@ export function useDashboardDemo(config: DashboardConfig): void {
 
       logger('🛑 Demo mode stopped - cleared speed data');
     };
-  }, [config.demo, throttledLog]);
+  }, [config.demo, throttledLog, setDashboardDemoActive]);
 }

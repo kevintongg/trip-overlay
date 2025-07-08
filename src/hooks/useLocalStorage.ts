@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, SetStateAction } from 'react';
 import { logger } from '../utils/logger';
 
 /**
@@ -21,7 +21,7 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
   });
 
   // Return a wrapped version of useState's setter function that persists the new value to localStorage
-  const setValue = (value: T | ((val: T) => T)) => {
+  const setValue = (value: SetStateAction<T>) => {
     try {
       // Allow value to be a function so we have the same API as useState
       const valueToStore =
@@ -35,8 +35,36 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
         window.localStorage.removeItem(key);
         logger.debug(`Removed localStorage key "${key}"`);
       } else {
-        window.localStorage.setItem(key, JSON.stringify(valueToStore));
-        logger.debug(`Saved to localStorage key "${key}"`);
+        try {
+          window.localStorage.setItem(key, JSON.stringify(valueToStore));
+          logger.debug(`Saved to localStorage key "${key}"`);
+        } catch (storageError: any) {
+          if (storageError.name === 'QuotaExceededError') {
+            logger.warn(
+              `localStorage quota exceeded for key "${key}", attempting cleanup`
+            );
+            // Clear old trip data to make space
+            const keysToRemove = ['owm_api_usage'];
+            keysToRemove.forEach(oldKey => {
+              try {
+                window.localStorage.removeItem(oldKey);
+              } catch {
+                // Ignore errors during cleanup
+              }
+            });
+            // Try again after cleanup
+            try {
+              window.localStorage.setItem(key, JSON.stringify(valueToStore));
+              logger.debug(`Saved to localStorage key "${key}" after cleanup`);
+            } catch {
+              logger.error(
+                `localStorage quota still exceeded for key "${key}"`
+              );
+            }
+          } else {
+            throw storageError;
+          }
+        }
       }
     } catch (error) {
       logger.error(`Error setting localStorage key "${key}":`, error);

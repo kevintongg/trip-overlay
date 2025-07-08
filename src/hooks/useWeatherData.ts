@@ -31,8 +31,31 @@ export function useWeatherData(
 
   return useQuery({
     queryKey: ['weather', roundedLat, roundedLon, units],
-    queryFn: () => fetchWeather(lat!, lon!, units), // Use original coords for API call
-    enabled: Boolean(lat && lon && isFinite(lat) && isFinite(lon)),
+    queryFn: () => {
+      if (
+        !lat ||
+        !lon ||
+        !isFinite(lat) ||
+        !isFinite(lon) ||
+        lat < -90 ||
+        lat > 90 ||
+        lon < -180 ||
+        lon > 180
+      ) {
+        throw new Error('Invalid coordinates for weather fetch');
+      }
+      return fetchWeather(lat, lon, units);
+    },
+    enabled: Boolean(
+      lat &&
+        lon &&
+        isFinite(lat) &&
+        isFinite(lon) &&
+        lat >= -90 &&
+        lat <= 90 &&
+        lon >= -180 &&
+        lon <= 180
+    ),
     refetchInterval: 600000, // 10 minutes
     staleTime: 300000, // 5 minutes
     retry: (failureCount, error) => {

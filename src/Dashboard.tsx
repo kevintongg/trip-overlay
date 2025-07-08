@@ -12,7 +12,7 @@ import { LocationSection } from './components/dashboard/LocationSection';
 import { WeatherSection } from './components/dashboard/WeatherSection';
 
 /**
- * New React-First Dashboard Component
+ * React-First Dashboard Component
  *
  * Complete rewrite with clean architecture:
  * - Separated hooks for each concern
@@ -28,7 +28,7 @@ import { WeatherSection } from './components/dashboard/WeatherSection';
  * - Better TypeScript support
  * - Cleaner code organization
  */
-const DashboardNew: React.FC = () => {
+const Dashboard: React.FC = () => {
   // Configuration from URL parameters (maintains exact compatibility)
   const config = useDashboardConfig();
 
@@ -75,4 +75,4 @@ const DashboardNew: React.FC = () => {
   );
 };
 
-export default DashboardNew;
+export default Dashboard;

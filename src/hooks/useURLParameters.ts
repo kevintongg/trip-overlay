@@ -3,6 +3,35 @@ import { useTripProgressStore } from '../store/tripStore';
 import { logger } from '../utils/logger';
 
 /**
+ * Sanitize string input to prevent XSS
+ */
+function sanitizeInput(input: string): string {
+  // Remove any script tags, javascript: URLs, and other dangerous content
+  return input
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/javascript:/gi, '')
+    .replace(/on\w+\s*=/gi, '')
+    .trim();
+}
+
+/**
+ * Safely parse JSON with size and content validation
+ */
+function safeJsonParse(jsonString: string): any {
+  if (jsonString.length > 10000) {
+    throw new Error('JSON data too large (>10KB)');
+  }
+
+  // Basic content validation - ensure it doesn't contain script content
+  const sanitized = sanitizeInput(jsonString);
+  if (sanitized.includes('<script') || sanitized.includes('javascript:')) {
+    throw new Error('Invalid JSON content detected');
+  }
+
+  return JSON.parse(sanitized);
+}
+
+/**
  * URL Parameters Hook - CRITICAL for Cloud OBS remote control
  * Processes URL parameters on mount to control overlay remotely
  * This is the ONLY way to control overlay in Cloud OBS environments
@@ -31,19 +60,21 @@ export function useURLParameters() {
       try {
         switch (key) {
           case 'reset':
-            logger('URL parameter triggered: reset =', value);
+            logger('URL parameter triggered: reset =', sanitizeInput(value));
             if (value === 'all') {
               resetProgress();
             } else if (value === 'today') {
               resetTodayDistance();
             } else {
-              logger.warn('Unknown reset parameter:', value);
+              logger.warn('Unknown reset parameter:', sanitizeInput(value));
             }
             processedParams++;
             break;
 
           case 'resets':
-            const resetTypes = value.split(',');
+            const resetTypes = value
+              .split(',')
+              .map(type => sanitizeInput(type.trim()));
             logger('URL parameter triggered: multiple resets =', resetTypes);
             resetTypes.forEach(resetType => {
               if (resetType === 'all') {
@@ -70,12 +101,8 @@ export function useURLParameters() {
 
           case 'importTripData':
             if (value && value.length > 0) {
-              if (value.length > 10000) {
-                logger.warn('Import data too large (>10KB), ignoring');
-                break;
-              }
               try {
-                const data = JSON.parse(decodeURIComponent(value));
+                const data = safeJsonParse(decodeURIComponent(value));
                 logger('URL parameter triggered: importTripData()');
                 importTripData(data);
                 processedParams++;

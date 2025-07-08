@@ -1,12 +1,15 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useConnectionStore } from '../../store/connectionStore';
+import {
+  useConnectionStore,
+  type Coordinates,
+} from '../../store/connectionStore';
 import { useRtirlSocket } from '../useRtirlSocket';
 import { logger } from '../../utils/logger';
 
 export interface LocationData {
   locationText: string;
   isConnected: boolean;
-  lastPosition: any;
+  lastPosition: Coordinates | null;
   rtirlConnected: boolean;
 }
 

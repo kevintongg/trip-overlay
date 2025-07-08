@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import './index.css';
 import TripOverlay from './TripOverlay.tsx';
+import { ErrorBoundary } from './components/ErrorBoundary.tsx';
 
 // Create a client for React Query
 const queryClient = new QueryClient({
@@ -16,8 +17,10 @@ const queryClient = new QueryClient({
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <TripOverlay />
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <TripOverlay />
+      </QueryClientProvider>
+    </ErrorBoundary>
   </React.StrictMode>
 );

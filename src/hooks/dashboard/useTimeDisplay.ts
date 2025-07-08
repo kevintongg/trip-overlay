@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import type { DashboardConfig } from './useDashboardConfig';
+import type { WeatherResponse } from '../../types/weather';
 
 export interface TimeDisplay {
   dateStr: string;
@@ -15,7 +16,7 @@ export interface TimeDisplay {
  */
 export function useTimeDisplay(
   config: DashboardConfig,
-  weatherData?: any
+  weatherData?: WeatherResponse | null | undefined
 ): TimeDisplay {
   const [currentTime, setCurrentTime] = useState(new Date());
 

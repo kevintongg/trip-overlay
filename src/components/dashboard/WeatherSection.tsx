@@ -1,5 +1,6 @@
 import React from 'react';
 import type { SpeedDisplay } from '../../hooks/dashboard/useSpeedDisplay';
+import type { WeatherResponse } from '../../types/weather';
 import {
   getWeatherIcon,
   getWeatherTemp,
@@ -13,7 +14,7 @@ import {
 } from '../../utils/dashboard/weatherFormatters';
 
 interface WeatherSectionProps {
-  weatherData: any;
+  weatherData: WeatherResponse | null | undefined;
   speedDisplay: SpeedDisplay;
   show: boolean;
 }

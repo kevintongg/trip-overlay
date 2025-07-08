@@ -20,12 +20,29 @@ async function fetchWeatherDirect(
 
   const apiUrl = `https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${lon}&units=${units}&exclude=minutely,alerts&appid=${apiKey}`;
 
-  const response = await fetch(apiUrl);
-  if (!response.ok) {
-    throw new Error(`Weather API error: ${response.status}`);
-  }
+  // Create AbortController for timeout handling
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
-  return response.json();
+  try {
+    const response = await fetch(apiUrl, {
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(`Weather API error: ${response.status}`);
+    }
+
+    return response.json();
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      throw new Error('Weather API request timed out');
+    }
+    throw error;
+  }
 }
 
 /**
@@ -144,9 +161,19 @@ export async function fetchWeatherData(
 
   // Strategy 1: Try Cloudflare function first
   try {
+    // Create AbortController for timeout handling
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout for Cloudflare
+
     const response = await fetch(
-      `/functions/weather?lat=${lat}&lon=${lon}&units=${units}`
+      `/functions/weather?lat=${lat}&lon=${lon}&units=${units}`,
+      {
+        signal: controller.signal,
+      }
     );
+
+    clearTimeout(timeoutId);
+
     if (response.ok) {
       const responseText = await response.text();
 
@@ -187,8 +214,12 @@ export async function fetchWeatherData(
       );
       apiMonitor.recordApiCall('cloudflare_function', lat, lon, false, false);
     }
-  } catch (error) {
-    console.warn('⚠️ Weather: Cloudflare function error:', error);
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      console.warn('⚠️ Weather: Cloudflare function timed out');
+    } else {
+      console.warn('⚠️ Weather: Cloudflare function error:', error);
+    }
     apiMonitor.recordApiCall('cloudflare_function', lat, lon, false, false);
   }
 
