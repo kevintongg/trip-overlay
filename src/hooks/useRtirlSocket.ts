@@ -68,10 +68,24 @@ export function useRtirlSocket() {
       return;
     }
 
+    // Debug: Log raw RTIRL data structure occasionally
+    if (!isDemo && Math.random() < 0.1) { // 10% chance to log structure
+      logger('🔍 RTIRL raw data structure:', JSON.stringify(data, null, 2));
+    }
+
+    // Handle both RTIRL format (nested location) and demo format (flat)
+    const latitude = data.latitude || data.location?.latitude;
+    const longitude = data.longitude || data.location?.longitude;
+
+    if (latitude === undefined || longitude === undefined) {
+      logger.warn('⚠️ Trip: Missing coordinates in location data:', data);
+      return;
+    }
+
     // Validate coordinates using centralized validation
     const coordinates: Coordinates = {
-      lat: data.latitude,
-      lon: data.longitude,
+      lat: latitude,
+      lon: longitude,
     };
 
     if (!validateCoordinates(coordinates)) {
@@ -101,12 +115,12 @@ export function useRtirlSocket() {
       const state = demoStateRef.current;
       if (state.updateCount === 1 || state.updateCount % 5 === 0) {
         logger(
-          `🎭 Demo update #${state.updateCount} - ${data.latitude.toFixed(4)}, ${data.longitude.toFixed(4)} @ ${speedKmh.toFixed(1)}km/h`
+          `🎭 Demo update #${state.updateCount} - ${latitude.toFixed(4)}, ${longitude.toFixed(4)} @ ${speedKmh.toFixed(1)}km/h`
         );
       }
     } else {
       logger(
-        `📡 Trip: Location received - ${data.latitude?.toFixed(4) || 'N/A'}, ${data.longitude?.toFixed(4) || 'N/A'} @ ${speedKmh.toFixed(1)}km/h`
+        `📡 Trip: Location received - ${latitude.toFixed(4)}, ${longitude.toFixed(4)} @ ${speedKmh.toFixed(1)}km/h`
       );
     }
 
@@ -117,8 +131,8 @@ export function useRtirlSocket() {
 
     // Dispatch custom event for location update with full data (speed now in km/h)
     const locationData: LocationData = {
-      latitude: data.latitude,
-      longitude: data.longitude,
+      latitude: latitude,
+      longitude: longitude,
       accuracy: data.accuracy || 10,
       speed: speedKmh, // Now guaranteed to be in km/h
       timestamp: Date.now(),
