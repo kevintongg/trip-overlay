@@ -1,6 +1,7 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { logger } from '../../utils/logger';
 import { useConnectionStore } from '../../store/connectionStore';
+import { speedUpdateService } from '../../utils/speedUpdateService';
 import type { DashboardConfig } from './useDashboardConfig';
 
 /**
@@ -35,30 +36,8 @@ export function useDashboardDemo(config: DashboardConfig): void {
         localStorage.getItem('tripOverlayMode');
 
       if (hasPersistedDemoData) {
-        // Get old values before clearing for proper storage event
-        const oldSpeed = localStorage.getItem('tripOverlaySpeed');
-        const oldMode = localStorage.getItem('tripOverlayMode');
-
-        // Clear demo speed data from localStorage
-        localStorage.removeItem('tripOverlaySpeed');
-        localStorage.removeItem('tripOverlayMode');
-
-        // Dispatch storage events to notify speed display hook
-        window.dispatchEvent(
-          new StorageEvent('storage', {
-            key: 'tripOverlaySpeed',
-            newValue: null,
-            oldValue: oldSpeed,
-          })
-        );
-
-        window.dispatchEvent(
-          new StorageEvent('storage', {
-            key: 'tripOverlayMode',
-            newValue: null,
-            oldValue: oldMode,
-          })
-        );
+        // Clear demo speed data using optimized service
+        speedUpdateService.clearSpeedData();
 
         logger('🧹 Cleaned up persisted demo data from localStorage');
       }
@@ -101,9 +80,8 @@ export function useDashboardDemo(config: DashboardConfig): void {
       demoState.lat = Math.round((48.2082 + latMovement) * 1000) / 1000;
       demoState.lon = Math.round((16.3738 + lonMovement) * 1000) / 1000;
 
-      // Store demo speed in localStorage for speed display
-      localStorage.setItem('tripOverlaySpeed', demoState.speed.toFixed(1));
-      localStorage.setItem('tripOverlayMode', 'CYCLING');
+      // Store demo speed using optimized service
+      speedUpdateService.updateSpeed(demoState.speed, 'CYCLING');
 
       // Dispatch location update event
       const locationData = {
@@ -133,30 +111,8 @@ export function useDashboardDemo(config: DashboardConfig): void {
       // Clear the global flag when demo mode stops
       setDashboardDemoActive(false);
 
-      // Get old values before clearing for proper storage event
-      const oldSpeed = localStorage.getItem('tripOverlaySpeed');
-      const oldMode = localStorage.getItem('tripOverlayMode');
-
-      // Clear demo speed data from localStorage to prevent persistence
-      localStorage.removeItem('tripOverlaySpeed');
-      localStorage.removeItem('tripOverlayMode');
-
-      // Dispatch storage events to notify speed display hook of the changes
-      window.dispatchEvent(
-        new StorageEvent('storage', {
-          key: 'tripOverlaySpeed',
-          newValue: null,
-          oldValue: oldSpeed,
-        })
-      );
-
-      window.dispatchEvent(
-        new StorageEvent('storage', {
-          key: 'tripOverlayMode',
-          newValue: null,
-          oldValue: oldMode,
-        })
-      );
+      // Clear demo speed data using optimized service
+      speedUpdateService.clearSpeedData();
 
       logger('🛑 Demo mode stopped - cleared speed data');
     };

@@ -1,4 +1,5 @@
 import { useEffect, useCallback } from 'react';
+import { speedUpdateService } from '../../utils/speedUpdateService';
 import type { LocationData } from './useLocationData';
 import type { SpeedDisplay } from './useSpeedDisplay';
 import type { TimeDisplay } from './useTimeDisplay';
@@ -74,37 +75,18 @@ export function useDashboardConsole(
 
   const testSpeed = useCallback((speed: number) => {
     logger(`🚴 Dashboard: Setting test speed to ${speed} km/h`);
-    localStorage.setItem('tripOverlaySpeed', speed.toString());
-    localStorage.setItem('tripOverlayMode', 'CYCLING');
-    window.dispatchEvent(
-      new StorageEvent('storage', {
-        key: 'tripOverlaySpeed',
-        newValue: speed.toString(),
-      })
-    );
+    speedUpdateService.updateSpeed(speed, 'CYCLING', { force: true });
   }, []);
 
   const testMode = useCallback((mode: string) => {
     logger(`🏃 Dashboard: Setting test mode to ${mode}`);
-    localStorage.setItem('tripOverlayMode', mode);
-    window.dispatchEvent(
-      new StorageEvent('storage', {
-        key: 'tripOverlayMode',
-        newValue: mode,
-      })
-    );
+    const currentSpeed = speedUpdateService.getCurrentSpeed()?.speed || 0;
+    speedUpdateService.updateSpeed(currentSpeed, mode, { force: true });
   }, []);
 
   const clearSpeed = useCallback(() => {
     logger('🛑 Dashboard: Clearing speed data');
-    localStorage.removeItem('tripOverlaySpeed');
-    localStorage.removeItem('tripOverlayMode');
-    window.dispatchEvent(
-      new StorageEvent('storage', {
-        key: 'tripOverlaySpeed',
-        newValue: null,
-      })
-    );
+    speedUpdateService.clearSpeedData();
   }, []);
 
   // Create API object

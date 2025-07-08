@@ -3,6 +3,7 @@ import { useTripProgressStore } from '../store/tripStore';
 import { calculateDistance } from '../utils/gps';
 import { CONFIG, validateCoordinates } from '../utils/config';
 import { logger } from '../utils/logger';
+import { speedUpdateService } from '../utils/speedUpdateService';
 import type { Coordinates } from '../types/config';
 import type { LocationData } from '../types/rtirl';
 
@@ -171,9 +172,8 @@ export function useGPSProcessor() {
       state.lastPosition = newPosition;
       state.lastTimestamp = now;
 
-      // Store mode in localStorage for dashboard compatibility
-      localStorage.setItem('tripOverlaySpeed', smoothedSpeed.toFixed(1));
-      localStorage.setItem('tripOverlayMode', state.currentMode);
+      // Store mode in localStorage for dashboard compatibility using optimized service
+      speedUpdateService.updateSpeed(smoothedSpeed, state.currentMode);
 
       // Log periodic updates
       if (state.positionHistory.length % 10 === 0) {
