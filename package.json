@@ -6,6 +6,7 @@
   "main": "index.html",
   "scripts": {
     "dev": "vite",
+    "dev:functions": "node dev-functions.js",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx,js --report-unused-disable-directives",

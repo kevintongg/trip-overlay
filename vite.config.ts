@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import { copyFileSync, mkdirSync, existsSync } from 'fs';
+import { copyFileSync, mkdirSync, existsSync, readdirSync } from 'fs';
 
 // Plugin to copy functions directory to dist
 function copyFunctionsPlugin() {
@@ -9,21 +9,22 @@ function copyFunctionsPlugin() {
     name: 'copy-functions',
     writeBundle() {
       const sourceDir = 'functions';
-      const targetDir = 'dist/functions'; // Back to functions/ as per Cloudflare docs
+      const targetDir = 'dist/functions';
 
       if (existsSync(sourceDir)) {
         if (!existsSync(targetDir)) {
           mkdirSync(targetDir, { recursive: true });
         }
 
-        // Copy weather.js
-        const sourceFile = path.join(sourceDir, 'weather.js');
-        const targetFile = path.join(targetDir, 'weather.js');
+        // Copy all .js files from functions directory
+        const files = readdirSync(sourceDir).filter(file => file.endsWith('.js'));
 
-        if (existsSync(sourceFile)) {
+        files.forEach(file => {
+          const sourceFile = path.join(sourceDir, file);
+          const targetFile = path.join(targetDir, file);
           copyFileSync(sourceFile, targetFile);
-          console.log('✅ Copied functions/weather.js to dist/functions/');
-        }
+          console.log(`✅ Copied functions/${file} to dist/functions/`);
+        });
       }
     },
   };
@@ -34,6 +35,17 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+    },
+  },
+  server: {
+    port: 5173,
+    // For local development, you can either:
+    // 1. Set environment variables (OWM_API_KEY, OPENCAGE_API_KEY) and use the dev-functions.js script
+    // 2. Or the functions will gracefully fallback to Nominatim for geocoding
+    proxy: {
+      // Uncomment these lines if you want to proxy to a local function server
+      // '/weather': 'http://localhost:8787',
+      // '/geocode': 'http://localhost:8787',
     },
   },
   build: {

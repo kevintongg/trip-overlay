@@ -15,52 +15,13 @@ interface GeocodeProvider {
   geocode: (coordinates: Coordinates) => Promise<string>;
 }
 
-// OpenCage API response interfaces
-interface OpenCageComponents {
-  city?: string;
-  town?: string;
-  village?: string;
-  municipality?: string;
-  district?: string;
-  borough?: string;
-  neighbourhood?: string;
-  suburb?: string;
-  quarter?: string;
-  city_district?: string;
-  _normalized_city?: string;
-  state?: string;
-  state_code?: string;
-  country?: string;
-  country_code?: string;
-  continent?: string;
-  _category?: string;
-  _type?: string;
+// Server response interface
+interface GeocodeResponse {
+  location: string;
+  provider: string;
 }
 
-interface OpenCageResult {
-  components: OpenCageComponents;
-  formatted: string;
-  geometry: {
-    lat: number;
-    lng: number;
-  };
-  confidence: number;
-}
-
-interface OpenCageResponse {
-  results: OpenCageResult[];
-  status: {
-    code: number;
-    message: string;
-  };
-  rate?: {
-    limit: number;
-    remaining: number;
-    reset: number;
-  };
-}
-
-// Legacy Nominatim interfaces (kept as fallback)
+// Legacy interfaces for fallback Nominatim (kept for direct fallback if server fails)
 interface NominatimAddress {
   district?: string;
   borough?: string;
@@ -79,6 +40,19 @@ interface NominatimResponse {
   address?: NominatimAddress;
 }
 
+/**
+ * Location Service - Secure Geocoding with Server-Side API Key Protection
+ *
+ * Security Model:
+ * 1. Primary: Server-side geocoding function (/geocode) - API keys protected
+ * 2. Fallback: Direct Nominatim (free, no API key required)
+ * 3. Final: Coordinate display
+ *
+ * Benefits:
+ * - API keys never exposed to browser
+ * - Maintains same functionality
+ * - Progressive fallback strategy
+ */
 class LocationService {
   private cache = new Map<string, CachedLocation>();
   private requestQueue = new Set<string>();
@@ -91,84 +65,93 @@ class LocationService {
   private readonly RETRY_DELAY = 500; // 0.5 seconds between retries
 
   /**
-   * Generate cache key based on coordinates with radius-based zones
-   * This creates cache zones of ~100m to reduce API calls for nearby locations
+   * Generate cache key for coordinates (rounded to ~100m precision)
    */
   private getCacheKey(coordinates: Coordinates): string {
-    const radiusInDegrees = this.CACHE_RADIUS / 111000; // Convert meters to degrees
-    const latKey =
-      Math.round(coordinates.lat / radiusInDegrees) * radiusInDegrees;
-    const lonKey =
-      Math.round(coordinates.lon / radiusInDegrees) * radiusInDegrees;
-    return `${latKey.toFixed(5)},${lonKey.toFixed(5)}`;
+    // Round to 3 decimal places (~100m accuracy) for cache efficiency
+    const lat = Math.round(coordinates.lat * 1000) / 1000;
+    const lon = Math.round(coordinates.lon * 1000) / 1000;
+    return `${lat},${lon}`;
   }
 
   /**
-   * Check if cached result is still valid
+   * Get cached location if available and fresh
    */
   private getCachedResult(coordinates: Coordinates): string | null {
-    const cacheKey = this.getCacheKey(coordinates);
-    const cached = this.cache.get(cacheKey);
+    const key = this.getCacheKey(coordinates);
+    const cached = this.cache.get(key);
 
     if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
+      logger(`[LocationService] Cache hit for ${key}: ${cached.locationText}`);
       return cached.locationText;
+    }
+
+    if (cached) {
+      logger(`[LocationService] Cache expired for ${key}, removing`);
+      this.cache.delete(key);
     }
 
     return null;
   }
 
   /**
-   * Cache a successful geocoding result
+   * Store result in cache
    */
   private setCachedResult(
     coordinates: Coordinates,
     locationText: string
   ): void {
-    const cacheKey = this.getCacheKey(coordinates);
-    this.cache.set(cacheKey, {
+    const key = this.getCacheKey(coordinates);
+    this.cache.set(key, {
       locationText,
       timestamp: Date.now(),
     });
 
-    // Clean old cache entries periodically
+    logger(`[LocationService] Cached result for ${key}: ${locationText}`);
+
+    // Clean up old entries periodically
     if (this.cache.size > 100) {
       this.cleanOldCacheEntries();
     }
   }
 
   /**
-   * Remove expired cache entries
+   * Remove old cache entries
    */
   private cleanOldCacheEntries(): void {
     const now = Date.now();
+    let removedCount = 0;
+
     for (const [key, cached] of this.cache.entries()) {
       if (now - cached.timestamp > this.CACHE_DURATION) {
         this.cache.delete(key);
+        removedCount++;
       }
     }
+
+    logger(`[LocationService] Cleaned ${removedCount} old cache entries`);
   }
 
   /**
-   * Create a timeout promise that rejects after specified milliseconds
+   * Create timeout promise for race conditions
    */
   private createTimeoutPromise(ms: number): Promise<never> {
     return new Promise((_, reject) => {
-      setTimeout(() => reject(new Error(`Request timeout after ${ms}ms`)), ms);
+      setTimeout(() => reject(new Error('Request timeout')), ms);
     });
   }
 
   /**
-   * OpenCage geocoding provider (primary)
+   * Secure server-side geocoding provider (primary)
+   * Uses the /geocode serverless function to keep API keys secure
    */
-  private async geocodeOpenCage(coordinates: Coordinates): Promise<string> {
-    const apiKey = import.meta.env.VITE_OPENCAGE_API_KEY;
+  private async geocodeServerSide(coordinates: Coordinates): Promise<string> {
+    logger(
+      `[LocationService] Server: Requesting geocode for ${coordinates.lat}, ${coordinates.lon}`
+    );
 
-    if (!apiKey) {
-      throw new Error('OpenCage API key not configured');
-    }
-
-    const query = `${coordinates.lat},${coordinates.lon}`;
-    const url = `https://api.opencagedata.com/geocode/v1/json?key=${apiKey}&q=${encodeURIComponent(query)}&no_annotations=1&language=en&limit=1`;
+    const url = `/geocode?lat=${coordinates.lat}&lon=${coordinates.lon}`;
+    logger(`[LocationService] Server: URL: ${url}`);
 
     const response = await fetch(url, {
       headers: {
@@ -176,99 +159,38 @@ class LocationService {
       },
     });
 
-    if (!response.ok) {
-      throw new Error(`OpenCage API error: ${response.status}`);
-    }
-
-    const data: OpenCageResponse = await response.json();
-
-    if (data.status.code !== 200) {
-      throw new Error(`OpenCage API error: ${data.status.message}`);
-    }
-
-    return this.extractLocationFromOpenCage(data);
-  }
-
-  /**
-   * Extract location text from OpenCage response
-   */
-  private extractLocationFromOpenCage(data: OpenCageResponse): string {
-    if (!data.results || data.results.length === 0) {
-      throw new Error('No results in OpenCage response');
-    }
-
-    const result = data.results[0];
-    const { components } = result;
-
-    // Build location string with priority order: "District, City, Country"
-    const district =
-      components.district ||
-      components.borough ||
-      components.neighbourhood ||
-      components.suburb ||
-      components.quarter ||
-      components.city_district;
-
-    const city =
-      components._normalized_city ||
-      components.city ||
-      components.town ||
-      components.village ||
-      components.municipality;
-
-    const { country } = components;
-
-    const locationParts = [];
-
-    // Add district if it's different from city and not too generic
-    if (district && district !== city && !this.isGenericDistrict(district)) {
-      locationParts.push(district);
-    }
-
-    if (city) {
-      locationParts.push(city);
-    }
-
-    if (country) {
-      locationParts.push(country);
-    }
-
-    if (locationParts.length === 0) {
-      // Fallback to formatted address if no components available
-      return result.formatted;
-    }
-
-    return locationParts.join(', ');
-  }
-
-  /**
-   * Check if district name is too generic to be useful
-   */
-  private isGenericDistrict(district: string): boolean {
-    const genericTerms = [
-      'district',
-      'area',
-      'region',
-      'zone',
-      'sector',
-      'division',
-      'administrative',
-    ];
-
-    const lowerDistrict = district.toLowerCase();
-    return genericTerms.some(term => lowerDistrict.includes(term));
-  }
-
-  /**
-   * OpenStreetMap Nominatim geocoding provider (fallback)
-   */
-  private async geocodeNominatim(coordinates: Coordinates): Promise<string> {
     logger(
-      `[LocationService] Nominatim: Requesting geocode for ${coordinates.lat}, ${coordinates.lon}`
+      `[LocationService] Server: Response status: ${response.status} ${response.statusText}`
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        `Server geocoding error: ${response.status} ${response.statusText}`
+      );
+    }
+
+    const data: GeocodeResponse = await response.json();
+    logger(`[LocationService] Server: Response data:`, data);
+
+    if (!data.location) {
+      throw new Error('No location in server response');
+    }
+
+    logger(`[LocationService] Server: Success via ${data.provider}: ${data.location}`);
+    return data.location;
+  }
+
+  /**
+   * Direct Nominatim geocoding provider (fallback)
+   * Used when server-side geocoding fails
+   */
+  private async geocodeNominatimDirect(coordinates: Coordinates): Promise<string> {
+    logger(
+      `[LocationService] Nominatim Direct: Requesting geocode for ${coordinates.lat}, ${coordinates.lon}`
     );
 
     const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${coordinates.lat}&lon=${coordinates.lon}&zoom=14&addressdetails=1`;
-    logger(`[LocationService] Nominatim: URL: ${url}`);
+    logger(`[LocationService] Nominatim Direct: URL: ${url}`);
 
     const response = await fetch(url, {
       headers: {
@@ -277,7 +199,7 @@ class LocationService {
     });
 
     logger(
-      `[LocationService] Nominatim: Response status: ${response.status} ${response.statusText}`
+      `[LocationService] Nominatim Direct: Response status: ${response.status} ${response.statusText}`
     );
 
     if (!response.ok) {
@@ -287,10 +209,10 @@ class LocationService {
     }
 
     const data: NominatimResponse = await response.json();
-    logger(`[LocationService] Nominatim: Response data:`, data);
+    logger(`[LocationService] Nominatim Direct: Response data:`, data);
 
     const result = this.extractLocationFromNominatim(data);
-    logger(`[LocationService] Nominatim: Extracted location: ${result}`);
+    logger(`[LocationService] Nominatim Direct: Extracted location: ${result}`);
 
     return result;
   }
@@ -356,28 +278,33 @@ class LocationService {
    * Backup geocoding provider using a fallback coordinate display
    */
   private async geocodeFallback(coordinates: Coordinates): Promise<string> {
-    // Return formatted coordinates as fallback
-    return `${coordinates.lat.toFixed(3)}, ${coordinates.lon.toFixed(3)}`;
+    logger(
+      `[LocationService] Fallback: Using coordinates for ${coordinates.lat}, ${coordinates.lon}`
+    );
+
+    // Format coordinates to reasonable precision
+    const lat = coordinates.lat.toFixed(4);
+    const lon = coordinates.lon.toFixed(4);
+    return `${lat}, ${lon}`;
   }
 
   /**
    * Get all available geocoding providers in order of preference
+   * Updated to prioritize secure server-side geocoding
    */
   private getProviders(): GeocodeProvider[] {
     const providers: GeocodeProvider[] = [];
 
-    // Primary: OpenCage (if API key is configured)
-    if (import.meta.env.VITE_OPENCAGE_API_KEY) {
-      providers.push({
-        name: 'OpenCage',
-        geocode: coords => this.geocodeOpenCage(coords),
-      });
-    }
-
-    // Secondary: Nominatim (free fallback)
+    // Primary: Secure server-side geocoding (API keys protected)
     providers.push({
-      name: 'Nominatim',
-      geocode: coords => this.geocodeNominatim(coords),
+      name: 'Server',
+      geocode: coords => this.geocodeServerSide(coords),
+    });
+
+    // Secondary: Direct Nominatim (free fallback)
+    providers.push({
+      name: 'Nominatim Direct',
+      geocode: coords => this.geocodeNominatimDirect(coords),
     });
 
     // Final fallback: Coordinates
@@ -390,17 +317,21 @@ class LocationService {
   }
 
   /**
-   * Try multiple geocoding providers with fallback
+   * Try multiple geocoding providers with progressive fallback
    */
   private async tryMultipleProviders(
     coordinates: Coordinates
   ): Promise<string> {
     const providers = this.getProviders();
+    logger(
+      `[LocationService] Trying ${providers.length} providers: ${providers.map(p => p.name).join(', ')}`
+    );
+
     let lastError: Error | null = null;
 
     for (const provider of providers) {
       try {
-        logger(`[LocationService] Trying ${provider.name} provider`);
+        logger(`[LocationService] Trying provider: ${provider.name}`);
 
         const result = await Promise.race([
           provider.geocode(coordinates),
@@ -408,67 +339,80 @@ class LocationService {
         ]);
 
         logger(
-          `[LocationService] ${provider.name} provider succeeded: ${result}`
+          `[LocationService] ✅ Success with ${provider.name}: ${result}`
         );
         return result;
       } catch (error) {
         lastError = error as Error;
-        logger(`[LocationService] ${provider.name} provider failed:`, error);
+        logger(
+          `[LocationService] ❌ ${provider.name} failed: ${lastError.message}`
+        );
 
-        // Don't try fallback providers if this was a timeout
-        if (error instanceof Error && error.message.includes('timeout')) {
-          // Add small delay before trying next provider
+        // Add delay before trying next provider (except for last one)
+        if (provider !== providers[providers.length - 1]) {
           await new Promise(resolve => setTimeout(resolve, this.RETRY_DELAY));
         }
       }
     }
 
-    // If all providers failed, throw the last error
-    throw lastError || new Error('All geocoding providers failed');
+    // All providers failed
+    const errorMessage = `All geocoding providers failed. Last error: ${lastError?.message || 'Unknown error'}`;
+    logger(`[LocationService] ❌ ${errorMessage}`);
+    throw new Error(errorMessage);
   }
 
   /**
    * Main geocoding method with caching and deduplication
    */
   async reverseGeocode(coordinates: Coordinates): Promise<string> {
-    // Check cache first
-    const cached = this.getCachedResult(coordinates);
-    if (cached) {
-      logger(`[LocationService] Cache hit: ${cached}`);
-      return cached;
+    // Input validation
+    if (
+      !coordinates ||
+      typeof coordinates.lat !== 'number' ||
+      typeof coordinates.lon !== 'number' ||
+      !isFinite(coordinates.lat) ||
+      !isFinite(coordinates.lon) ||
+      coordinates.lat < -90 ||
+      coordinates.lat > 90 ||
+      coordinates.lon < -180 ||
+      coordinates.lon > 180
+    ) {
+      throw new Error(
+        `Invalid coordinates: ${JSON.stringify(coordinates)}`
+      );
     }
 
-    const requestKey = `${coordinates.lat},${coordinates.lon}`;
+    const cacheKey = this.getCacheKey(coordinates);
 
-    // Check if there's already a pending request for these coordinates
-    const pendingRequest = this.pendingRequests.get(requestKey);
-    if (pendingRequest) {
-      logger(`[LocationService] Reusing pending request for ${requestKey}`);
-      return pendingRequest;
+    // Check cache first
+    const cachedResult = this.getCachedResult(coordinates);
+    if (cachedResult) {
+      return cachedResult;
+    }
+
+    // Check if request is already in progress (deduplication)
+    if (this.pendingRequests.has(cacheKey)) {
+      logger(`[LocationService] Deduplicating request for ${cacheKey}`);
+      return this.pendingRequests.get(cacheKey)!;
     }
 
     // Create new request
-    const request = this.tryMultipleProviders(coordinates)
-      .then(result => {
-        this.setCachedResult(coordinates, result);
-        return result;
-      })
-      .catch(error => {
-        logger(
-          `[LocationService] All providers failed for ${requestKey}:`,
-          error
-        );
-        // Return formatted coordinates as final fallback
-        const fallback = `${coordinates.lat.toFixed(3)}, ${coordinates.lon.toFixed(3)}`;
-        this.setCachedResult(coordinates, fallback);
-        return fallback;
-      })
-      .finally(() => {
-        this.pendingRequests.delete(requestKey);
-      });
+    const requestPromise = this.tryMultipleProviders(coordinates);
 
-    this.pendingRequests.set(requestKey, request);
-    return request;
+    // Store pending request for deduplication
+    this.pendingRequests.set(cacheKey, requestPromise);
+
+    try {
+      const result = await requestPromise;
+
+      // Cache successful result
+      this.setCachedResult(coordinates, result);
+
+      return result;
+    } finally {
+      // Always clean up pending request
+      this.pendingRequests.delete(cacheKey);
+    }
   }
 
   /**
@@ -478,9 +422,6 @@ class LocationService {
     const testCoords = coordinates || { lat: 48.2082, lon: 16.3738 }; // Vienna
 
     logger('[LocationService] === DEBUG INFO ===');
-    logger(
-      `[LocationService] OpenCage API Key configured: ${!!import.meta.env.VITE_OPENCAGE_API_KEY}`
-    );
     logger(`[LocationService] Cache size: ${this.cache.size} entries`);
     logger(`[LocationService] Pending requests: ${this.pendingRequests.size}`);
 
@@ -504,11 +445,12 @@ class LocationService {
   }
 
   /**
-   * Clear all cached results (useful for testing or memory management)
+   * Clear all cached locations
    */
   clearCache(): void {
+    const oldSize = this.cache.size;
     this.cache.clear();
-    logger('[LocationService] Cache cleared');
+    logger(`[LocationService] Cleared cache (${oldSize} entries removed)`);
   }
 
   /**
@@ -522,5 +464,5 @@ class LocationService {
   }
 }
 
-// Export singleton instance
+// Create singleton instance
 export const locationService = new LocationService();
