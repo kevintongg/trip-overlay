@@ -35,9 +35,11 @@ const Dashboard: React.FC = () => {
   // Core data hooks (with client-side check)
   const locationData = useLocationData();
   const speedDisplay = useSpeedDisplay();
+  const weatherUnits = 'metric'; // Could be made configurable via URL params later
   const weatherQuery = useWeatherData(
     locationData.lastPosition?.lat,
-    locationData.lastPosition?.lon
+    locationData.lastPosition?.lon,
+    weatherUnits
   );
   const weatherData = weatherQuery.data;
 
@@ -65,6 +67,7 @@ const Dashboard: React.FC = () => {
             weatherData={weatherData}
             speedDisplay={speedDisplay}
             show={config.showWeather}
+            units={weatherUnits}
           />
 
           {/* Time Section */}

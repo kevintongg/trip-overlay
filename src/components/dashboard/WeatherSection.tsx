@@ -17,6 +17,7 @@ interface WeatherSectionProps {
   weatherData: WeatherResponse | null | undefined;
   speedDisplay: SpeedDisplay;
   show: boolean;
+  units?: string;
 }
 
 /**
@@ -28,6 +29,7 @@ export function WeatherSection({
   weatherData,
   speedDisplay,
   show,
+  units = 'metric',
 }: WeatherSectionProps) {
   if (!show) {
     return null;
@@ -50,10 +52,10 @@ export function WeatherSection({
           className="flex flex-col items-center gap-1 mx-3"
         >
           <div className="text-[1.7em] font-black text-white tracking-wide drop-shadow-[0_3px_12px_rgba(0,0,0,0.9)] font-inter leading-none">
-            {getWeatherTemp(weatherData)}
+            {getWeatherTemp(weatherData, units)}
           </div>
           <div className="text-[0.95em] text-gray-300 font-medium tracking-wide drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] font-inter whitespace-nowrap opacity-80">
-            {getWeatherHighLow(weatherData)}
+            {getWeatherHighLow(weatherData, units)}
           </div>
         </div>
 
@@ -98,8 +100,8 @@ export function WeatherSection({
           getWeatherHumidity(weatherData)) && (
           <div className="text-center text-[1.0em] text-gray-300 mb-1">
             {[
-              getWeatherFeelsLike(weatherData) &&
-                `Feels like: ${getWeatherFeelsLike(weatherData)}`,
+              getWeatherFeelsLike(weatherData, units) &&
+                `Feels like: ${getWeatherFeelsLike(weatherData, units)}`,
               getWeatherHumidity(weatherData) &&
                 `Humidity: ${getWeatherHumidity(weatherData)}`,
             ]

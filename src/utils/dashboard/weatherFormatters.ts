@@ -61,21 +61,23 @@ export function getWeatherIcon(weatherData: any): React.ReactElement | string {
 }
 
 // Temperature formatting (extracted from original)
-export function getWeatherTemp(weatherData: any): string {
+export function getWeatherTemp(weatherData: any, units: string = 'metric'): string {
   if (!weatherData?.current?.temp) {
     return '--°';
   }
-  return `${weatherData.current.temp.toFixed(1)}°`;
+  const unit = units === 'imperial' ? '°F' : units === 'standard' ? 'K' : '°C';
+  return `${weatherData.current.temp.toFixed(1)}${unit}`;
 }
 
 // High/Low temperature formatting (extracted from original)
-export function getWeatherHighLow(weatherData: any): string {
+export function getWeatherHighLow(weatherData: any, units: string = 'metric'): string {
   if (!weatherData?.daily?.[0]) {
     return '';
   }
+  const unit = units === 'imperial' ? '°F' : units === 'standard' ? 'K' : '°C';
   const high = weatherData.daily[0].temp.max.toFixed(1);
   const low = weatherData.daily[0].temp.min.toFixed(1);
-  return `${high}° / ${low}°`;
+  return `${high}${unit} / ${low}${unit}`;
 }
 
 // Weather description formatting (extracted from original)
@@ -87,11 +89,12 @@ export function getWeatherDesc(weatherData: any): string {
 }
 
 // Feels like temperature (extracted from original)
-export function getWeatherFeelsLike(weatherData: any): string | null {
+export function getWeatherFeelsLike(weatherData: any, units: string = 'metric'): string | null {
   if (weatherData?.current?.feels_like === undefined) {
     return null;
   }
-  return `${weatherData.current.feels_like.toFixed(1)}°`;
+  const unit = units === 'imperial' ? '°F' : units === 'standard' ? 'K' : '°C';
+  return `${weatherData.current.feels_like.toFixed(1)}${unit}`;
 }
 
 // Humidity formatting (extracted from original)
