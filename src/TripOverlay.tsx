@@ -37,15 +37,15 @@ const TripOverlay: React.FC = () => {
   // Get current mode from GPS processor (which includes hysteresis and delays)
   const currentMode = gpsProcessor.getCurrentMode();
 
-  // Avatar image mapping - using assets/ directory like original
+  // Avatar image mapping - using public directory for production builds
   const getAvatarImage = () => {
     switch (currentMode) {
       case 'WALKING':
-        return 'assets/walking.gif';
+        return '/walking.gif';
       case 'CYCLING':
-        return 'assets/cycling.gif';
+        return '/cycling.gif';
       default:
-        return 'assets/stationary.png';
+        return '/stationary.png';
     }
   };
 

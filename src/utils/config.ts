@@ -48,19 +48,19 @@ export const CONFIG: ConfigType = {
         maxSpeed: 2,
         minMovementM: 1,
         gpsThrottle: 5000, // Check less often when still
-        avatar: 'assets/stationary.png',
+        avatar: '/stationary.png',
       },
       WALKING: {
         maxSpeed: 10, // Up to 10 km/h
         minMovementM: 1,
         gpsThrottle: 2000,
-        avatar: 'assets/walking.gif',
+        avatar: '/walking.gif',
       },
       CYCLING: {
         maxSpeed: 35, // Up to 35 km/h
         minMovementM: 5,
         gpsThrottle: 500,
-        avatar: 'assets/cycling.gif',
+        avatar: '/cycling.gif',
       },
     },
     modeSwitchDelay: 10000, // 10 seconds
