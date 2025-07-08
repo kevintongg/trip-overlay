@@ -45,7 +45,6 @@ It consists of two main overlays:
 - **Tailwind CSS & shadcn/ui**: For utility-first styling and a modern component library.
 
 ### File Structure
-
 ```
 src/
 ├── components/     # React components (UI, core, layout)
@@ -61,6 +60,8 @@ src/
 ```
 
 ### State Management
+- **Client State (Zustand)**: `tripStore`, `weatherStore`, and `connectionStore` manage the application's UI and session state. State is persisted to `localStorage` where necessary.
+- **Server State (React Query)**: Manages asynchronous operations like fetching weather data, with automatic caching, retries, and background updates.
 
 - **Client State (Zustand)**: `tripStore`, `weatherStore`, and `connectionStore` manage the application's UI and session state. State is persisted to `localStorage` where necessary.
 - **Server State (React Query)**: Manages asynchronous operations like fetching weather data, with automatic caching, retries, and background updates.
