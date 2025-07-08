@@ -9,7 +9,7 @@ function copyFunctionsPlugin() {
     name: 'copy-functions',
     writeBundle() {
       const sourceDir = 'functions';
-      const targetDir = 'dist/functions';
+      const targetDir = 'dist/_functions'; // Cloudflare Pages requires _functions
 
       if (existsSync(sourceDir)) {
         if (!existsSync(targetDir)) {
@@ -22,7 +22,7 @@ function copyFunctionsPlugin() {
 
         if (existsSync(sourceFile)) {
           copyFileSync(sourceFile, targetFile);
-          console.log('✅ Copied functions/weather.js to dist/functions/');
+          console.log('✅ Copied functions/weather.js to dist/_functions/');
         }
       }
     }

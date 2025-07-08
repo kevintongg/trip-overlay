@@ -4,13 +4,24 @@
 VITE_RTIRL_USER_ID=your_rtirl_user_id_here
 VITE_DEMO_MODE=false
 
-# OpenCage Geocoding API (Optional - improves location accuracy)
+# OpenCage Geocoding API (Optional but Recommended - improves location accuracy)
 # Get your free API key from: https://opencagedata.com/
-# Free tier: 2,500 requests/day - more than enough for personal use
-# If not configured, falls back to free Nominatim (slower, less reliable)
+# Free tier: 2,500 requests/day - perfect for personal streaming use
+# Benefits over free Nominatim fallback:
+#   - Higher quality results and formatting
+#   - Better handling of international locations
+#   - Faster response times
+#   - Priority support from OpenCage
+# If not configured, falls back to free Nominatim (slower, less detailed)
 VITE_OPENCAGE_API_KEY=your_opencage_api_key_here
+
+# Weather API (Required for weather features)
+# This should be configured in .dev.vars file for local development
+# and in Cloudflare Pages environment variables for production
+# Get your free API key from: https://openweathermap.org/api/one-call-3
+VITE_OWM_API_KEY=your_openweathermap_api_key_here
 
 # Notes:
 # - Copy this file to .env.local (which is gitignored)
 # - Replace the placeholder values with your actual keys
-# - Weather API key is configured separately in .dev.vars for Cloudflare Functions
+# - For Cloudflare deployment, set OWM_API_KEY in Pages environment variables
