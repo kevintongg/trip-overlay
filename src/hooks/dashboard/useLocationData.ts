@@ -38,13 +38,19 @@ export function useLocationData(): LocationData {
   const getDisplayText = useCallback(
     (position: Coordinates | null, loading: boolean, known: string): string => {
       if (!position) return 'Waiting for GPS...';
-      if (!loading) return known;
 
-      // During loading, show helpful progress messages
-      if (known !== '--') {
+      // If we have GPS but no real location text yet, show loading message
+      if (known === '--') {
+        return 'GPS Connected - Getting location...';
+      }
+
+      // If we're loading and have a previous location, show the previous location
+      if (loading && known !== '--') {
         return known; // Keep showing last known location while updating
       }
-      return 'GPS Connected - Getting location...';
+
+      // Normal case: show the known location
+      return known;
     },
     []
   );

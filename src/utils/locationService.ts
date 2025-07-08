@@ -258,31 +258,45 @@ class LocationService {
    * OpenStreetMap Nominatim geocoding provider (fallback)
    */
   private async geocodeNominatim(coordinates: Coordinates): Promise<string> {
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${coordinates.lat}&lon=${coordinates.lon}&zoom=14&addressdetails=1`,
-      {
-        headers: {
-          'User-Agent': 'trip-overlay-dashboard/1.0',
-        },
-      }
-    );
+    logger(`[LocationService] Nominatim: Requesting geocode for ${coordinates.lat}, ${coordinates.lon}`);
+
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${coordinates.lat}&lon=${coordinates.lon}&zoom=14&addressdetails=1`;
+    logger(`[LocationService] Nominatim: URL: ${url}`);
+
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'trip-overlay-dashboard/1.0',
+      },
+    });
+
+    logger(`[LocationService] Nominatim: Response status: ${response.status} ${response.statusText}`);
 
     if (!response.ok) {
-      throw new Error(`Nominatim API error: ${response.status}`);
+      throw new Error(`Nominatim API error: ${response.status} ${response.statusText}`);
     }
 
     const data: NominatimResponse = await response.json();
-    return this.extractLocationFromNominatim(data);
+    logger(`[LocationService] Nominatim: Response data:`, data);
+
+    const result = this.extractLocationFromNominatim(data);
+    logger(`[LocationService] Nominatim: Extracted location: ${result}`);
+
+    return result;
   }
 
   /**
    * Extract location text from Nominatim response
    */
   private extractLocationFromNominatim(data: NominatimResponse): string {
+    logger(`[LocationService] Nominatim: Extracting location from:`, data);
+
     const { address } = data;
     if (!address) {
+      logger.error('[LocationService] Nominatim: No address data in response');
       throw new Error('No address data in response');
     }
+
+    logger(`[LocationService] Nominatim: Address components:`, address);
 
     // Build location string: "District, City, Country" or "City, Country"
     const district =
@@ -301,6 +315,8 @@ class LocationService {
 
     const { country } = address;
 
+    logger(`[LocationService] Nominatim: Parsed components - district: ${district}, city: ${city}, country: ${country}`);
+
     const locationParts = [];
     if (district && district !== city) {
       locationParts.push(district);
@@ -312,7 +328,10 @@ class LocationService {
       locationParts.push(country);
     }
 
+    logger(`[LocationService] Nominatim: Location parts: [${locationParts.join(', ')}]`);
+
     if (locationParts.length === 0) {
+      logger.error('[LocationService] Nominatim: No valid location parts found');
       throw new Error('No valid location parts found');
     }
 
@@ -429,6 +448,32 @@ class LocationService {
 
     this.pendingRequests.set(requestKey, request);
     return request;
+  }
+
+  /**
+   * Debug method to check location service configuration and test geocoding
+   */
+  async debug(coordinates?: Coordinates): Promise<void> {
+    const testCoords = coordinates || { lat: 48.2082, lon: 16.3738 }; // Vienna
+
+    logger('[LocationService] === DEBUG INFO ===');
+    logger(`[LocationService] OpenCage API Key configured: ${!!import.meta.env.VITE_OPENCAGE_API_KEY}`);
+    logger(`[LocationService] Cache size: ${this.cache.size} entries`);
+    logger(`[LocationService] Pending requests: ${this.pendingRequests.size}`);
+
+    const providers = this.getProviders();
+    logger(`[LocationService] Available providers: ${providers.map(p => p.name).join(', ')}`);
+
+    logger(`[LocationService] Testing geocoding for ${testCoords.lat}, ${testCoords.lon}...`);
+
+    try {
+      const result = await this.reverseGeocode(testCoords);
+      logger(`[LocationService] ✅ Test successful: ${result}`);
+    } catch (error) {
+      logger(`[LocationService] ❌ Test failed:`, error);
+    }
+
+    logger('[LocationService] === END DEBUG ===');
   }
 
   /**

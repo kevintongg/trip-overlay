@@ -9,6 +9,7 @@ import { useConnectionStore } from '../store/connectionStore';
 import { logger } from '../utils/logger';
 import { CONFIG } from '../utils/config';
 import { apiMonitor } from './apiMonitor';
+import { locationService } from './locationService';
 
 // Global API interface for TypeScript
 declare global {
@@ -45,6 +46,7 @@ declare global {
     showConsoleCommands: () => void;
     getStatus: () => any;
     checkRtirlConnection: () => boolean;
+    debugLocationService: (lat?: number, lon?: number) => Promise<void>;
   }
 }
 
@@ -374,6 +376,7 @@ export function setupGlobalConsoleAPI() {
 🔍 DEBUGGING:
 • getStatus() - Show complete system status and diagnostics
 • checkRtirlConnection() - Check RTIRL GPS connection status specifically
+• debugLocationService() - Debug location/geocoding service issues
 • TripOverlay.getStatus() - Same as getStatus() (namespaced version)
 • showConsoleCommands() - Show this help
 
@@ -412,12 +415,21 @@ Type any function name to use it. Current trip: ${useTripProgressStore.getState(
     logger(help);
   };
 
+  // Debug location service function
+  const debugLocationService = async (lat?: number, lon?: number) => {
+    const coordinates = lat && lon ? { lat, lon } : undefined;
+    await locationService.debug(coordinates);
+  };
+
   // Set up global API (includes weather API monitoring)
   window.TripOverlay = { controls, getStatus, checkRtirlConnection };
 
   // Weather API monitoring functions
   window.owmApiStats = () => apiMonitor.logUsageStats();
   window.owmApiReset = () => apiMonitor.resetUsage();
+
+  // Location service debugging
+  window.debugLocationService = debugLocationService;
 
   // Backward compatibility - individual functions
   window.addDistance = controls.addDistance;
@@ -433,6 +445,7 @@ Type any function name to use it. Current trip: ${useTripProgressStore.getState(
   window.showConsoleCommands = showConsoleCommands;
   window.getStatus = getStatus;
   window.checkRtirlConnection = checkRtirlConnection;
+  window.debugLocationService = debugLocationService;
 
   // Mark as initialized
   isGlobalAPIInitialized = true;
