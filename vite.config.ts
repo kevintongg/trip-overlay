@@ -1,10 +1,37 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import { copyFileSync, mkdirSync, existsSync } from 'fs';
+
+// Plugin to copy functions directory to dist
+function copyFunctionsPlugin() {
+  return {
+    name: 'copy-functions',
+    writeBundle() {
+      const sourceDir = 'functions';
+      const targetDir = 'dist/functions';
+
+      if (existsSync(sourceDir)) {
+        if (!existsSync(targetDir)) {
+          mkdirSync(targetDir, { recursive: true });
+        }
+
+        // Copy weather.js
+        const sourceFile = path.join(sourceDir, 'weather.js');
+        const targetFile = path.join(targetDir, 'weather.js');
+
+        if (existsSync(sourceFile)) {
+          copyFileSync(sourceFile, targetFile);
+          console.log('✅ Copied functions/weather.js to dist/functions/');
+        }
+      }
+    }
+  };
+}
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), copyFunctionsPlugin()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
