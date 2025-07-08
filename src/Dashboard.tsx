@@ -54,7 +54,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="w-screen h-screen flex flex-col items-end justify-start gap-[18px] pr-[24px] pt-[24px] pointer-events-none">
-      <Card className="dashboard-card flex flex-col items-center bg-gradient-to-br from-zinc-900 to-zinc-800 border-white/20 rounded-2xl p-4 shadow-[0_4px_24px_rgba(0,0,0,0.4)] min-w-[280px] max-w-[480px] backdrop-blur-none">
+      <Card className="dashboard-card flex flex-col items-center bg-gradient-to-br from-zinc-900/70 to-zinc-800/70 border-white/20 rounded-2xl p-4 shadow-[0_4px_24px_rgba(0,0,0,0.4)] min-w-[280px] max-w-[480px] backdrop-blur-sm">
         <CardContent className="p-0 w-full">
           {/* Location Section */}
           <LocationSection
