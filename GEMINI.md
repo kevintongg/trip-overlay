@@ -1,90 +1,75 @@
 # GEMINI.md
 
-This file provides guidance to Gemini when working with code in this repository.
+This file provides guidance to AI assistants when working with code in this repository.
 
 ## Project Overview
 
-This is a real-time GPS tracking overlay for live streaming cycling/bike trips. It connects to RTIRL (Real-Time IRL) API to display progress tracking with animated avatars and weather information. The project is designed for IRL streamers using OBS and cloud platforms like IRLToolkit, specifically optimized for cycling trips from Vienna to Zagreb.
+This is a real-time GPS tracking overlay for live streaming, built with **React 19, TypeScript, and Vite**. It connects to the RTIRL (Real-Time IRL) API to display trip progress, animated avatars, speed, location, and weather information. The project is designed for IRL streamers using OBS and cloud platforms like IRLToolkit.
+
+It consists of two main overlays:
+1.  **Trip Overlay**: Tracks and visualizes trip distance and progress.
+2.  **Dashboard**: Displays detailed real-time data like speed, location, and weather.
 
 ## Development Commands
 
-### Code Quality
+### Primary Workflow
+- `pnpm install`: Install all dependencies.
+- `pnpm dev`: Start the Vite development server (usually at http://localhost:5173).
+- `pnpm build`: Build the production-ready application.
+- `pnpm preview`: Preview the production build locally.
 
-- `pnpm install` - Install development dependencies
-- `pnpm run lint` - Run ESLint code linting
-- `pnpm run lint:fix` - Auto-fix ESLint issues
-- `pnpm run format` - Format code with Prettier
-- `pnpm run format:check` - Check code formatting
+### Code Quality & Testing
+- `pnpm lint`: Run ESLint for code analysis.
+- `pnpm lint:fix`: Automatically fix linting issues.
+- `pnpm format`: Format code with Prettier.
+- `pnpm test`: Run the unit and integration tests with Vitest.
 
-### Testing
+### Local Testing
+- Access the overlays via the Vite dev server URL (e.g., `http://localhost:5173/trip.html` and `http://localhost:5173/dashboard.html`).
+- Use the `?demo=true` URL parameter for testing without a live RTIRL connection.
+- For local testing of Cloudflare functions (like the weather API), you can use `pnpm wrangler pages dev .`.
 
-- Open `index.html` or `dashboard.html` directly in browser (file:// URLs work)
-- Use `?demo=true` URL parameter for testing without RTIRL connection
-- Optional: `pnpm wrangler pages dev .` for local server testing with weather functions
+## Architecture (React 19 + TypeScript)
 
-## Architecture
-
-### Core Components
-
-**Two Main Overlays:**
-
-1.  **Trip Progress Overlay** (`index.html` + `js/trip-progress.js`)
-    - Real-time GPS distance tracking
-    - Animated progress bar with avatar
-    - Smart movement detection (stationary/walking/cycling/vehicle)
-    - localStorage persistence for trip data
-
-2.  **Dashboard Overlay** (`dashboard.html` + `js/dashboard.js`)
-    - Real-time location display
-    - Weather information with OpenWeatherMap integration
-    - Time/timezone display
-    - Optimized for streaming dashboards
-
-**Key Features:**
-
-- **RTIRL Integration**: WebSocket connection to Real-Time IRL API for live GPS data
-- **Smart Movement Detection**: Automatically detects movement type based on speed
-- **GPS Drift Protection**: Filters out stationary GPS noise with configurable thresholds
-- **Persistence**: localStorage for trip progress across sessions
-- **Weather Integration**: Cloudflare Functions proxy for OpenWeatherMap API
-- **Cloud-Friendly**: URL parameters for control in cloud environments (IRLToolkit)
+### Technology Stack
+- **React 19**: For building the component-based UI using modern hooks.
+- **TypeScript**: Ensures full type safety and better developer experience.
+- **Vite**: Provides a fast development server and optimized production builds.
+- **Zustand**: For lightweight, global client-state management (e.g., trip state, connection status).
+- **React Query**: For managing server state, including caching and refetching for the weather API.
+- **Tailwind CSS & shadcn/ui**: For utility-first styling and a modern component library.
 
 ### File Structure
-
 ```
-├── index.html              # Main trip progress overlay (ES6 module)
-├── dashboard.html  # Dashboard with weather/location (ES6 module)
-├── js/
-│   ├── trip-progress.js    # Main trip tracking logic (ES6 module)
-│   ├── dashboard.js # Dashboard functionality (ES6 module)
-│   └── legacy_script.js    # Older implementation (legacy)
-├── utils/                  # Shared ES6 modules
-│   ├── config.js          # Centralized configuration
-│   ├── rtirl.js           # Shared RTIRL connection logic
-│   └── status.js          # Unified status reporting
-├── css/
-│   ├── trip-progress.css   # Trip overlay styles
-│   └── dashboard.css # Dashboard styles
-├── functions/
-│   └── weather.js          # Cloudflare Functions weather proxy
-├── assets/                 # Avatar images and icons
-└── [extensive documentation]
+src/
+├── components/     # React components (UI, core, layout)
+├── hooks/          # Custom React hooks for logic reuse
+├── store/          # Zustand state management stores
+├── utils/          # Utility functions and services (GPS, API clients)
+├── types/          # TypeScript type definitions
+├── styles/         # Global CSS styles
+├── TripOverlay.tsx # Entry component for the trip progress overlay
+├── Dashboard.tsx   # Entry component for the dashboard overlay
+├── trip-main.tsx   # React root for the trip overlay
+└── dashboard-main.tsx # React root for the dashboard
 ```
 
 ### State Management
+- **Client State (Zustand)**: `tripStore`, `weatherStore`, and `connectionStore` manage the application's UI and session state. State is persisted to `localStorage` where necessary.
+- **Server State (React Query)**: Manages asynchronous operations like fetching weather data, with automatic caching, retries, and background updates.
 
-- **Trip Progress**: Uses localStorage for persistence with manual backup/restore
-- **Movement Detection**: Sophisticated permissible mode system with GPS drift protection
-- **Weather Cache**: Automatic caching with 5-minute intervals and error recovery
-- **Connection State**: Shared RTIRL connection state across both overlays
-- **Memory Management**: Automatic cache cleanup and timer management
-- **Error Recovery**: Comprehensive async error handling with graceful fallbacks
+### Key Features
+- **Component-Based Architecture**: UI is built with reusable React components.
+- **RTIRL Integration**: `useRtirlSocket` hook manages the WebSocket connection for live GPS data.
+- **Type Safety**: Full TypeScript coverage for robust and maintainable code.
+- **Cloud-Friendly Controls**: URL parameters and a global console API are preserved for remote control in cloud environments (e.g., IRLToolkit).
+- **Weather Integration**: A serverless function (`functions/weather.js`) proxies requests to the OpenWeatherMap API, with data fetched via React Query.
 
-## Gemini Specific Guidance
+## AI Assistant Guidance
 
-- **Prioritize existing conventions**: When making changes, always adhere to the existing code style, naming conventions, and architectural patterns found in the project.
-- **Utilize `pnpm`**: The project uses `pnpm` for package management. Use `pnpm install`, `pnpm run lint`, etc.
-- **ES6 Modules**: Be aware that the project heavily utilizes ES6 modules.
-- **Centralized Configuration**: Refer to `utils/config.js` for all centralized configuration.
-- **Testing**: Use the `?demo=true` URL parameter for testing without a live RTIRL connection.
-- **Cloudflare Functions**: The `functions/weather.js` file is a Cloudflare Function.
+- **Prioritize Modern React Patterns**: Use functional components with hooks. Avoid class components.
+- **Utilize `pnpm`**: The project uses `pnpm` for all package management and scripts.
+- **TypeScript First**: Ensure all new code is strongly typed. Use the types defined in `src/types/`.
+- **Centralized Configuration**: All configuration is managed in `src/utils/config.ts`.
+- **State Management**: Use Zustand for client state and React Query for server state. Do not introduce new state management libraries.
+- **Backward Compatibility**: Maintain the existing `window.TripOverlay.controls` API and all URL parameters for compatibility with streaming setups.
