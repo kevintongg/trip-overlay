@@ -156,7 +156,7 @@ export async function fetchWeatherData(
     const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout for Cloudflare
 
     const response = await fetch(
-      `/functions/weather?lat=${lat}&lon=${lon}&units=${units}`,
+      `/weather?lat=${lat}&lon=${lon}&units=${units}`,
       {
         signal: controller.signal,
       }
