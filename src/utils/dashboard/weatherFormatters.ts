@@ -61,7 +61,10 @@ export function getWeatherIcon(weatherData: any): React.ReactElement | string {
 }
 
 // Temperature formatting (extracted from original)
-export function getWeatherTemp(weatherData: any, units: string = 'metric'): string {
+export function getWeatherTemp(
+  weatherData: any,
+  units: string = 'metric'
+): string {
   if (!weatherData?.current?.temp) {
     return '--°';
   }
@@ -70,7 +73,10 @@ export function getWeatherTemp(weatherData: any, units: string = 'metric'): stri
 }
 
 // High/Low temperature formatting (extracted from original)
-export function getWeatherHighLow(weatherData: any, units: string = 'metric'): string {
+export function getWeatherHighLow(
+  weatherData: any,
+  units: string = 'metric'
+): string {
   if (!weatherData?.daily?.[0]) {
     return '';
   }
@@ -89,7 +95,10 @@ export function getWeatherDesc(weatherData: any): string {
 }
 
 // Feels like temperature (extracted from original)
-export function getWeatherFeelsLike(weatherData: any, units: string = 'metric'): string | null {
+export function getWeatherFeelsLike(
+  weatherData: any,
+  units: string = 'metric'
+): string | null {
   if (weatherData?.current?.feels_like === undefined) {
     return null;
   }

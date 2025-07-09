@@ -41,7 +41,9 @@ async function handleWeather(url) {
   if (!lat || !lon) {
     return {
       status: 400,
-      body: JSON.stringify({ error: 'Missing "lat" or "lon" query parameters' })
+      body: JSON.stringify({
+        error: 'Missing "lat" or "lon" query parameters',
+      }),
     };
   }
 
@@ -51,8 +53,9 @@ async function handleWeather(url) {
       status: 500,
       body: JSON.stringify({
         error: 'API key not configured on server.',
-        message: 'Ensure OWM_API_KEY is set in .dev.vars or environment variables for local development.'
-      })
+        message:
+          'Ensure OWM_API_KEY is set in .dev.vars or environment variables for local development.',
+      }),
     };
   }
 
@@ -69,14 +72,14 @@ async function handleWeather(url) {
           status: response.status,
           statusText: response.statusText,
           message: errorText,
-        })
+        }),
       };
     }
 
     const data = await response.json();
     return {
       status: 200,
-      body: JSON.stringify(data)
+      body: JSON.stringify(data),
     };
   } catch (error) {
     return {
@@ -84,7 +87,7 @@ async function handleWeather(url) {
       body: JSON.stringify({
         error: 'Failed to execute fetch in the proxy function.',
         message: error.message,
-      })
+      }),
     };
   }
 }
@@ -97,7 +100,9 @@ async function handleGeocode(url) {
   if (!lat || !lon) {
     return {
       status: 400,
-      body: JSON.stringify({ error: 'Missing "lat" or "lon" query parameters' })
+      body: JSON.stringify({
+        error: 'Missing "lat" or "lon" query parameters',
+      }),
     };
   }
 
@@ -119,15 +124,32 @@ async function handleGeocode(url) {
           const { components } = result;
 
           // Extract location (same logic as server function)
-          const district = components.district || components.borough || components.neighbourhood ||
-                          components.suburb || components.quarter || components.city_district;
-          const city = components._normalized_city || components.city || components.town ||
-                      components.village || components.municipality;
+          const district =
+            components.district ||
+            components.borough ||
+            components.neighbourhood ||
+            components.suburb ||
+            components.quarter ||
+            components.city_district;
+          const city =
+            components._normalized_city ||
+            components.city ||
+            components.town ||
+            components.village ||
+            components.municipality;
           const { country } = components;
 
           const locationParts = [];
-          const isGenericDistrict = (d) => {
-            const genericTerms = ['district', 'area', 'region', 'zone', 'sector', 'division', 'administrative'];
+          const isGenericDistrict = d => {
+            const genericTerms = [
+              'district',
+              'area',
+              'region',
+              'zone',
+              'sector',
+              'division',
+              'administrative',
+            ];
             return genericTerms.some(term => d.toLowerCase().includes(term));
           };
 
@@ -137,11 +159,17 @@ async function handleGeocode(url) {
           if (city) locationParts.push(city);
           if (country) locationParts.push(country);
 
-          const locationText = locationParts.length > 0 ? locationParts.join(', ') : result.formatted;
+          const locationText =
+            locationParts.length > 0
+              ? locationParts.join(', ')
+              : result.formatted;
 
           return {
             status: 200,
-            body: JSON.stringify({ location: locationText, provider: 'OpenCage' })
+            body: JSON.stringify({
+              location: locationText,
+              provider: 'OpenCage',
+            }),
           };
         }
       }
@@ -170,9 +198,15 @@ async function handleGeocode(url) {
     }
 
     // Extract location
-    const district = address.district || address.borough || address.neighbourhood ||
-                    address.suburb || address.quarter || address.city_district;
-    const city = address.city || address.town || address.village || address.municipality;
+    const district =
+      address.district ||
+      address.borough ||
+      address.neighbourhood ||
+      address.suburb ||
+      address.quarter ||
+      address.city_district;
+    const city =
+      address.city || address.town || address.village || address.municipality;
     const { country } = address;
 
     const locationParts = [];
@@ -186,7 +220,10 @@ async function handleGeocode(url) {
 
     return {
       status: 200,
-      body: JSON.stringify({ location: locationParts.join(', '), provider: 'Nominatim' })
+      body: JSON.stringify({
+        location: locationParts.join(', '),
+        provider: 'Nominatim',
+      }),
     };
   } catch (error) {
     console.error('Geocoding failed:', error);
@@ -196,8 +233,8 @@ async function handleGeocode(url) {
       status: 200,
       body: JSON.stringify({
         location: `${parseFloat(lat).toFixed(4)}, ${parseFloat(lon).toFixed(4)}`,
-        provider: 'Coordinates'
-      })
+        provider: 'Coordinates',
+      }),
     };
   }
 }
@@ -229,13 +266,19 @@ const server = http.createServer(async (req, res) => {
     } else {
       result = {
         status: 404,
-        body: JSON.stringify({ error: 'Not found', available: ['/weather', '/geocode'] })
+        body: JSON.stringify({
+          error: 'Not found',
+          available: ['/weather', '/geocode'],
+        }),
       };
     }
   } catch (error) {
     result = {
       status: 500,
-      body: JSON.stringify({ error: 'Internal server error', message: error.message })
+      body: JSON.stringify({
+        error: 'Internal server error',
+        message: error.message,
+      }),
     };
   }
 
@@ -246,12 +289,20 @@ const server = http.createServer(async (req, res) => {
 server.listen(PORT, () => {
   console.log(`🚀 Local function server running on http://localhost:${PORT}`);
   console.log(`📍 Available endpoints:`);
-  console.log(`   • http://localhost:${PORT}/weather?lat=40.7128&lon=-74.0060&units=metric`);
+  console.log(
+    `   • http://localhost:${PORT}/weather?lat=40.7128&lon=-74.0060&units=metric`
+  );
   console.log(`   • http://localhost:${PORT}/geocode?lat=40.7128&lon=-74.0060`);
   console.log('');
   console.log('🔧 Environment check:');
-  console.log(`   • OWM_API_KEY: ${process.env.OWM_API_KEY ? '✅ Set' : '❌ Missing'}`);
-  console.log(`   • OPENCAGE_API_KEY: ${process.env.OPENCAGE_API_KEY ? '✅ Set' : '⚠️  Missing (will use Nominatim)'}`);
+  console.log(
+    `   • OWM_API_KEY: ${process.env.OWM_API_KEY ? '✅ Set' : '❌ Missing'}`
+  );
+  console.log(
+    `   • OPENCAGE_API_KEY: ${process.env.OPENCAGE_API_KEY ? '✅ Set' : '⚠️  Missing (will use Nominatim)'}`
+  );
   console.log('');
-  console.log('💡 To use with Vite dev server, uncomment proxy lines in vite.config.ts');
+  console.log(
+    '💡 To use with Vite dev server, uncomment proxy lines in vite.config.ts'
+  );
 });

@@ -101,7 +101,7 @@ export function useDashboardConsole(
   // Expose to window object (for backward compatibility)
   useEffect(() => {
     // Create TripOverlay namespace if it doesn't exist
-    if (!window.TripOverlay) {
+    if (!(window as any).TripOverlay) {
       (window as any).TripOverlay = {};
     }
 

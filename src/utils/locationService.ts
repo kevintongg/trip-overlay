@@ -176,7 +176,9 @@ class LocationService {
       throw new Error('No location in server response');
     }
 
-    logger(`[LocationService] Server: Success via ${data.provider}: ${data.location}`);
+    logger(
+      `[LocationService] Server: Success via ${data.provider}: ${data.location}`
+    );
     return data.location;
   }
 
@@ -184,7 +186,9 @@ class LocationService {
    * Direct Nominatim geocoding provider (fallback)
    * Used when server-side geocoding fails
    */
-  private async geocodeNominatimDirect(coordinates: Coordinates): Promise<string> {
+  private async geocodeNominatimDirect(
+    coordinates: Coordinates
+  ): Promise<string> {
     logger(
       `[LocationService] Nominatim Direct: Requesting geocode for ${coordinates.lat}, ${coordinates.lon}`
     );
@@ -338,9 +342,7 @@ class LocationService {
           this.createTimeoutPromise(this.REQUEST_TIMEOUT),
         ]);
 
-        logger(
-          `[LocationService] ✅ Success with ${provider.name}: ${result}`
-        );
+        logger(`[LocationService] ✅ Success with ${provider.name}: ${result}`);
         return result;
       } catch (error) {
         lastError = error as Error;
@@ -377,9 +379,7 @@ class LocationService {
       coordinates.lon < -180 ||
       coordinates.lon > 180
     ) {
-      throw new Error(
-        `Invalid coordinates: ${JSON.stringify(coordinates)}`
-      );
+      throw new Error(`Invalid coordinates: ${JSON.stringify(coordinates)}`);
     }
 
     const cacheKey = this.getCacheKey(coordinates);

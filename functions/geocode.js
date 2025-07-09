@@ -61,16 +61,20 @@ export async function onRequest(context) {
             locationParts.push(country);
           }
 
-          const locationText = locationParts.length > 0
-            ? locationParts.join(', ')
-            : result.formatted;
+          const locationText =
+            locationParts.length > 0
+              ? locationParts.join(', ')
+              : result.formatted;
 
-          return new Response(JSON.stringify({
-            location: locationText,
-            provider: 'OpenCage'
-          }), {
-            headers: { 'Content-Type': 'application/json' },
-          });
+          return new Response(
+            JSON.stringify({
+              location: locationText,
+              provider: 'OpenCage',
+            }),
+            {
+              headers: { 'Content-Type': 'application/json' },
+            }
+          );
         }
       }
     } catch (error) {
@@ -129,23 +133,28 @@ export async function onRequest(context) {
       throw new Error('No valid location parts found');
     }
 
-    return new Response(JSON.stringify({
-      location: locationParts.join(', '),
-      provider: 'Nominatim'
-    }), {
-      headers: { 'Content-Type': 'application/json' },
-    });
-
+    return new Response(
+      JSON.stringify({
+        location: locationParts.join(', '),
+        provider: 'Nominatim',
+      }),
+      {
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
   } catch (error) {
     console.error('Geocoding failed:', error);
 
     // Final fallback: return coordinates
-    return new Response(JSON.stringify({
-      location: `${parseFloat(lat).toFixed(4)}, ${parseFloat(lon).toFixed(4)}`,
-      provider: 'Coordinates'
-    }), {
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return new Response(
+      JSON.stringify({
+        location: `${parseFloat(lat).toFixed(4)}, ${parseFloat(lon).toFixed(4)}`,
+        provider: 'Coordinates',
+      }),
+      {
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
   }
 }
 

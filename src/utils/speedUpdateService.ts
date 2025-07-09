@@ -1,5 +1,9 @@
 import { logger } from './logger';
-import { optimizedSetItem, optimizedGetItem } from './localStorageService';
+import {
+  optimizedSetItem,
+  optimizedGetItem,
+  localStorageService,
+} from './localStorageService';
 
 interface SpeedData {
   speed: number;
@@ -144,12 +148,16 @@ class SpeedUpdateService {
     }
 
     try {
-      // Batch the localStorage updates
+      // Batch the localStorage updates - use direct setItem to avoid double JSON encoding
       await Promise.all([
-        optimizedSetItem(this.STORAGE_KEYS.speed, update.speed.toFixed(1), {
-          throttleMs: 100,
-        }),
-        optimizedSetItem(this.STORAGE_KEYS.mode, update.mode, {
+        localStorageService.setItem(
+          this.STORAGE_KEYS.speed,
+          update.speed.toFixed(1),
+          {
+            throttleMs: 100,
+          }
+        ),
+        localStorageService.setItem(this.STORAGE_KEYS.mode, update.mode, {
           throttleMs: 100,
         }),
       ]);

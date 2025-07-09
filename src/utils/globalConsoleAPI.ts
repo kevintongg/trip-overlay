@@ -1,457 +1,179 @@
 /**
- * Global Console API for Trip Overlay
- * Provides backward compatibility with vanilla JS implementation
- * and maintains console command functionality for streaming
+ * Global Console API - Exposes trip overlay controls to browser console
+ * This maintains compatibility with the original vanilla JS console commands
+ * Updated to work with the new unified hook system
  */
 
-import { useTripProgressStore } from '../store/tripStore';
-import { useConnectionStore } from '../store/connectionStore';
-import { logger } from '../utils/logger';
-import { CONFIG } from '../utils/config';
-import { apiMonitor } from './apiMonitor';
-import { locationService } from './locationService';
+// Store reference to the current trip overlay instance
+let tripOverlayControls: any = null;
 
-// Global API interface for TypeScript
-declare global {
-  interface Window {
-    TripOverlay: {
-      controls: {
-        addDistance: (km: number) => void;
-        setDistance: (km: number) => void;
-        jumpToProgress: (percentage: number) => void;
-        setTotalDistance: (km: number) => void;
-        setTodayDistance: (km: number) => void;
-        setTotalTraveled: (km: number) => void;
-        convertToMiles: () => void;
-        convertToKilometers: () => void;
-        resetProgress: () => void;
-        resetTodayDistance: () => void;
-        exportTripData: () => void;
-        importTripData: (data?: string) => void;
-      };
-      getStatus: () => any;
-      checkRtirlConnection: () => boolean;
-    };
-    // Backward compatibility functions
-    addDistance: (km: number) => void;
-    setDistance: (km: number) => void;
-    jumpToProgress: (percentage: number) => void;
-    setTotalDistance: (km: number) => void;
-    convertToMiles: () => void;
-    convertToKilometers: () => void;
-    resetTripProgress: () => void;
-    resetTodayDistance: () => void;
-    exportTripData: () => void;
-    importTripData: (data?: string) => void;
-    showConsoleCommands: () => void;
-    getStatus: () => any;
-    checkRtirlConnection: () => boolean;
-    debugLocationService: (lat?: number, lon?: number) => Promise<void>;
-  }
-}
+export const setupGlobalConsoleAPI = (controls: any) => {
+  tripOverlayControls = controls;
 
-// Flag to ensure global API is only initialized once
-let isGlobalAPIInitialized = false;
+  // Set up TripOverlay global object
+  (window as any).TripOverlay = {
+    controls: {
+      addDistance: (km: number) => {
+        if (tripOverlayControls) {
+          tripOverlayControls.addDistance(km);
+        }
+      },
+      setDistance: (km: number) => {
+        if (tripOverlayControls) {
+          tripOverlayControls.setDistance(km);
+        }
+      },
+      jumpToProgress: (percent: number) => {
+        if (tripOverlayControls) {
+          tripOverlayControls.jumpToProgress(percent);
+        }
+      },
+      setTotalDistance: (km: number) => {
+        if (tripOverlayControls) {
+          tripOverlayControls.setTotalDistance(km);
+        }
+      },
+      convertToMiles: () => {
+        if (tripOverlayControls) {
+          tripOverlayControls.convertToMiles();
+        }
+      },
+      convertToKilometers: () => {
+        if (tripOverlayControls) {
+          tripOverlayControls.convertToKilometers();
+        }
+      },
+      resetTripProgress: () => {
+        if (tripOverlayControls) {
+          tripOverlayControls.resetTripProgress();
+        }
+      },
+      resetTodayDistance: () => {
+        if (tripOverlayControls) {
+          tripOverlayControls.resetTodayDistance();
+        }
+      },
+      resetAutoStartLocation: () => {
+        try {
+          const saved = localStorage.getItem('trip-overlay-data');
+          if (saved) {
+            const data = JSON.parse(saved);
+            data.autoStartLocation = null;
+            localStorage.setItem('trip-overlay-data', JSON.stringify(data));
+            console.log('✅ Auto start location reset');
+          } else {
+            console.log('No trip data found to reset');
+          }
+        } catch (error) {
+          console.error('Failed to reset auto start location:', error);
+        }
+      },
+      exportTripData: () => {
+        if (tripOverlayControls && tripOverlayControls.getStatus) {
+          const status = tripOverlayControls.getStatus();
+          const data = {
+            totalDistanceTraveled: status.totalDistanceTraveled,
+            todayDistanceTraveled: status.todayDistanceTraveled,
+            useImperialUnits: status.useImperialUnits,
+            totalDistance: status.originalTotalDistance,
+            exportDate: new Date().toISOString(),
+          };
 
-/**
- * Initialize global console API
- * Called once during app initialization
- * Idempotent - safe to call multiple times
- */
-export function setupGlobalConsoleAPI() {
-  // Prevent multiple initializations
-  if (isGlobalAPIInitialized) {
-    return;
-  }
+          const blob = new Blob([JSON.stringify(data, null, 2)], {
+            type: 'application/json',
+          });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `trip-overlay-backup-${new Date().toISOString().split('T')[0]}.json`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
 
-  const store = useTripProgressStore.getState();
-
-  // Validation helpers
-  const validateNumber = (
-    value: any,
-    min: number,
-    max: number,
-    name: string
-  ): number | null => {
-    const num = parseFloat(value?.toString() || '');
-    if (!isFinite(num) || num < min || num > max) {
-      logger.warn(`Invalid ${name}: must be ${min}-${max}`);
+          console.log('Trip data exported successfully');
+        } else {
+          console.log('exportTripData - controls not available');
+        }
+      },
+      importTripData: (data: any) => {
+        if (tripOverlayControls) {
+          const jsonString =
+            typeof data === 'string' ? data : JSON.stringify(data);
+          tripOverlayControls.importTripData(jsonString);
+        }
+      },
+    },
+    getStatus: () => {
+      if (tripOverlayControls) {
+        return tripOverlayControls.getStatus();
+      }
       return null;
-    }
-    return num;
-  };
-
-  // Core controls object
-  const controls = {
-    addDistance: (km: number) => {
-      const distance = validateNumber(km, -10000, 10000, 'distance');
-      if (distance !== null) {
-        store.addDistance(distance);
-      }
-    },
-
-    setDistance: (km: number) => {
-      const distance = validateNumber(km, 0, 50000, 'distance');
-      if (distance !== null) {
-        store.setDistance(distance);
-      }
-    },
-
-    jumpToProgress: (percentage: number) => {
-      const percent = validateNumber(percentage, 0, 100, 'percentage');
-      if (percent !== null) {
-        store.jumpToProgress(percent);
-      }
-    },
-
-    setTotalDistance: (km: number) => {
-      const distance = validateNumber(km, 1, 50000, 'total distance');
-      if (distance !== null) {
-        store.setTotalDistance(distance);
-      }
-    },
-
-    setTodayDistance: (km: number) => {
-      const distance = validateNumber(km, 0, 1000, 'today distance');
-      if (distance !== null) {
-        store.setTodayDistance(distance);
-      }
-    },
-
-    setTotalTraveled: (km: number) => {
-      const distance = validateNumber(km, 0, 50000, 'total traveled');
-      if (distance !== null) {
-        store.setTotalTraveled(distance);
-      }
-    },
-
-    convertToMiles: () => {
-      store.setUnits('miles');
-    },
-
-    convertToKilometers: () => {
-      store.setUnits('km');
-    },
-
-    resetProgress: () => {
-      store.resetProgress();
-    },
-
-    resetTodayDistance: () => {
-      store.resetTodayDistance();
-    },
-
-    exportTripData: () => {
-      store.exportTripData();
-    },
-
-    importTripData: (data?: string) => {
-      if (!data) {
-        // Show file picker for manual import
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.json,application/json';
-        input.onchange = e => {
-          const file = (e.target as HTMLInputElement).files?.[0];
-          if (file) {
-            const reader = new FileReader();
-            reader.onload = event => {
-              const content = event.target?.result as string;
-              if (content) {
-                store.importTripData(content);
-              }
-            };
-            reader.readAsText(file);
-          }
-        };
-        input.click();
-        return;
-      }
-
-      // Direct data import
-      try {
-        store.importTripData(data);
-      } catch (error) {
-        logger.error('CONSOLE: Failed to import trip data:', error);
-      }
     },
   };
 
-  // Universal status function for debugging (works from any page)
-  const getStatus = () => {
-    const state = useTripProgressStore.getState();
-    const connectionState = useConnectionStore.getState();
-    const units = state.units === 'miles' ? 'miles' : 'km';
-    const kmToMiles = 0.621371;
-    const unitMultiplier = state.units === 'miles' ? kmToMiles : 1;
+  // Set up the global helper function
+  (window as any).showConsoleCommands = () => {
+    console.log(`
+      --- Trip Overlay Console Commands ---
 
-    // Detect current page
-    const currentPage = window.location.pathname.includes('dashboard')
-      ? 'Dashboard'
-      : 'Trip Overlay';
+      // --- Distance Manipulation ---
+      TripOverlay.controls.addDistance(km)       - Adds/subtracts distance. Ex: TripOverlay.controls.addDistance(10.5)
+      TripOverlay.controls.setDistance(km)       - Sets the total distance traveled. Ex: TripOverlay.controls.setDistance(100)
+      TripOverlay.controls.jumpToProgress(%)     - Jumps to a specific percentage of the trip. Ex: TripOverlay.controls.jumpToProgress(50)
 
-    // Check RTIRL connection status universally
-    const hasRTIRLLib = typeof window.RealtimeIRL !== 'undefined';
-    const isDemoMode =
-      CONFIG.rtirl.demoMode ||
-      new URLSearchParams(window.location.search).get('demo') === 'true';
+      // --- Trip Configuration ---
+      TripOverlay.controls.setTotalDistance(km)  - Changes the total trip distance target. Ex: TripOverlay.controls.setTotalDistance(500)
 
-    // Enhanced RTIRL status
-    let rtirlStatus = '❌ Disconnected';
-    let connectionDetails = '';
+      // --- Unit Conversion ---
+      TripOverlay.controls.convertToMiles()      - Switches display to Imperial units (miles).
+      TripOverlay.controls.convertToKilometers() - Switches display to Metric units (kilometers).
 
-    if (isDemoMode) {
-      rtirlStatus = '🎭 Demo Mode Active';
-      connectionDetails = 'Simulated GPS data';
-    } else if (!hasRTIRLLib) {
-      rtirlStatus = '❌ Library Not Loaded';
-      connectionDetails = 'Add RTIRL script to HTML';
-    } else if (!CONFIG.rtirl.userId) {
-      rtirlStatus = '⚠️ User ID Missing';
-      connectionDetails = 'Configure VITE_RTIRL_USER_ID';
-    } else {
-      switch (connectionState.connectionStatus) {
-        case 'connected':
-          rtirlStatus = '✅ Connected';
-          connectionDetails = `Receiving live GPS data (${connectionState.reconnectAttempts} previous failures)`;
-          break;
-        case 'connecting':
-          rtirlStatus = '🔌 Connecting...';
-          connectionDetails = 'Attempting to establish connection';
-          break;
-        case 'disconnected':
-          rtirlStatus = '❌ Disconnected';
-          connectionDetails = `${connectionState.reconnectAttempts} connection attempts failed`;
-          break;
-        case 'error':
-          rtirlStatus = '💥 Error';
-          connectionDetails = `Connection failed (${connectionState.reconnectAttempts} attempts)`;
-          break;
-        default:
-          rtirlStatus = '❓ Unknown Status';
-          connectionDetails = 'Status not determined';
-      }
-    }
+      // --- Reset Functions ---
+      TripOverlay.controls.resetTripProgress()   - Resets all trip data to zero.
+      TripOverlay.controls.resetTodayDistance()  - Resets only the 'today' distance counter.
+      TripOverlay.controls.resetAutoStartLocation() - Clears the auto-detected start location for re-detection.
 
-    // Last position info
-    let positionInfo = 'No position data available';
-    if (connectionState.lastPosition) {
-      positionInfo = `${connectionState.lastPosition.lat.toFixed(4)}, ${connectionState.lastPosition.lon.toFixed(4)}`;
-    }
+      // --- Data Management ---
+      TripOverlay.controls.exportTripData()      - Downloads a backup file of current trip progress.
+      TripOverlay.controls.importTripData(json)  - Restores trip progress from a JSON string.
 
-    const statusReport = `
-🔍 UNIVERSAL TRIP OVERLAY STATUS:
+      // --- Debugging ---
+      TripOverlay.getStatus()           - Shows the current status of the overlay.
 
-📄 Current Page: ${currentPage}
-🔗 Available Pages:
-   • Trip Overlay: index-react.html (GPS tracking, progress display)
-   • Dashboard: dashboard-react.html (time, weather, location info)
+      // --- URL Parameters (can be added to the overlay URL) ---
+      ?controls=true        - Shows the control panel on load.
+      ?reset=trip           - Resets all trip data on load.
+      ?reset=today          - Resets today's distance on load.
+      ?reset=location       - Resets auto-start location on load.
+      ?resets=trip,today    - Resets multiple items on load (comma-separated).
+      ?export=true          - Downloads trip data backup on load.
+      ?import=<json_string> - Imports trip data from a URL-encoded JSON string on load.
+      ?units=miles          - Sets units to miles on load.
+      ?units=km             - Sets units to kilometers on load.
+      ?totalDistance=<km>   - Sets the total trip distance on load.
+      ?addDistance=<km>     - Adds distance to total and today's distance on load.
+      ?setDistance=<km>     - Sets total and today's distance on load.
+      ?jumpTo=<percent>     - Jumps to a specific progress percentage on load.
+      ?stream=true          - Enables stream mode (hotkey hints).
+      ?setTodayDistance=<km> - Sets today's distance on load.
+      ?setTodayTraveled=<km> - (alias) Also sets today's distance on load.
+      ?setTotalTraveled=<km>- Sets total traveled distance on load.
 
-🔑 Configuration:
-   Mode: 🏍️ Vehicle (cycling/motorbike mode)
-   Target Distance: ${(state.totalDistanceKm * unitMultiplier).toFixed(1)} ${units}
-   Units: ${units}
-   Demo Mode: ${isDemoMode ? '✅ Active' : '❌ Disabled'}
-
-🌐 RTIRL Connection:
-   Status: ${rtirlStatus}
-   Details: ${connectionDetails}
-   Last Position: ${positionInfo}
-   User ID: ${CONFIG.rtirl.userId || 'Not Set'}
-   Library Loaded: ${hasRTIRLLib ? 'Yes' : 'No'}
-   Demo Available: Add ?demo=true to URL for testing
-
-📊 Trip Progress:
-   Current Distance: ${(state.currentDistanceKm * unitMultiplier).toFixed(2)} ${units}
-   Today's Distance: ${(state.todayDistanceKm * unitMultiplier).toFixed(2)} ${units}
-   Total Traveled: ${(state.totalTraveledKm * unitMultiplier).toFixed(2)} ${units}
-   Remaining: ${(Math.max(0, state.totalDistanceKm - state.currentDistanceKm) * unitMultiplier).toFixed(2)} ${units}
-   Progress: ${state.totalDistanceKm > 0 ? ((state.currentDistanceKm / state.totalDistanceKm) * 100).toFixed(1) : '0.0'}%
-
-⚙️ Current State:
-   Units: ${units}
-   Moving: ${state.isMoving ? '✅ Yes' : '❌ No'}
-   Current Speed: ${state.currentSpeed.toFixed(1)} km/h
-
-🛠️ System Info:
-   Store: ✅ Zustand (shared across both pages)
-   Persistence: ✅ localStorage (auto-save enabled)
-   React Version: Modern React + TypeScript + Vite
-   Page Type: ${currentPage}
-
-💡 Available Commands: Type showConsoleCommands() for full command list
-🎮 Quick Test: Try addDistance(5) to add 5km to your trip
-    `;
-
-    logger(statusReport);
-
-    // Return comprehensive data object for programmatic access
-    return {
-      currentPage,
-      rtirl: {
-        libraryLoaded: hasRTIRLLib,
-        userId: CONFIG.rtirl.userId,
-        demoMode: isDemoMode,
-      },
-      trip: {
-        totalDistanceKm: state.totalDistanceKm,
-        currentDistanceKm: state.currentDistanceKm,
-        todayDistanceKm: state.todayDistanceKm,
-        totalTraveledKm: state.totalTraveledKm,
-        progress:
-          state.totalDistanceKm > 0
-            ? (state.currentDistanceKm / state.totalDistanceKm) * 100
-            : 0,
-      },
-      settings: {
-        units: state.units,
-        isMoving: state.isMoving,
-        currentSpeed: state.currentSpeed,
-      },
-      system: {
-        version: 'React + TypeScript',
-        store: 'Zustand',
-        persistence: 'localStorage',
-      },
-    };
+      ------------------------------------
+      `);
   };
 
-  // Dedicated RTIRL connection checker
-  const checkRtirlConnection = () => {
-    const connectionState = useConnectionStore.getState();
-    const hasRTIRLLib = typeof window.RealtimeIRL !== 'undefined';
-    const isDemoMode =
-      CONFIG.rtirl.demoMode ||
-      new URLSearchParams(window.location.search).get('demo') === 'true';
-
-    let status = '';
-    let connected = false;
-
-    if (isDemoMode) {
-      status = '🎭 RTIRL Status: Demo Mode Active - Using simulated GPS data';
-      connected = true;
-    } else if (!hasRTIRLLib) {
-      status =
-        '❌ RTIRL Status: Library Not Loaded\n💡 Add this to your HTML: <script src="https://cdn.jsdelivr.net/npm/@rtirl/api@latest/lib/index.min.js"></script>';
-    } else if (!CONFIG.rtirl.userId) {
-      status =
-        '⚠️ RTIRL Status: User ID not configured\n💡 Set VITE_RTIRL_USER_ID in your .env.local file';
-    } else {
-      connected = connectionState.isConnected;
-      switch (connectionState.connectionStatus) {
-        case 'connected':
-          status = `✅ RTIRL Status: Connected to user ${CONFIG.rtirl.userId}\n📡 Receiving live GPS data (${connectionState.reconnectAttempts} previous connection issues)`;
-          if (connectionState.lastPosition) {
-            status += `\n📍 Current Position: ${connectionState.lastPosition.lat.toFixed(4)}, ${connectionState.lastPosition.lon.toFixed(4)}`;
-          }
-          break;
-        case 'connecting':
-          status = '🔌 RTIRL Status: Attempting to connect...';
-          break;
-        case 'disconnected':
-          status = `❌ RTIRL Status: Disconnected (${connectionState.reconnectAttempts} connection attempts)`;
-          if (connectionState.reconnectAttempts > 0) {
-            status +=
-              '\n💡 Streamer may be offline or location sharing disabled';
-          }
-          break;
-        case 'error':
-          status = `💥 RTIRL Status: Connection Error (${connectionState.reconnectAttempts} failed attempts)`;
-          status += '\n💡 Check network connection and RTIRL service status';
-          break;
-        default:
-          status = '❓ RTIRL Status: Unknown connection state';
-      }
-    }
-
-    console.log(status);
-    return connected;
-  };
-
-  // Help system matching original showConsoleCommands pattern
-  const showConsoleCommands = () => {
-    const help = `
-🎮 TRIP OVERLAY CONSOLE COMMANDS:
-
-🔍 DEBUGGING:
-• getStatus() - Show complete system status and diagnostics
-• checkRtirlConnection() - Check RTIRL GPS connection status specifically
-• debugLocationService() - Debug location/geocoding service issues
-• TripOverlay.getStatus() - Same as getStatus() (namespaced version)
-• showConsoleCommands() - Show this help
-
-🌤️ WEATHER API MONITORING:
-• owmApiStats() - Show OpenWeatherMap API usage statistics
-• owmApiReset() - Reset API usage tracking (for testing)
-
-📏 DISTANCE MANIPULATION:
-• addDistance(km) - Add/subtract distance (use negative to subtract)
-  Example: addDistance(5.5) or addDistance(-2.1)
-
-• setDistance(km) - Set total distance to specific value
-  Example: setDistance(100.5)
-
-• jumpToProgress(percent) - Jump to specific percentage (0-100)
-  Example: jumpToProgress(75)
-
-🌍 UNIT CONVERSION:
-• convertToMiles() - Switch display to miles
-• convertToKilometers() - Switch display to kilometers
-
-⚙️ TRIP SETTINGS:
-• setTotalDistance(km) - Change the total trip distance target
-  Example: setTotalDistance(500)
-
-🔄 RESET FUNCTIONS:
-• resetTripProgress() - Start completely fresh
-• resetTodayDistance() - Reset today's distance only
-
-💾 DATA MANAGEMENT:
-• exportTripData() - Download backup file
-• importTripData(jsonString) - Import backup manually
-
-Type any function name to use it. Current trip: ${useTripProgressStore.getState().currentDistanceKm.toFixed(2)}/${useTripProgressStore.getState().totalDistanceKm}km
-    `;
-    logger(help);
-  };
-
-  // Debug location service function
-  const debugLocationService = async (lat?: number, lon?: number) => {
-    const coordinates = lat && lon ? { lat, lon } : undefined;
-    await locationService.debug(coordinates);
-  };
-
-  // Set up global API (includes weather API monitoring)
-  window.TripOverlay = { controls, getStatus, checkRtirlConnection };
-
-  // Weather API monitoring functions
-  window.owmApiStats = () => apiMonitor.logUsageStats();
-  window.owmApiReset = () => apiMonitor.resetUsage();
-
-  // Location service debugging
-  window.debugLocationService = debugLocationService;
-
-  // Backward compatibility - individual functions
-  window.addDistance = controls.addDistance;
-  window.setDistance = controls.setDistance;
-  window.jumpToProgress = controls.jumpToProgress;
-  window.setTotalDistance = controls.setTotalDistance;
-  window.convertToMiles = controls.convertToMiles;
-  window.convertToKilometers = controls.convertToKilometers;
-  window.resetTripProgress = controls.resetProgress;
-  window.resetTodayDistance = controls.resetTodayDistance;
-  window.exportTripData = controls.exportTripData;
-  window.importTripData = controls.importTripData;
-  window.showConsoleCommands = showConsoleCommands;
-  window.getStatus = getStatus;
-  window.checkRtirlConnection = checkRtirlConnection;
-  window.debugLocationService = debugLocationService;
-
-  // Mark as initialized
-  isGlobalAPIInitialized = true;
-
-  // Initialize notification
-  logger(
-    '🎮 Trip Overlay Console API initialized. Type showConsoleCommands() for help.'
-  );
-}
+  // Backward compatibility - set up direct global functions
+  if (tripOverlayControls) {
+    (window as any).addDistance = tripOverlayControls.addDistance;
+    (window as any).setDistance = tripOverlayControls.setDistance;
+    (window as any).jumpToProgress = tripOverlayControls.jumpToProgress;
+    (window as any).convertToMiles = tripOverlayControls.convertToMiles;
+    (window as any).convertToKilometers =
+      tripOverlayControls.convertToKilometers;
+    (window as any).resetTripProgress = tripOverlayControls.resetTripProgress;
+    (window as any).resetTodayDistance = tripOverlayControls.resetTodayDistance;
+    (window as any).getStatus = tripOverlayControls.getStatus;
+  }
+};

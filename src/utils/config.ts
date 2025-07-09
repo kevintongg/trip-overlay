@@ -46,19 +46,19 @@ export const CONFIG: ConfigType = {
     modes: {
       STATIONARY: {
         maxSpeed: 0.5, // Lower threshold for better walking detection
-        minMovementM: 0.5, // More sensitive to small movements
+        minMovementM: 15, // Account for GPS accuracy (±10m), need significant movement
         gpsThrottle: 5000, // Check less often when still
         avatar: '/stationary.png',
       },
       WALKING: {
         maxSpeed: 8.0, // Up to 8.0 km/h (robust walking/cycling threshold)
-        minMovementM: 0.5, // More sensitive to small movements
+        minMovementM: 20, // Account for GPS accuracy, walking should be consistent movement
         gpsThrottle: 2000,
         avatar: '/walking.gif',
       },
       CYCLING: {
         maxSpeed: 35, // Up to 35 km/h
-        minMovementM: 1, // More robust: 1m minimum for cycling
+        minMovementM: 25, // Higher threshold for cycling - should be clear movement
         gpsThrottle: 500,
         avatar: '/cycling.gif',
       },

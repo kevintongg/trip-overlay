@@ -14,6 +14,10 @@ export default [
       '**/*.d.ts',
       '.wrangler/**',
       'functions/**', // Cloudflare Workers
+      '.history/**', // VS Code history files
+      'js/**', // Legacy vanilla JS files
+      'utils/**', // Legacy utility files
+      'dev-functions.js', // Development script
     ],
   },
   {

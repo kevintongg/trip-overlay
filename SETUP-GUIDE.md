@@ -175,18 +175,21 @@ Good luck with your IRL stream! 🎥🏍️
 The location service can use OpenCage for higher quality reverse geocoding instead of the free Nominatim fallback.
 
 #### Benefits of OpenCage over Nominatim:
+
 - **Higher quality results** - Better formatted addresses
-- **Better international coverage** - More accurate for non-English locations  
+- **Better international coverage** - More accurate for non-English locations
 - **Faster response times** - Dedicated infrastructure
 - **Priority support** - Professional service level
 
 #### Getting OpenCage API Key:
+
 1. **Visit**: https://opencagedata.com/
 2. **Sign up** for free account (no credit card required)
 3. **Free tier**: 2,500 requests/day (perfect for personal streaming)
 4. **Copy your API key** from the dashboard
 
 #### Configuration:
+
 ```bash
 # Copy the environment template
 cp env-template .env.local
@@ -200,12 +203,14 @@ VITE_OPENCAGE_API_KEY=your_actual_opencage_api_key_here
 Weather functionality requires an OpenWeatherMap API key configured in two places:
 
 #### Getting OpenWeatherMap API Key:
+
 1. **Visit**: https://openweathermap.org/api/one-call-3
 2. **Sign up** for free account
 3. **Free tier**: 1,000 calls/day (sufficient for streaming use)
 4. **Copy your API key** (may take a few hours to activate)
 
 #### Local Development Configuration:
+
 ```bash
 # Create/edit .dev.vars file for local Cloudflare Functions
 echo "OWM_API_KEY=your_openweathermap_api_key_here" > .dev.vars
@@ -215,6 +220,7 @@ echo "VITE_OWM_API_KEY=your_openweathermap_api_key_here" >> .env.local
 ```
 
 #### Production Configuration:
+
 1. **Cloudflare Pages Dashboard** → Your project → **Settings** → **Environment variables**
 2. **Add variable**: `OWM_API_KEY` = `your_openweathermap_api_key_here`
 3. **Redeploy** to apply changes
@@ -222,6 +228,7 @@ echo "VITE_OWM_API_KEY=your_openweathermap_api_key_here" >> .env.local
 ### Testing API Keys
 
 #### Test OpenCage locally:
+
 ```bash
 # Start dev server
 pnpm dev
@@ -231,6 +238,7 @@ pnpm dev
 ```
 
 #### Test Weather API locally:
+
 ```bash
 # Use Wrangler for local functions testing
 pnpm wrangler pages dev dist --local
@@ -248,7 +256,7 @@ curl "http://localhost:8788/functions/weather?lat=46.76&lon=17.25&units=metric"
 # Build the project first
 pnpm build
 
-# Run with Wrangler for functions support  
+# Run with Wrangler for functions support
 pnpm wrangler pages dev dist --local
 
 # Access overlays at:

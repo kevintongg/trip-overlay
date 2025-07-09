@@ -136,7 +136,7 @@ export function useTripProgress() {
   }, [units]);
 
   // --- CONSOLE COMMANDS FOR TESTING ---
-  function showConsoleCommands() {
+  const _showConsoleCommands = () => {
     console.log(`
       --- Trip Overlay Console Commands ---
 
@@ -185,7 +185,7 @@ export function useTripProgress() {
 
       ------------------------------------
       `);
-  }
+  };
 
   return {
     // State values

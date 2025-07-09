@@ -51,7 +51,8 @@ export function useGPSProcessor() {
     (speed: number, _currentMode: string) => {
       const WALKING_THRESHOLD = 0.5; // km/h - Much more sensitive for walking
       // Realistic speed thresholds for human movement
-      if (speed > 8.0) { // 8.0 km/h = 4.9 mph - reasonable cycling threshold
+      if (speed > 8.0) {
+        // 8.0 km/h = 4.9 mph - reasonable cycling threshold
         return 'CYCLING';
       } else if (speed > WALKING_THRESHOLD) {
         return 'WALKING';
@@ -105,7 +106,7 @@ export function useGPSProcessor() {
         return;
       }
 
-            // Calculate speed like original implementation (use both reported and calculated)
+      // Calculate speed like original implementation (use both reported and calculated)
       const reportedSpeed = data.speed || 0;
       const calculatedSpeed = calculateSpeedFromGPS(
         state.lastPosition,
@@ -117,22 +118,24 @@ export function useGPSProcessor() {
       const finalSpeed = Math.max(reportedSpeed, calculatedSpeed);
 
       // Log debug info to help troubleshoot
-      const distanceM = calculateDistance(state.lastPosition, newPosition) * 1000;
+      const distanceM =
+        calculateDistance(state.lastPosition, newPosition) * 1000;
       const distanceKm = distanceM / 1000;
-      const speedInfo = reportedSpeed > 0
-        ? `RTIRL: ${reportedSpeed.toFixed(1)} km/h`
-        : 'RTIRL: no speed data';
+      const speedInfo =
+        reportedSpeed > 0
+          ? `RTIRL: ${reportedSpeed.toFixed(1)} km/h`
+          : 'RTIRL: no speed data';
       logger(
-        `🧮 GPS: Moved ${distanceM.toFixed(1)}m in ${(timeDelta/1000).toFixed(1)}s -> Calc: ${calculatedSpeed.toFixed(2)} km/h, Final: ${finalSpeed.toFixed(2)} km/h (${speedInfo})`
+        `🧮 GPS: Moved ${distanceM.toFixed(1)}m in ${(timeDelta / 1000).toFixed(1)}s -> Calc: ${calculatedSpeed.toFixed(2)} km/h, Final: ${finalSpeed.toFixed(2)} km/h (${speedInfo})`
       );
 
-            // Add to speed history for smoothing (longer history for better GPS noise filtering)
+      // Add to speed history for smoothing (longer history for better GPS noise filtering)
       state.speedHistory.push(finalSpeed);
       if (state.speedHistory.length > 10) {
         state.speedHistory.shift(); // Keep last 10 readings for better smoothing
       }
 
-            // Aggressive speed smoothing to filter GPS noise
+      // Aggressive speed smoothing to filter GPS noise
       let smoothedSpeed = finalSpeed;
       if (state.speedHistory.length >= 3) {
         // Use 25th percentile to be more conservative with speed spikes
@@ -143,8 +146,11 @@ export function useGPSProcessor() {
         // Log smoothing effect for debugging
         const rawSpeed = finalSpeed;
         const smoothingEffect = Math.abs(rawSpeed - smoothedSpeed);
-        if (smoothingEffect > 2) { // Log significant smoothing
-          logger(`🎯 GPS: Speed smoothed from ${rawSpeed.toFixed(1)} to ${smoothedSpeed.toFixed(1)} km/h (filtered noise)`);
+        if (smoothingEffect > 2) {
+          // Log significant smoothing
+          logger(
+            `🎯 GPS: Speed smoothed from ${rawSpeed.toFixed(1)} to ${smoothedSpeed.toFixed(1)} km/h (filtered noise)`
+          );
         }
       }
 
@@ -183,7 +189,7 @@ export function useGPSProcessor() {
       if (distanceKm >= minMovementKm) {
         // Calculate maximum reasonable distance for this time period and mode
         const maxSpeedMs = usedModeConfig.maxSpeed / 3.6; // Convert to m/s
-        const maxReasonableDistance = (timeDelta / 1000 * maxSpeedMs) / 1000; // km
+        const maxReasonableDistance = ((timeDelta / 1000) * maxSpeedMs) / 1000; // km
 
         // GPS jump detection - reject unrealistic distances
         if (distanceKm > maxReasonableDistance * 1.5) {
@@ -194,7 +200,9 @@ export function useGPSProcessor() {
           // Only add distance if we're moving (above stationary threshold)
           if (smoothedSpeed > CONFIG.movement.modes.STATIONARY.maxSpeed) {
             addDistance(distanceKm);
-            logger(`✅ GPS: Added ${distanceKm.toFixed(4)} km to trip (speed: ${smoothedSpeed.toFixed(1)} km/h, mode: ${state.currentMode})`);
+            logger(
+              `✅ GPS: Added ${distanceKm.toFixed(4)} km to trip (speed: ${smoothedSpeed.toFixed(1)} km/h, mode: ${state.currentMode})`
+            );
           }
         }
       }
@@ -217,7 +225,13 @@ export function useGPSProcessor() {
         );
       }
     },
-    [calculateSpeedFromGPS, determineMovementMode, updateSpeed, setMoving]
+    [
+      calculateSpeedFromGPS,
+      determineMovementMode,
+      updateSpeed,
+      setMoving,
+      addDistance,
+    ]
   );
 
   // Set up location update listener
@@ -237,7 +251,7 @@ export function useGPSProcessor() {
         handleLocationUpdate as EventListener
       );
     };
-  }, []); // Remove dependencies to prevent stale closures
+  }, [processLocationUpdate]);
 
   return {
     getCurrentMode: () => stateRef.current.currentMode,

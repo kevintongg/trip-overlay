@@ -17,7 +17,9 @@ function copyFunctionsPlugin() {
         }
 
         // Copy all .js files from functions directory
-        const files = readdirSync(sourceDir).filter(file => file.endsWith('.js'));
+        const files = readdirSync(sourceDir).filter(file =>
+          file.endsWith('.js')
+        );
 
         files.forEach(file => {
           const sourceFile = path.join(sourceDir, file);

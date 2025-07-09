@@ -31,9 +31,6 @@ const isDemo =
   CONFIG.rtirl.demoMode ||
   new URLSearchParams(window.location.search).get('demo') === 'true';
 
-// Global flag to prevent duplicate RTIRL connections
-let isRtirlInitialized = false;
-
 export function useRtirlSocket() {
   const {
     setConnected,
@@ -69,7 +66,8 @@ export function useRtirlSocket() {
     }
 
     // Debug: Log raw RTIRL data structure occasionally
-    if (!isDemo && Math.random() < 0.1) { // 10% chance to log structure
+    if (!isDemo && Math.random() < 0.1) {
+      // 10% chance to log structure
       logger('🔍 RTIRL raw data structure:', JSON.stringify(data, null, 2));
     }
 
@@ -119,8 +117,9 @@ export function useRtirlSocket() {
         );
       }
     } else {
+      // Log location updates for non-demo mode
       logger(
-        `📡 Trip: Location received - ${latitude.toFixed(4)}, ${longitude.toFixed(4)} @ ${speedKmh.toFixed(1)}km/h`
+        `📡 RTIRL: Location update - ${latitude.toFixed(6)}, ${longitude.toFixed(6)} | Speed: ${speedKmh.toFixed(1)} km/h | Accuracy: ${data.accuracy?.toFixed(1) || 'N/A'}m | Time: ${new Date().toLocaleTimeString()}`
       );
     }
 
@@ -247,13 +246,11 @@ export function useRtirlSocket() {
       return;
     }
 
-    // Prevent duplicate initialization in React StrictMode
-    if (isRtirlInitialized || initRef.current) {
+    if (initRef.current) {
       return;
     }
 
     initRef.current = true;
-    isRtirlInitialized = true;
 
     // Check if RTIRL library is loaded
     if (
@@ -297,9 +294,6 @@ export function useRtirlSocket() {
       if (rtirl && rtirl.locationListener) {
         rtirl.locationListener(); // Remove listener
       }
-      // Reset flags on cleanup for proper re-initialization if needed
-      isRtirlInitialized = false;
-      initRef.current = false;
     };
   }, [isDemo]);
 

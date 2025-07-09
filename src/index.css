@@ -161,7 +161,7 @@ body {
   /* Prevent Dark Reader from overriding dashboard card borders */
   .dashboard-card,
   [data-radix-scroll-area-viewport],
-  [class*="border-white"] {
+  [class*='border-white'] {
     border-color: rgba(255, 255, 255, 0.2) !important;
   }
 

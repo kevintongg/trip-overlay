@@ -1,43 +1,41 @@
-import React from 'react';
-import { useTripProgress } from './hooks/useTripProgress';
+import React, { useEffect } from 'react';
+import { useTripOverlay } from './hooks/useTripOverlay';
 import { useRtirlSocket } from './hooks/useRtirlSocket';
-import { useConsoleCommands } from './hooks/useConsoleCommands';
 import { useURLParameters } from './hooks/useURLParameters';
 import { useAppInitialization } from './hooks/useAppInitialization';
-import { useGPSProcessor } from './hooks/useGPSProcessor';
-import { useTripProgressStore } from './store/tripStore';
+import { setupGlobalConsoleAPI } from './utils/globalConsoleAPI';
 
 /**
  * Trip Overlay Component - Clean minimalist design for streaming
- * Matches original vanilla JS design but with React + Tailwind
+ * Uses unified hook that ports original vanilla JS logic exactly
  * Optimized for 1080p streaming with clean typography and minimal footprint
  */
 const TripOverlay: React.FC = () => {
+  const tripOverlayControls = useTripOverlay();
   const {
     traveledDistance,
     todayDistance,
     remainingDistance,
     progressPercent,
-    getUnitLabel,
-    resetTrip,
-    resetToday,
-  } = useTripProgress();
-
-  // Get export function from store
-  const { exportTripData } = useTripProgressStore();
+    currentMode,
+    unitSuffix,
+    resetTripProgress,
+    resetTodayDistance,
+    getStatus,
+    modeChangeCounter,
+  } = tripOverlayControls;
 
   useRtirlSocket(); // Still needed for GPS data updates
-  useConsoleCommands();
   useURLParameters();
   useAppInitialization();
 
-  // Use robust GPS processor for movement detection
-  const gpsProcessor = useGPSProcessor();
-
-  // Get current mode from GPS processor (which includes hysteresis and delays)
-  const currentMode = gpsProcessor.getCurrentMode();
+  // Set up console API
+  useEffect(() => {
+    setupGlobalConsoleAPI(tripOverlayControls);
+  }, [tripOverlayControls]);
 
   // Avatar image mapping - using public directory for production builds
+  // Note: modeChangeCounter ensures React re-renders when mode changes
   const getAvatarImage = () => {
     switch (currentMode) {
       case 'WALKING':
@@ -50,11 +48,11 @@ const TripOverlay: React.FC = () => {
   };
 
   // Control panel functions
-  const resetTripProgress = () => {
+  const handleResetTripProgress = () => {
     console.log(
       `[${new Date().toISOString()}] TripOverlay: Reset trip progress triggered`
     );
-    resetTrip();
+    resetTripProgress();
   };
 
   const resetAutoStartLocation = () => {
@@ -69,11 +67,11 @@ const TripOverlay: React.FC = () => {
     );
   };
 
-  const resetTodayDistance = () => {
+  const handleResetTodayDistance = () => {
     console.log(
       `[${new Date().toISOString()}] TripOverlay: Reset today distance triggered`
     );
-    resetToday();
+    resetTodayDistance();
   };
 
   const handleExportTripData = () => {
@@ -81,8 +79,30 @@ const TripOverlay: React.FC = () => {
       `[${new Date().toISOString()}] TripOverlay: Export trip data triggered`
     );
     try {
-      const result = exportTripData();
-      console.log(`[${new Date().toISOString()}] TripOverlay: ${result}`);
+      const status = getStatus();
+      const data = {
+        totalDistanceTraveled: status.totalDistanceTraveled,
+        todayDistanceTraveled: status.todayDistanceTraveled,
+        useImperialUnits: status.useImperialUnits,
+        totalDistance: status.originalTotalDistance,
+        exportDate: new Date().toISOString(),
+      };
+
+      const blob = new Blob([JSON.stringify(data, null, 2)], {
+        type: 'application/json',
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `trip-overlay-backup-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      console.log(
+        `[${new Date().toISOString()}] TripOverlay: Trip data downloaded`
+      );
     } catch (error) {
       console.error(
         `[${new Date().toISOString()}] TripOverlay: Export failed:`,
@@ -132,7 +152,7 @@ const TripOverlay: React.FC = () => {
             {/* Traveled Distance - Left aligned */}
             <div className="flex-1 flex flex-col items-start text-left">
               <span className="text-[19px] font-bold text-white [text-shadow:1px_1px_3px_rgba(0,0,0,0.8)]">
-                {traveledDistance.toFixed(2)} {getUnitLabel()}
+                {traveledDistance.toFixed(2)} {unitSuffix}
               </span>
               <div className="text-[10px] font-normal text-[#cccccc] uppercase text-left">
                 traveled
@@ -142,7 +162,7 @@ const TripOverlay: React.FC = () => {
             {/* Today's Distance - Center aligned */}
             <div className="flex-1 flex flex-col items-center text-center">
               <span className="text-[19px] font-bold text-white [text-shadow:1px_1px_3px_rgba(0,0,0,0.8)]">
-                {todayDistance.toFixed(1)} {getUnitLabel()}
+                {todayDistance.toFixed(2)} {unitSuffix}
               </span>
               <div className="text-[10px] font-normal text-[#cccccc] uppercase text-center">
                 today
@@ -152,7 +172,7 @@ const TripOverlay: React.FC = () => {
             {/* Remaining Distance - Right aligned */}
             <div className="flex-1 flex flex-col items-end text-right">
               <span className="text-[19px] font-bold text-white [text-shadow:1px_1px_3px_rgba(0,0,0,0.8)]">
-                {remainingDistance.toFixed(2)} {getUnitLabel()}
+                {remainingDistance.toFixed(2)} {unitSuffix}
               </span>
               <div className="text-[10px] font-normal text-[#cccccc] uppercase text-right">
                 remaining
@@ -173,7 +193,7 @@ const TripOverlay: React.FC = () => {
           {/* Primary Control Row */}
           <div className="flex gap-3 mb-2.5 justify-center">
             <button
-              onClick={resetTodayDistance}
+              onClick={handleResetTodayDistance}
               className="bg-white/15 border border-white/30 text-white px-4 py-2.5 rounded-lg cursor-pointer
                        text-[13px] font-medium transition-all duration-200 min-w-[110px] text-center
                        hover:bg-white/25 hover:border-white/50 hover:-translate-y-0.5
@@ -207,7 +227,7 @@ const TripOverlay: React.FC = () => {
               📍 Fix Start
             </button>
             <button
-              onClick={resetTripProgress}
+              onClick={handleResetTripProgress}
               className="bg-red-600/30 border border-red-600/50 text-white px-4 py-2.5 rounded-lg cursor-pointer
                        text-[13px] font-medium transition-all duration-200 min-w-[110px] text-center
                        hover:bg-red-600/50 hover:border-red-600/70 hover:-translate-y-0.5

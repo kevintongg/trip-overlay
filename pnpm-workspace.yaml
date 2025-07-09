@@ -1,2 +1,6 @@
 onlyBuiltDependencies:
+  - '@tailwindcss/oxide'
+  - esbuild
   - protobufjs
+  - sharp
+  - workerd

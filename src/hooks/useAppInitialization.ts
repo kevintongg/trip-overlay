@@ -1,25 +1,13 @@
 import { useEffect } from 'react';
-import { setupGlobalConsoleAPI } from '../utils/globalConsoleAPI';
-
-// Global flag to ensure app is only initialized once
-let isAppInitialized = false;
 
 /**
  * Centralized app initialization hook
- * Handles all one-time setup tasks like console API
- * Safe to call from multiple components due to flag protection
+ * Handles all one-time setup tasks (console API now handled by TripOverlay)
  */
 export function useAppInitialization() {
   useEffect(() => {
-    if (isAppInitialized) {
-      return;
-    }
-
-    isAppInitialized = true;
-
-    // Initialize console API once
-    setupGlobalConsoleAPI();
-
+    // Console API is now set up in TripOverlay component after hook initialization
     // Any other global initialization can go here
+    console.log('🚀 Trip Overlay app initialized');
   }, []);
 }
