@@ -53,7 +53,8 @@ export function useDashboardConsole(
       },
     };
 
-    logger('📊 Dashboard Status:', status);
+    // Display nicely formatted table
+    logger('📊 Dashboard Status:');
     console.table({
       'RTIRL Connected': status.rtirl.connected,
       'Location Text': status.location.text,
@@ -64,6 +65,14 @@ export function useDashboardConsole(
         ? `${Math.round(status.weather.temperature)}°`
         : 'N/A',
     });
+
+    // Show detailed status in readable format
+    console.log('📋 Detailed Status:');
+    console.log(`  RTIRL: ${status.rtirl.connected ? 'Connected' : 'Disconnected'} ${status.rtirl.lastPosition ? `(${status.rtirl.lastPosition.lat.toFixed(4)}, ${status.rtirl.lastPosition.lon.toFixed(4)})` : '(no position)'}`);
+    console.log(`  Location: ${status.location.text} (${status.location.connected ? 'connected' : 'disconnected'})`);
+    console.log(`  Speed: ${status.speed.kmh} km/h (${status.speed.mph} mph) - Mode: ${status.speed.mode}`);
+    console.log(`  Time: ${status.time.formatted} ${status.time.timezone}`);
+    console.log(`  Weather: ${status.weather.hasData ? `${Math.round(status.weather.temperature)}° - ${status.weather.description}` : 'No weather data'}`);
 
     return status;
   }, [locationData, speedDisplay, timeDisplay, weatherData]);
