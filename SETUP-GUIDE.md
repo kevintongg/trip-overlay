@@ -2,74 +2,124 @@
 
 ## Quick Start for IRL Streamers
 
-### 1. **Browser Requirements**
+### 1. **Development Environment Setup**
 
-**Modern Browser Required**: The overlay now uses ES6 modules and requires:
+**Prerequisites:**
+- Node.js 18+ installed
+- pnpm package manager
+- Modern browser (Chrome 90+, Firefox 88+, Safari 14+, Edge 90+)
 
-- Chrome 63+ / Firefox 60+ / Safari 11+ / Edge 79+
-- Local file access (file:// URLs work fine)
+**Installation:**
+
+```bash
+# Clone or download the repository
+git clone <repository-url>
+cd trip-overlay
+
+# Install dependencies
+pnpm install
+
+# Start development server
+pnpm run dev
+```
 
 ### 2. **Test the Overlay (Demo Mode)**
 
-Open `index.html` and add `?demo=true` to the URL:
+Access the React overlay in your browser:
 
 ```
-file:///path/to/index.html?demo=true
+# Development server (recommended)
+http://localhost:5173/index-react.html?demo=true
+http://localhost:5173/dashboard-react.html?demo=true
+
+# Legacy vanilla JS (backup)
+http://localhost:5173/index.html?demo=true
+http://localhost:5173/dashboard.html?demo=true
 ```
 
 You should see the overlay simulate cycling movement and distance tracking.
 
 ### 3. **Configure for Your Trip**
 
-#### Environment Setup (Recommended)
+#### Environment Setup (Required)
 
-Copy and configure your environment variables:
+Create and configure your environment variables:
 
 ```bash
 # Copy the template file
-cp env-template .env.local
+cp .env.example .env.local
 
 # Edit .env.local with your values:
 VITE_RTIRL_USER_ID=your_rtirl_user_id_here
 VITE_OPENCAGE_API_KEY=your_opencage_key_here  # Optional but recommended
+VITE_OWM_API_KEY=your_openweather_key_here    # For weather features
 ```
 
-**Why OpenCage API?**
+**Environment Variables Explained:**
 
-- **Faster location updates**: 5-10x faster than free alternatives
-- **Better accuracy**: More reliable city/country detection
-- **Free tier**: 2,500 requests/day (plenty for streaming)
-- **Fallback**: Without key, automatically uses free Nominatim
+- **VITE_RTIRL_USER_ID**: Your RTIRL user ID (required for live GPS)
+- **VITE_OPENCAGE_API_KEY**: Faster, higher-quality geocoding (optional)
+- **VITE_OWM_API_KEY**: Weather data integration (required for weather)
 
 #### Trip Distance Configuration
 
-You can set the total distance using the `setTotalTraveled` URL parameter:
+You can set the total distance using URL parameters:
 
 `?setTotalTraveled=500` (to set total distance to 500km)
+`?totalDistance=371` (Vienna to Zagreb default)
 
-### 3. **Add to OBS Studio**
+### 4. **Add to OBS Studio**
+
+#### For Development (React Dev Server)
 
 1. **Add Browser Source**:
    - Source → Add → Browser Source
-   - Name: "Trip Overlay"
-   - URL: `file:///full/path/to/index.html`
+   - Name: "Trip Overlay (React)"
+   - URL: `http://localhost:5173/index-react.html`
    - Width: 1920, Height: 1080
    - ✅ Shutdown source when not visible
    - ✅ Refresh browser when scene becomes active
 
-2. **Position the Overlay**:
+#### For Production (Built Files)
+
+1. **Build the project**:
+   ```bash
+   pnpm run build
+   ```
+
+2. **Add Browser Source**:
+   - Source → Add → Browser Source
+   - Name: "Trip Overlay"
+   - URL: `file:///full/path/to/dist/index-react.html`
+   - Width: 1920, Height: 1080
+   - ✅ Shutdown source when not visible
+   - ✅ Refresh browser when scene becomes active
+
+3. **Position the Overlay**:
    - Drag to top of screen
    - Resize as needed
    - Set blend mode to "Normal"
-   - (The overlay is top-aligned by default. You can adjust the top margin in the CSS if needed.)
+   - (The overlay is top-aligned by default. You can adjust in CSS if needed.)
 
-### 4. **Stream Controls**
+### 5. **Stream Controls**
+
+**Console Commands (F12 Browser Console):**
+
+```javascript
+// All original commands still work in React version
+TripOverlay.getStatus();              // Complete system status
+TripOverlay.controls.addDistance(10); // Add 10km
+TripOverlay.controls.resetTrip();     // Reset everything
+showConsoleCommands();                // Show all commands
+```
+
+**URL Parameters (Cloud/OBS Control):**
 
 While streaming, you can use URL parameters to control the overlay. For example, to reset the daily distance, you would add `?reset=today` to the URL in your OBS browser source.
 
 For a full list of commands, see the [API.md](./API.md) file.
 
-### 5. **URL Parameters for Stream Management**
+### 6. **URL Parameters for Stream Management**
 
 Add these to your OBS browser source URL:
 
@@ -82,7 +132,17 @@ Add these to your OBS browser source URL:
 ?setTotalTraveled=500    # Set total trip distance to 500km
 ```
 
-Example: `file:///path/to/index.html?stream=true&controls=false`
+**React Development Examples:**
+```
+http://localhost:5173/index-react.html?stream=true&controls=false
+http://localhost:5173/dashboard-react.html?demo=true&weather=true
+```
+
+**Production Examples:**
+```
+file:///path/to/dist/index-react.html?stream=true&controls=false
+https://your-site.pages.dev/index-react.html?demo=true
+```
 
 ## 📱 RTIRL Setup
 
@@ -94,79 +154,173 @@ Example: `file:///path/to/index.html?stream=true&controls=false`
 
 ## 🔧 Troubleshooting
 
+### Development Server Issues
+
+- ✅ Check Node.js 18+ is installed: `node --version`
+- ✅ Install dependencies: `pnpm install`
+- ✅ Start dev server: `pnpm run dev`
+- ✅ Access React overlays at `localhost:5173`
+
 ### Overlay Not Updating
 
-- ✅ Check RTIRL_USER_ID is correct
+- ✅ Check VITE_RTIRL_USER_ID in `.env.local`
 - ✅ Ensure RTIRL app is broadcasting
-- ✅ Check browser console for connection errors
+- ✅ Check browser console (F12) for connection errors
 - ✅ Try refreshing the browser source in OBS
+- ✅ Verify environment variables are loaded
+
+### Build Issues
+
+- ✅ Run `pnpm run build` to create production files
+- ✅ Check `dist/` folder for built files
+- ✅ Use `pnpm run preview` to test built version
 
 ### GPS Jumps/Weird Distances
 
 - The overlay automatically filters GPS jumps >200km/h
 - Check console for "GPS jump detected" warnings
+- Enhanced GPS validation in React version
 
 ### Performance Issues
 
 - ✅ Enable "Shutdown source when not visible" in OBS
 - ✅ Close browser dev tools during stream
-- ✅ The overlay is optimized for 8+ hour streams
+- ✅ React version has improved performance optimizations
+- ✅ Use production build for streaming: `pnpm run build`
 
 ### Demo Mode Not Working
 
 - Make sure you're using `?demo=true` in the URL
-- Check browser console for errors
-- Try opening in a modern browser (Chrome/Firefox/Edge)
+- Try React version: `localhost:5173/index-react.html?demo=true`
+- Check browser console (F12) for errors
+- Ensure dev server is running: `pnpm run dev`
 
 ## 🎯 Advanced Configuration
 
 ### Custom Trip Distance
 
+**React Version (Recommended):**
+- Use environment variables in `.env.local`
+- Use URL parameters: `?totalDistance=1500`
+- Use console commands: `TripOverlay.controls.setTotalDistance(1500)`
+
+**Legacy Configuration (for reference):**
 ```javascript
-// For longer trips, update this value
+// Old vanilla JS method - now handled by React state management
 const TOTAL_DISTANCE_KM = 1500.0; // e.g., for a cross-country trip
 ```
 
-Or, you can use the `totalDistance` URL parameter:
+### TypeScript Configuration
 
-`?totalDistance=1500`
+The React version includes full TypeScript support:
+
+```typescript
+// Type-safe configuration in src/utils/config.ts
+export const CONFIG = {
+  trip: {
+    totalDistanceKm: 371.0, // Vienna to Zagreb
+    useAutoStart: false,
+    manualStartLocation: { lat: 48.209, lon: 16.3531 },
+  },
+  // ... more configuration
+};
+```
 
 ## 📊 Data Persistence
 
-### Backup Your Progress
+### Backup Your Progress (React Version)
 
-- Use the `exportTripData()` console command to download a JSON backup.
+```javascript
+// Console commands (all original commands work)
+TripOverlay.controls.exportTripData();  // Download JSON backup
+TripOverlay.controls.importTripData(jsonData); // Restore from backup
+
+// Enhanced React state management
+TripOverlay.getStatus(); // Complete state including React store
+```
 
 ### Restore Progress
 
-- Import backup via browser console: `importTripData(jsonString)`
+- Import backup via browser console: `TripOverlay.controls.importTripData(jsonString)`
 - Or use URL parameter: `?import=<encoded-json>`
+- React version includes improved data validation
 
 ### Cross-Device Setup
 
-1. Export data from computer A
-2. Import data to computer B
-3. Continue stream seamlessly
+1. Export data from computer A: `TripOverlay.controls.exportTripData()`
+2. Import data to computer B: `TripOverlay.controls.importTripData(backup)`
+3. Continue stream seamlessly with React state persistence
+4. All data persists in localStorage with enhanced error handling
 
 ## 🚨 Important Notes
 
-- **Test everything** in demo mode first
+### React Migration Benefits
+
+- **Enhanced Performance**: Optimized React rendering and state management
+- **Type Safety**: Full TypeScript integration prevents runtime errors
+- **Better Architecture**: Cleaner separation of concerns and reusable components
+- **Improved Testing**: Unit tests and better debugging capabilities
+- **Modern Development**: Hot reloading, ESLint, Prettier integration
+
+### Compatibility
+
+- **100% Backward Compatible**: All console commands and URL parameters work identically
+- **Legacy Support**: Original vanilla JS files preserved as backup
+- **Stream Workflow**: Zero changes required for existing OBS setups
+- **Browser Support**: Modern browsers required (Chrome 90+, Firefox 88+)
+
+### Best Practices
+
+- **Test everything** in demo mode first: `?demo=true`
 - **Always backup** progress before major changes
-- **Monitor browser console** for connection issues
-- **The overlay auto-saves** every 500ms during travel
+- **Monitor browser console** (F12) for connection issues
+- **Use production builds** for streaming: `pnpm run build`
+- **The React overlay auto-saves** with enhanced persistence
 - **Daily resets** happen automatically with 6-hour grace period
-- **Compatible** with all major browsers and OBS versions
 
 ## 📞 Support
 
-If something doesn't work:
+### React Version Issues
 
-1. Check browser console for errors
-2. Test in demo mode first
-3. Verify RTIRL connection
+1. **Development Problems**: 
+   - Check Node.js version: `node --version` (need 18+)
+   - Verify dependencies: `pnpm install`
+   - Check environment file: `.env.local` exists
+   - Start dev server: `pnpm run dev`
+
+2. **Build/Production Issues**:
+   - Run build: `pnpm run build`
+   - Test build: `pnpm run preview`
+   - Check dist folder contains built files
+
+3. **Legacy Compatibility**:
+   - Original files available as backup in repository
+   - All console commands work identically
+   - URL parameters unchanged
+
+### General Troubleshooting
+
+1. Check browser console (F12) for errors
+2. Test in demo mode first: `?demo=true`
+3. Verify RTIRL connection and user ID
 4. Check OBS browser source settings
+5. Try React version: `index-react.html`
 
-Good luck with your IRL stream! 🎥🏍️
+Good luck with your IRL stream! 🎥🚴‍♂️
+
+## 🔄 React vs Legacy
+
+| Feature | React Version | Legacy Version |
+|---------|---------------|----------------|
+| **Performance** | ✅ Optimized | ✅ Good |
+| **Type Safety** | ✅ Full TypeScript | ❌ None |
+| **Development** | ✅ Hot reload, modern tools | ⚠️ Manual refresh |
+| **Console Commands** | ✅ 100% compatible | ✅ Original |
+| **URL Parameters** | ✅ 100% compatible | ✅ Original |
+| **Browser Support** | Chrome 90+, Firefox 88+ | Chrome 63+, Firefox 60+ |
+| **Build Required** | ✅ For production | ❌ Direct file access |
+
+**Recommendation**: Use React version for development and production. Legacy files remain as backup.
 
 ## API Keys Setup
 
