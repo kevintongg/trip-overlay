@@ -29,6 +29,7 @@ export function useLocationData(): LocationData {
 
   // Track last processed coordinates to avoid unnecessary requests
   const lastProcessedCoords = useRef<string | null>(null);
+  const lastGeocodeTime = useRef<number>(0);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /**
@@ -134,9 +135,14 @@ export function useLocationData(): LocationData {
       return;
     }
 
-    // Calculate if this is a significant position change (>50 meters)
-    // This prevents unnecessary API calls for minor GPS drift
-    if (lastProcessedCoords.current) {
+    // Check if we should geocode (matches vanilla JS logic exactly)
+    const now = Date.now();
+    const timeSinceLastGeocode = now - lastGeocodeTime.current;
+    
+    let shouldGeocode = !lastProcessedCoords.current || timeSinceLastGeocode > 30000; // 30 seconds
+    
+    // Also check distance if we have previous coordinates (>100 meters like vanilla JS)
+    if (lastProcessedCoords.current && !shouldGeocode) {
       const [lastLat, lastLon] = lastProcessedCoords.current
         .split(',')
         .map(Number);
@@ -145,11 +151,16 @@ export function useLocationData(): LocationData {
         { lat: lastPosition.lat, lon: lastPosition.lon }
       );
 
-      // Only update if moved more than 50 meters
-      if (distance < 50) {
-        return;
-      }
+      // Only update if moved more than 100 meters (0.1km like vanilla JS)
+      shouldGeocode = distance >= 100;
     }
+    
+    if (!shouldGeocode) {
+      return;
+    }
+    
+    // Update geocode time
+    lastGeocodeTime.current = now;
 
     // Trigger debounced reverse geocoding
     debouncedReverseGeocode({
