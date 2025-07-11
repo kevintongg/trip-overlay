@@ -211,7 +211,7 @@ export function useGPSProcessor() {
       
       // Get current progress for smart logging
       const { totalTraveledKm, totalDistanceKm, units } = useTripProgressStore.getState();
-      const progressPercent = (totalTraveledKm / totalDistanceKm) * 100;
+      const progressPercent = Math.min((totalTraveledKm / totalDistanceKm) * 100, 100);
       
       // Smart logging like original (not every update!)
       const isDemoMode = new URLSearchParams(window.location.search).get('demo') === 'true';

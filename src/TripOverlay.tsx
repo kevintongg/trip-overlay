@@ -1,3 +1,16 @@
+/*
+ * TripOverlay - Real-time GPS Tracking for Live Streaming
+ * 
+ * Copyright (c) 2025 Kevin Tong and Trip Overlay Contributors
+ * 
+ * Dual Licensed:
+ * - Non-Commercial License: Free for personal/educational use
+ * - Commercial License: Required for monetized streaming
+ * 
+ * For commercial licensing: licensing@tripoverlay.dev
+ * For questions: https://github.com/kevintongg/trip-overlay
+ */
+
 import React, { useEffect } from 'react';
 import { useTripProgressStore } from './store/tripStore';
 import { useRtirlSocket } from './hooks/useRtirlSocket';
@@ -42,7 +55,7 @@ const TripOverlay: React.FC = () => {
   // Calculate values
   const unitMultiplier = units === 'miles' ? 0.621371 : 1;
   const unitSuffix = units === 'miles' ? 'mi' : 'km';
-  const progressPercent = totalDistanceKm > 0 ? (totalTraveledKm / totalDistanceKm) * 100 : 0;
+  const progressPercent = totalDistanceKm > 0 ? Math.min((totalTraveledKm / totalDistanceKm) * 100, 100) : 0;
   const remainingDistance = Math.max(0, totalDistanceKm - totalTraveledKm);
 
   // Avatar image mapping
