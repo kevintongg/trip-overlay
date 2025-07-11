@@ -1,6 +1,12 @@
 # Trip Overlay for RTIRL
 
-A professional real-time GPS tracking overlay for live streaming cycling trips. Perfect for IRL (In Real Life) streamers using RTIRL to show their journey progress with beautiful visuals and accurate distance tracking, specifically designed for cycling adventures like Vienna to Zagreb.
+A professional real-time GPS tracking overlay for live streaming cycling trips. **Now built with React + TypeScript + Vite** for modern development while maintaining 100% backward compatibility. Perfect for IRL streamers using RTIRL to show their journey progress with beautiful visuals and accurate distance tracking.
+
+### **🎯 Modern Architecture**
+- **React 19** + **TypeScript** + **Vite** for type-safe, fast development
+- **Zustand** state management + **React Query** for server state
+- **Tailwind CSS** for responsive, modern styling
+- **100% Backward Compatible** - All console commands and URL parameters work identically
 
 ## 📄 **License & Commercial Use**
 
@@ -131,21 +137,53 @@ _The overlay in action - showing real-time distance tracking with animated cycli
 
 ## Quick Start
 
-### 1. Get Your RTIRL User ID
+### **🆕 React + TypeScript Version (Recommended)**
 
-1. Go to [rtirl.com](https://rtirl.com) and sign in
-2. Find your user ID in your profile URL (e.g., `rtirl.com/user/YOUR_ID_HERE`)
+1. **Clone and Install**:
+   ```bash
+   git clone https://github.com/kevintongg/trip-overlay.git
+   cd trip-overlay
+   pnpm install
+   ```
 
-### 2. Configure Your Trip
+2. **Configure Environment**:
+   Create `.env.local`:
+   ```env
+   VITE_RTIRL_USER_ID=your_rtirl_user_id
+   VITE_DEMO_MODE=false
+   ```
 
-Edit `js/script.js` and update these values:
+3. **Start Development**:
+   ```bash
+   pnpm dev
+   # Open http://localhost:5173/index-react.html
+   ```
 
-```javascript
-const RTIRL_USER_ID = 'your_rtirl_user_id'; // Your RTIRL profile ID
-const TOTAL_DISTANCE_KM = 205.0; // Total trip distance in km
+4. **Get Your RTIRL User ID**:
+   - Go to [rtirl.com](https://rtirl.com) and find your profile ID
+   - Update `VITE_RTIRL_USER_ID` in `.env.local`
+
+### **📂 Legacy Vanilla JS Version**
+
+For the original vanilla JavaScript version, see the backup files:
+- `index.html` and `dashboard.html` 
+- Configure in `js/script.js` if using legacy version
+
+### **⚙️ Trip Configuration**
+
+Edit `src/utils/config.ts` for trip settings:
+```typescript
+export const CONFIG = {
+  trip: {
+    totalDistanceKm: 371.0, // Vienna to Zagreb
+    useAutoStart: false,
+    manualStartLocation: { lat: 48.209, lon: 16.3531 },
+  },
+  // ... other settings
+};
 ```
 
-The new script is designed to be "smart" and requires minimal configuration. The start location is detected automatically, and the movement type (walking, cycling, vehicle) is determined by your speed.
+The system automatically detects start location and movement type (walking, cycling, vehicle) based on your speed.
 
 For more advanced configurations, such as setting a different total distance on the fly, you can use URL parameters. For example, to set the total distance to 500km, you would add `?totalDistance=500` to your URL.
 
@@ -400,7 +438,7 @@ For progress that truly persists across devices and browsers:
 
 1. **Get free account** at [jsonbin.io](https://jsonbin.io)
 2. **Create a bin** and get your Bin ID and API key
-3. **Uncomment cloud storage code** in `js/script.js`
+3. **Enable cloud storage** in your configuration
 4. **Configure your credentials**:
    ```javascript
    const CLOUD_STORAGE_URL = 'https://api.jsonbin.io/v3/b/YOUR_BIN_ID';
@@ -1132,7 +1170,7 @@ https://yourusername.github.io/trip-overlay/?controls=true
 ## 🎛️ Manual Controls for IRLToolkit/Cloud Environments
 
 5. **Verify your overlay loads** and shows distance tracking
-6. **Configure your trip** by editing values in `js/script.js` if needed
+6. **Configure your trip** by editing values in `src/utils/config.ts` if needed
 
 ## 📖 **Important: Choose the Right Guide for Your Setup**
 
