@@ -12,7 +12,7 @@ interface GPSState {
   lastTimestamp: number;
   lastModeChange: number;
   currentMode: 'STATIONARY' | 'WALKING' | 'CYCLING';
-  modeSwitchTimeout: number | null;
+  modeSwitchTimeout: ReturnType<typeof setTimeout> | null;
   lastThrottleLogTime: number;
   lastProgressLogTime: number;
   lastLoggedProgress: number | null;
