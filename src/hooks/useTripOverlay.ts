@@ -34,6 +34,7 @@ interface TripOverlayState {
   lastProposedMode: MovementMode;
   stationaryCenter: Coordinates | null;
   modeChangeCounter: number;
+  isInitialized: boolean;
 }
 
 // Initial state - matches original configuration
@@ -64,6 +65,7 @@ const createInitialState = (): TripOverlayState => ({
   lastProposedMode: 'STATIONARY',
   stationaryCenter: null,
   modeChangeCounter: 0,
+  isInitialized: false,
 });
 
 /**
@@ -113,7 +115,7 @@ export function useTripOverlay() {
 
   // Movement detection using original responsive logic for live streaming
   const determineMovementMode = useCallback(
-    (speed: number, currentMode: MovementMode): MovementMode => {
+    (speed: number, _currentMode: MovementMode): MovementMode => {
       // Use original config thresholds
       const STATIONARY_THRESHOLD = CONFIG.movement.modes.STATIONARY.maxSpeed;
       const WALKING_THRESHOLD = CONFIG.movement.modes.WALKING.maxSpeed;
@@ -403,8 +405,6 @@ export function useTripOverlay() {
     },
     [
       calculateSpeedFromGPS,
-      determineMovementMode,
-      debouncedSave,
       state.originalTotalDistance,
       state.useImperialUnits,
     ]
@@ -537,6 +537,36 @@ export function useTripOverlay() {
     [debouncedSave]
   );
 
+  const setTodayDistance = useCallback(
+    (km: number) => {
+      const distance = parseFloat(km.toString());
+      if (isFinite(distance) && distance >= 0) {
+        setState(prev => ({
+          ...prev,
+          todayDistanceTraveled: distance,
+        }));
+        debouncedSave();
+        logger(`CONSOLE: Set today's distance to ${distance}km`);
+      }
+    },
+    [debouncedSave]
+  );
+
+  const setTotalTraveled = useCallback(
+    (km: number) => {
+      const distance = parseFloat(km.toString());
+      if (isFinite(distance) && distance >= 0) {
+        setState(prev => ({
+          ...prev,
+          totalDistanceTraveled: distance,
+        }));
+        debouncedSave();
+        logger(`CONSOLE: Set total traveled distance to ${distance}km`);
+      }
+    },
+    [debouncedSave]
+  );
+
   const importTripData = useCallback(
     (jsonString: string) => {
       try {
@@ -597,14 +627,20 @@ export function useTripOverlay() {
           originalTotalDistance:
             data.totalDistance || CONFIG.trip.totalDistanceKm,
           currentMode: data.currentMode || 'STATIONARY',
+          isInitialized: true,
         }));
 
         if (shouldResetToday) {
           logger('Daily distance reset - new travel day detected');
         }
+      } else {
+        // No saved data - mark as initialized
+        setState(prev => ({ ...prev, isInitialized: true }));
       }
     } catch (error) {
       logger.error('Failed to load persisted data:', error);
+      // Even if loading fails, mark as initialized so URL parameters can run
+      setState(prev => ({ ...prev, isInitialized: true }));
     }
   }, []);
 
@@ -685,6 +721,7 @@ export function useTripOverlay() {
     useImperialUnits: state.useImperialUnits,
     unitSuffix,
     modeChangeCounter: state.modeChangeCounter, // Force re-render on mode changes
+    isInitialized: state.isInitialized,
 
     // Console commands
     addDistance,
@@ -695,6 +732,8 @@ export function useTripOverlay() {
     convertToMiles,
     convertToKilometers,
     setTotalDistance,
+    setTodayDistance,
+    setTotalTraveled,
     importTripData,
 
     // Status - human readable for streaming

@@ -44,3 +44,6 @@ Thumbs.db
 # Misc
 .npm
 .wrangler
+
+# Claude Code session data
+.claude

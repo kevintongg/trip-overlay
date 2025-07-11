@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 interface TripProgressState {
   // Core distances
@@ -11,6 +12,8 @@ interface TripProgressState {
   units: 'km' | 'miles';
   isMoving: boolean;
   currentSpeed: number;
+  currentMode: 'STATIONARY' | 'WALKING' | 'CYCLING';
+  modeChangeCounter: number;
 
   // Actions for distance manipulation
   addDistance: (km: number) => void;
@@ -26,13 +29,16 @@ interface TripProgressState {
   // Speed and movement
   updateSpeed: (speed: number) => void;
   setMoving: (moving: boolean) => void;
+  setCurrentMode: (mode: 'STATIONARY' | 'WALKING' | 'CYCLING') => void;
 
   // Data import/export
   exportTripData: () => string;
   importTripData: (data: any) => string;
 }
 
-export const useTripProgressStore = create<TripProgressState>((set, get) => ({
+export const useTripProgressStore = create<TripProgressState>()(
+  persist(
+    (set, get) => ({
   // Initial state
   totalDistanceKm: 371, // Distance from Vienna to Zagreb (matches CONFIG)
   currentDistanceKm: 0,
@@ -41,6 +47,8 @@ export const useTripProgressStore = create<TripProgressState>((set, get) => ({
   units: 'km',
   isMoving: false,
   currentSpeed: 0,
+  currentMode: 'STATIONARY',
+  modeChangeCounter: 0,
 
   // Distance manipulation actions
   addDistance: (km: number) =>
@@ -105,6 +113,8 @@ export const useTripProgressStore = create<TripProgressState>((set, get) => ({
 
   setMoving: (moving: boolean) => set({ isMoving: moving }),
 
+  setCurrentMode: (mode: 'STATIONARY' | 'WALKING' | 'CYCLING') => set({ currentMode: mode }),
+
   // Data import/export
   exportTripData: () => {
     const state = get();
@@ -151,7 +161,18 @@ export const useTripProgressStore = create<TripProgressState>((set, get) => ({
       return 'Import failed - invalid data';
     }
   },
-}));
+    }),
+    {
+      name: 'trip-overlay-storage', // localStorage key
+      partialize: (state) => ({
+        totalDistanceKm: state.totalDistanceKm,
+        totalTraveledKm: state.totalTraveledKm,
+        todayDistanceKm: state.todayDistanceKm,
+        units: state.units,
+      }),
+    }
+  )
+);
 
 // Keep the old export for backward compatibility with the new trip overlay
 export const useTripStore = useTripProgressStore;

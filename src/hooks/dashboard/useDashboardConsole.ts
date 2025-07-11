@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useMemo } from 'react';
 import { speedUpdateService } from '../../utils/speedUpdateService';
 import type { LocationData } from './useLocationData';
 import type { SpeedDisplay } from './useSpeedDisplay';
@@ -98,14 +98,14 @@ export function useDashboardConsole(
     speedUpdateService.clearSpeedData();
   }, []);
 
-  // Create API object
-  const consoleAPI: ConsoleAPI = {
+  // Create API object (memoized to prevent recreation)
+  const consoleAPI: ConsoleAPI = useMemo(() => ({
     getStatus,
     reloadWeather,
     testSpeed,
     testMode,
     clearSpeed,
-  };
+  }), [getStatus, reloadWeather, testSpeed, testMode, clearSpeed]);
 
   // Expose to window object (for backward compatibility)
   useEffect(() => {
@@ -131,7 +131,7 @@ export function useDashboardConsole(
         delete (window as any)[key];
       });
     };
-  }, []); // Empty dependency array to only run once on mount
+  }, [consoleAPI]); // Include consoleAPI in dependency array
 
   return consoleAPI;
 }

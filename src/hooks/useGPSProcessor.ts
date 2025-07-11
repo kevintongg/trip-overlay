@@ -12,7 +12,11 @@ interface GPSState {
   lastTimestamp: number;
   lastModeChange: number;
   currentMode: 'STATIONARY' | 'WALKING' | 'CYCLING';
-  modeSwitchTimeout: NodeJS.Timeout | null;
+  modeSwitchTimeout: number | null;
+  lastThrottleLogTime: number;
+  lastProgressLogTime: number;
+  lastLoggedProgress: number | null;
+  startLocation: Coordinates | null;
 }
 
 /**
@@ -20,7 +24,7 @@ interface GPSState {
  * Handles speed calculation, mode detection with stability, and store updates
  */
 export function useGPSProcessor() {
-  const { updateSpeed, setMoving, addDistance } = useTripProgressStore();
+  const { updateSpeed, setMoving, addDistance, setCurrentMode } = useTripProgressStore();
 
   const stateRef = useRef<GPSState>({
     lastPosition: null,
@@ -28,10 +32,14 @@ export function useGPSProcessor() {
     lastModeChange: 0,
     currentMode: 'STATIONARY',
     modeSwitchTimeout: null,
+    lastThrottleLogTime: 0,
+    lastProgressLogTime: 0,
+    lastLoggedProgress: null,
+    startLocation: CONFIG.trip.useAutoStart ? null : CONFIG.trip.manualStartLocation,
   });
 
   // Calculate speed from GPS positions using Haversine formula
-  const calculateSpeedFromGPS = useCallback(
+  const _calculateSpeedFromGPS = useCallback(
     (pos1: Coordinates, pos2: Coordinates, timeDeltaMs: number): number => {
       if (timeDeltaMs <= 0) {
         return 0;
@@ -67,107 +75,177 @@ export function useGPSProcessor() {
         (newMode === 'STATIONARY' && state.currentMode !== 'STATIONARY') ||
         (newMode === 'WALKING' && state.currentMode === 'CYCLING');
 
+      logger(`🔄 GPS: Mode change detected: ${state.currentMode} → ${newMode} (speed: ${speedKmh.toFixed(1)} km/h, slowing: ${isSlowingDown})`);
+
       if (isSlowingDown) {
         // Apply delay when slowing down to prevent flickering
         if (!state.modeSwitchTimeout) {
+          logger(`⏱️ GPS: Starting ${CONFIG.movement.modeSwitchDelay/1000}s delay for mode change to ${newMode}`);
           state.modeSwitchTimeout = setTimeout(() => {
             state.currentMode = newMode;
+            setCurrentMode(newMode); // Update Zustand store
             state.modeSwitchTimeout = null;
-            logger(`🔄 GPS: Mode changed to ${newMode} (speed: ${speedKmh.toFixed(1)} km/h)`);
+            logger(`✅ GPS: Mode changed to ${newMode} after delay (speed: ${speedKmh.toFixed(1)} km/h)`);
           }, CONFIG.movement.modeSwitchDelay);
+        } else {
+          logger(`⏱️ GPS: Mode change delay already active, waiting...`);
         }
       } else {
         // Immediate mode change when speeding up
+        if (state.modeSwitchTimeout) {
+          clearTimeout(state.modeSwitchTimeout);
+          state.modeSwitchTimeout = null;
+          logger(`⚡ GPS: Cancelled delayed mode change, switching immediately`);
+        }
+        state.currentMode = newMode;
+        setCurrentMode(newMode); // Update Zustand store
+        logger(`✅ GPS: Mode changed to ${newMode} immediately (speed: ${speedKmh.toFixed(1)} km/h)`);
+      }
+    } else {
+      // Same mode, clear any pending timeout
+      if (state.modeSwitchTimeout) {
         clearTimeout(state.modeSwitchTimeout);
         state.modeSwitchTimeout = null;
-        state.currentMode = newMode;
-        logger(`🔄 GPS: Mode changed to ${newMode} (speed: ${speedKmh.toFixed(1)} km/h)`);
+        logger(`🚫 GPS: Cancelled mode change delay (speed settled at ${speedKmh.toFixed(1)} km/h in ${newMode})`);
       }
     }
-  }, []);
+  }, [setCurrentMode]);
 
-  // Process location update (simplified to match original vanilla JS)
+  // Process location update - EXACT match to original vanilla JS logic
   const processLocationUpdate = useCallback(
     (data: LocationData) => {
       const now = Date.now();
       const state = stateRef.current;
 
-      // Validate coordinates first
+      // 1. GPS THROTTLING (CRITICAL - missing from React version)
+      const modeConfig = CONFIG.movement.modes[state.currentMode];
+      if (now - state.lastTimestamp < modeConfig.gpsThrottle) {
+        if (!state.lastThrottleLogTime || now - state.lastThrottleLogTime > 10000) {
+          logger.warn('⏱️ Trip: Updates throttled (GPS throttling active)');
+          state.lastThrottleLogTime = now;
+        }
+        return; // CRITICAL: Exit early if throttled
+      }
+
+      const previousUpdateTime = state.lastTimestamp;
+      state.lastTimestamp = now;
+
+      if (!data) {
+        return;
+      }
+
+      // 2. Validate coordinates
       const currentPosition: Coordinates = {
         lat: data.latitude,
         lon: data.longitude,
       };
 
       if (!validateCoordinates(currentPosition)) {
-        logger.warn('⚠️ GPS: Invalid coordinates, ignoring update:', data);
+        logger.warn('⚠️ Trip: Invalid GPS coordinates received:', currentPosition);
         return;
       }
 
-      // For initial position or very long gaps, just set position without speed calculation
-      if (!state.lastPosition || now - state.lastTimestamp > 30000) {
+      // 3. Handle auto-start location detection (CRITICAL - missing)
+      if (CONFIG.trip.useAutoStart && !state.startLocation) {
+        if (data.latitude === 0 && data.longitude === 0) {
+          logger.warn('⚠️ Trip: Rejecting suspicious 0,0 coordinates for auto-start');
+          return;
+        }
+        state.startLocation = currentPosition;
         state.lastPosition = currentPosition;
-        state.lastTimestamp = now;
+        logger(`✅ Trip: Auto-detected start location - ${state.startLocation.lat.toFixed(4)}, ${state.startLocation.lon.toFixed(4)}`);
+        return; // CRITICAL: Exit after setting start location
+      }
+
+      // 4. CRITICAL CHECK: Need BOTH startLocation AND lastPosition
+      if (!state.startLocation || !state.lastPosition) {
+        state.lastPosition = currentPosition;
         updateSpeed(0);
         setMoving(false);
         logger('📍 GPS: Initial position set');
         return;
       }
 
-      const timeDiff = Math.max(1, (now - state.lastTimestamp) / 1000);
-
-      // Calculate distance and speed (matching original vanilla JS)
+      // 5. Speed calculation (exact match to original)
       const newDistance = calculateDistance(state.lastPosition, currentPosition);
-      const reportedSpeed = data.speed || 0;
+      const timeDiff = Math.max(1, (now - previousUpdateTime) / 1000);
+      
+      const reportedSpeedMs = data.speed || 0; // meters per second from RTIRL
+      const reportedSpeed = reportedSpeedMs * 3.6; // Convert m/s to km/h
       const calculatedSpeed = (newDistance / timeDiff) * 3600; // km/h
       const finalSpeed = Math.max(reportedSpeed, calculatedSpeed);
 
-      // Handle speed data and mode detection
+      // 6. Handle speed data and mode detection
+      // Debug logging for movement detection issues
+      if (Math.abs(finalSpeed) > 0.1) {
+        logger(`🏃 GPS: Speed=${finalSpeed.toFixed(1)}km/h (reported=${reportedSpeed.toFixed(1)}, calculated=${calculatedSpeed.toFixed(1)}) | Current mode: ${state.currentMode}`);
+      }
       handleSpeedData(finalSpeed);
 
-      // Store for dashboard compatibility
+      // 7. Store for dashboard compatibility (CRITICAL - missing)
+      localStorage.setItem('tripOverlaySpeed', finalSpeed.toFixed(1));
+      localStorage.setItem('tripOverlayMode', state.currentMode);
       speedUpdateService.updateSpeed(finalSpeed, state.currentMode);
 
-      // Distance validation (matching original)
+      // 8. Distance validation using current mode
       const usedModeConfig = CONFIG.movement.modes[state.currentMode];
       const minMovementKm = usedModeConfig.minMovementM / 1000;
 
       if (newDistance < minMovementKm) {
-        // Update state for next calculation
         state.lastPosition = currentPosition;
-        state.lastTimestamp = now;
         return; // Ignore noise
       }
 
-      // GPS jump detection
+      // 9. GPS jump detection
       const maxSpeedMs = usedModeConfig.maxSpeed / 3.6;
       const maxReasonableDistance = (timeDiff * maxSpeedMs) / 1000;
 
       if (newDistance > maxReasonableDistance * 1.5) {
         logger.warn(
-          `⚠️ GPS: Jump detected in ${state.currentMode} mode: ${newDistance.toFixed(4)}km vs max ${maxReasonableDistance.toFixed(4)}km - ignoring`
+          `⚠️ Trip: GPS jump detected in ${state.currentMode} mode: ${newDistance.toFixed(2)}km vs max ${maxReasonableDistance.toFixed(2)}km - ignoring`
         );
-      } else {
-        // Add distance to trip
-        addDistance(newDistance);
-        logger(
-          `✅ GPS: Added ${newDistance.toFixed(4)} km to trip (speed: ${finalSpeed.toFixed(1)} km/h, mode: ${state.currentMode})`
-        );
+        state.lastPosition = currentPosition;
+        return;
       }
 
-      // Update store with processed values
+      // 10. Add distance and smart progress logging (CRITICAL - missing smart logging)
+      addDistance(newDistance);
+      
+      // Get current progress for smart logging
+      const { totalTraveledKm, totalDistanceKm, units } = useTripProgressStore.getState();
+      const progressPercent = (totalTraveledKm / totalDistanceKm) * 100;
+      
+      // Smart logging like original (not every update!)
+      const isDemoMode = new URLSearchParams(window.location.search).get('demo') === 'true';
+      const shouldLogProgress = !isDemoMode || 
+        !state.lastProgressLogTime || 
+        now - state.lastProgressLogTime > 15000 ||
+        Math.floor(progressPercent) !== Math.floor(state.lastLoggedProgress || 0);
+
+      if (shouldLogProgress) {
+        const kmToMiles = 0.621371;
+        const unitMultiplier = units === 'miles' ? kmToMiles : 1;
+        const unitSuffix = units === 'miles' ? 'mi' : 'km';
+        logger(
+          `📈 Trip: Progress update - +${(newDistance * unitMultiplier).toFixed(4)}${unitSuffix} | Total: ${(totalTraveledKm * unitMultiplier).toFixed(4)}${unitSuffix} | ${progressPercent.toFixed(2)}% | Mode: ${state.currentMode}`
+        );
+        state.lastProgressLogTime = now;
+        state.lastLoggedProgress = progressPercent;
+      }
+
+      // 11. Update store with processed values
       updateSpeed(finalSpeed);
       setMoving(finalSpeed > CONFIG.movement.modes.STATIONARY.maxSpeed);
 
-      // Update state for next calculation
+      // 12. Update state for next calculation
       state.lastPosition = currentPosition;
-      state.lastTimestamp = now;
     },
     [
-      calculateSpeedFromGPS,
       handleSpeedData,
       updateSpeed,
       setMoving,
       addDistance,
+      setCurrentMode,
     ]
   );
 
@@ -188,8 +266,9 @@ export function useGPSProcessor() {
         handleLocationUpdate as EventListener
       );
       // Clean up timeout on unmount
-      if (stateRef.current.modeSwitchTimeout) {
-        clearTimeout(stateRef.current.modeSwitchTimeout);
+      const timeout = stateRef.current.modeSwitchTimeout;
+      if (timeout) {
+        clearTimeout(timeout);
       }
     };
   }, [processLocationUpdate]);

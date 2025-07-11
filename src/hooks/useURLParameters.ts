@@ -204,6 +204,7 @@ export function useURLParameters() {
             break;
 
           case 'setTodayDistance':
+          case 'setTodayTraveled': // Support both parameter names
             const todayDist = parseFloat(value);
             if (!isNaN(todayDist) && todayDist >= 0 && todayDist <= 1000) {
               logger(`URL parameter: Set today's distance to ${todayDist}km`);
@@ -261,5 +262,5 @@ export function useURLParameters() {
     if (processedParams > 0) {
       logger(`🔗 Processed ${processedParams} URL parameter(s)`);
     }
-  }, []);
+  }, []); // Run once on mount
 }

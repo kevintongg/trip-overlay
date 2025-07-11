@@ -1,9 +1,10 @@
 import React, { useEffect } from 'react';
-import { useTripOverlay } from './hooks/useTripOverlay';
+import { useTripProgressStore } from './store/tripStore';
 import { useRtirlSocket } from './hooks/useRtirlSocket';
+import { useGPSProcessor } from './hooks/useGPSProcessor';
+import { useConsoleCommands } from './hooks/useConsoleCommands';
 import { useURLParameters } from './hooks/useURLParameters';
 import { useAppInitialization } from './hooks/useAppInitialization';
-import { setupGlobalConsoleAPI } from './utils/globalConsoleAPI';
 
 /**
  * Trip Overlay Component - Clean minimalist design for streaming
@@ -11,31 +12,40 @@ import { setupGlobalConsoleAPI } from './utils/globalConsoleAPI';
  * Optimized for 1080p streaming with clean typography and minimal footprint
  */
 const TripOverlay: React.FC = () => {
-  const tripOverlayControls = useTripOverlay();
   const {
-    traveledDistance,
-    todayDistance,
-    remainingDistance,
-    progressPercent,
-    currentMode,
-    unitSuffix,
-    resetTripProgress,
+    totalDistanceKm,
+    totalTraveledKm,
+    todayDistanceKm,
+    units,
+    currentMode = 'STATIONARY',
+    resetProgress,
     resetTodayDistance,
-    getStatus,
-    modeChangeCounter,
-  } = tripOverlayControls;
+    exportTripData,
+  } = useTripProgressStore();
+  
+  const consoleCommands = useConsoleCommands();
 
-  useRtirlSocket(); // Still needed for GPS data updates
-  useURLParameters();
+  useRtirlSocket(); // GPS data updates
+  useGPSProcessor(); // Movement mode detection
+  useURLParameters(); // Handle URL parameters
   useAppInitialization();
 
   // Set up console API
   useEffect(() => {
-    setupGlobalConsoleAPI(tripOverlayControls);
-  }, [tripOverlayControls]);
+    (window as any).TripOverlay = {
+      controls: consoleCommands,
+      getStatus: consoleCommands.getStatus,
+    };
+    (window as any).showConsoleCommands = consoleCommands.showConsoleCommands;
+  }, [consoleCommands]);
 
-  // Avatar image mapping - using public directory for production builds
-  // Note: modeChangeCounter ensures React re-renders when mode changes
+  // Calculate values
+  const unitMultiplier = units === 'miles' ? 0.621371 : 1;
+  const unitSuffix = units === 'miles' ? 'mi' : 'km';
+  const progressPercent = totalDistanceKm > 0 ? (totalTraveledKm / totalDistanceKm) * 100 : 0;
+  const remainingDistance = Math.max(0, totalDistanceKm - totalTraveledKm);
+
+  // Avatar image mapping
   const getAvatarImage = () => {
     switch (currentMode) {
       case 'WALKING':
@@ -44,70 +54,6 @@ const TripOverlay: React.FC = () => {
         return '/cycling.gif';
       default:
         return '/stationary.png';
-    }
-  };
-
-  // Control panel functions
-  const handleResetTripProgress = () => {
-    console.log(
-      `[${new Date().toISOString()}] TripOverlay: Reset trip progress triggered`
-    );
-    resetTripProgress();
-  };
-
-  const resetAutoStartLocation = () => {
-    console.log(
-      `[${new Date().toISOString()}] TripOverlay: Reset auto start location triggered`
-    );
-    // Clear localStorage GPS data to force re-detection
-    localStorage.removeItem('tripOverlayStartLocation');
-    localStorage.removeItem('tripOverlayLastPosition');
-    console.log(
-      `[${new Date().toISOString()}] TripOverlay: Auto start location cleared - will re-detect on next GPS update`
-    );
-  };
-
-  const handleResetTodayDistance = () => {
-    console.log(
-      `[${new Date().toISOString()}] TripOverlay: Reset today distance triggered`
-    );
-    resetTodayDistance();
-  };
-
-  const handleExportTripData = () => {
-    console.log(
-      `[${new Date().toISOString()}] TripOverlay: Export trip data triggered`
-    );
-    try {
-      const status = getStatus();
-      const data = {
-        totalDistanceTraveled: status.totalDistanceTraveled,
-        todayDistanceTraveled: status.todayDistanceTraveled,
-        useImperialUnits: status.useImperialUnits,
-        totalDistance: status.originalTotalDistance,
-        exportDate: new Date().toISOString(),
-      };
-
-      const blob = new Blob([JSON.stringify(data, null, 2)], {
-        type: 'application/json',
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `trip-overlay-backup-${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      console.log(
-        `[${new Date().toISOString()}] TripOverlay: Trip data downloaded`
-      );
-    } catch (error) {
-      console.error(
-        `[${new Date().toISOString()}] TripOverlay: Export failed:`,
-        error
-      );
     }
   };
 
@@ -152,7 +98,7 @@ const TripOverlay: React.FC = () => {
             {/* Traveled Distance - Left aligned */}
             <div className="flex-1 flex flex-col items-start text-left">
               <span className="text-[19px] font-bold text-white [text-shadow:1px_1px_3px_rgba(0,0,0,0.8)]">
-                {traveledDistance.toFixed(2)} {unitSuffix}
+                {(totalTraveledKm * unitMultiplier).toFixed(2)} {unitSuffix}
               </span>
               <div className="text-[10px] font-normal text-[#cccccc] uppercase text-left">
                 traveled
@@ -162,7 +108,7 @@ const TripOverlay: React.FC = () => {
             {/* Today's Distance - Center aligned */}
             <div className="flex-1 flex flex-col items-center text-center">
               <span className="text-[19px] font-bold text-white [text-shadow:1px_1px_3px_rgba(0,0,0,0.8)]">
-                {todayDistance.toFixed(2)} {unitSuffix}
+                {(todayDistanceKm * unitMultiplier).toFixed(2)} {unitSuffix}
               </span>
               <div className="text-[10px] font-normal text-[#cccccc] uppercase text-center">
                 today
@@ -172,7 +118,7 @@ const TripOverlay: React.FC = () => {
             {/* Remaining Distance - Right aligned */}
             <div className="flex-1 flex flex-col items-end text-right">
               <span className="text-[19px] font-bold text-white [text-shadow:1px_1px_3px_rgba(0,0,0,0.8)]">
-                {remainingDistance.toFixed(2)} {unitSuffix}
+                {(remainingDistance * unitMultiplier).toFixed(2)} {unitSuffix}
               </span>
               <div className="text-[10px] font-normal text-[#cccccc] uppercase text-right">
                 remaining
@@ -182,68 +128,6 @@ const TripOverlay: React.FC = () => {
         </div>
       </div>
 
-      {/* Enhanced Control Panel - Conditional overlay like original */}
-      {showControlPanel && (
-        <div className="mt-5 p-[15px] bg-black/60 border border-white/20 rounded-[10px] backdrop-blur-[5px] min-w-[300px]">
-          {/* Control Header */}
-          <div className="text-center text-sm font-bold text-white mb-3 uppercase tracking-wider">
-            Stream Controls
-          </div>
-
-          {/* Primary Control Row */}
-          <div className="flex gap-3 mb-2.5 justify-center">
-            <button
-              onClick={handleResetTodayDistance}
-              className="bg-white/15 border border-white/30 text-white px-4 py-2.5 rounded-lg cursor-pointer
-                       text-[13px] font-medium transition-all duration-200 min-w-[110px] text-center
-                       hover:bg-white/25 hover:border-white/50 hover:-translate-y-0.5
-                       active:bg-white/35 active:translate-y-0"
-              title="Reset today's distance - most common for daily tours"
-            >
-              🔄 Reset Today
-            </button>
-            <button
-              onClick={handleExportTripData}
-              className="bg-white/15 border border-white/30 text-white px-4 py-2.5 rounded-lg cursor-pointer
-                       text-[13px] font-medium transition-all duration-200 min-w-[110px] text-center
-                       hover:bg-white/25 hover:border-white/50 hover:-translate-y-0.5
-                       active:bg-white/35 active:translate-y-0"
-              title="Download backup file"
-            >
-              💾 Backup
-            </button>
-          </div>
-
-          {/* Secondary Control Row */}
-          <div className="flex gap-3 mb-4 justify-center">
-            <button
-              onClick={resetAutoStartLocation}
-              className="bg-white/15 border border-white/30 text-white px-4 py-2.5 rounded-lg cursor-pointer
-                       text-[13px] font-medium transition-all duration-200 min-w-[110px] text-center
-                       hover:bg-white/25 hover:border-white/50 hover:-translate-y-0.5
-                       active:bg-white/35 active:translate-y-0"
-              title="Re-detect start location"
-            >
-              📍 Fix Start
-            </button>
-            <button
-              onClick={handleResetTripProgress}
-              className="bg-red-600/30 border border-red-600/50 text-white px-4 py-2.5 rounded-lg cursor-pointer
-                       text-[13px] font-medium transition-all duration-200 min-w-[110px] text-center
-                       hover:bg-red-600/50 hover:border-red-600/70 hover:-translate-y-0.5
-                       active:bg-red-600/60 active:translate-y-0"
-              title="⚠️ Reset entire trip - use carefully!"
-            >
-              🗑️ Reset All
-            </button>
-          </div>
-
-          {/* Feedback area */}
-          <div className="text-center text-xs p-2 rounded-md mt-1 min-h-[20px] flex items-center justify-center">
-            {/* Feedback messages would go here */}
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -1,6 +1,5 @@
 import { logger } from './logger';
 import {
-  optimizedSetItem,
   optimizedGetItem,
   localStorageService,
 } from './localStorageService';
