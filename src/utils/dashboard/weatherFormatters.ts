@@ -116,7 +116,7 @@ export function getWeatherHumidity(weatherData: any): string | null {
 
 // Wind formatting with direction (extracted from original)
 export function getWeatherWind(weatherData: any): string | null {
-  if (!weatherData?.current?.wind_speed) {
+  if (weatherData?.current?.wind_speed === undefined) {
     return null;
   }
 

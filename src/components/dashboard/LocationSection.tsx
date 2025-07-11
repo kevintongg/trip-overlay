@@ -21,7 +21,7 @@ export function LocationSection({ locationData, show }: LocationSectionProps) {
 
   return (
     <div className="mb-3 w-full text-center">
-      <div className="text-[1.3em] font-bold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] break-words flex items-center justify-center gap-2">
+      <div className="text-[1.15em] font-bold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] break-words flex items-center justify-center gap-2">
         {displayText}
         {locationData.isLoadingLocation && (
           <div className="inline-block">

@@ -2,6 +2,28 @@
 
 A professional real-time GPS tracking overlay for live streaming cycling trips. Perfect for IRL (In Real Life) streamers using RTIRL to show their journey progress with beautiful visuals and accurate distance tracking, specifically designed for cycling adventures like Vienna to Zagreb.
 
+## 📄 **License & Commercial Use**
+
+**TripOverlay is dual-licensed:**
+
+### 🆓 **Non-Commercial License (Free)**
+Perfect for hobby streamers and personal projects:
+- ✅ Personal streaming (no monetization)
+- ✅ Educational use  
+- ✅ Open source projects
+- ✅ Learning and experimentation
+
+### 💼 **Commercial License (Paid)**
+Required for any revenue-generating use:
+- 💰 Monetized streaming (donations, subs, sponsorships, ads)
+- 💰 Professional streaming services
+- 💰 Commercial streaming platforms
+- 💰 Revenue-generating applications
+
+**Need a commercial license?** Contact: **licensing@tripoverlay.dev**
+
+---
+
 ## **🔍 Quick Navigation**
 
 **🖥️ Local OBS Users:** This README has everything you need  

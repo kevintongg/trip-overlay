@@ -1,3 +1,15 @@
+/*
+ * TripOverlay Dashboard - Weather and Location Display
+ * 
+ * Copyright (c) 2025 Kevin Tong and Trip Overlay Contributors
+ * 
+ * Dual Licensed:
+ * - Non-Commercial License: Free for personal/educational use  
+ * - Commercial License: Required for monetized streaming
+ * 
+ * For commercial licensing: licensing@tripoverlay.dev
+ */
+
 import React, { useEffect } from 'react';
 import { Card, CardContent } from './components/ui/card';
 import { useWeatherData } from './hooks/useWeatherData';
@@ -64,7 +76,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="w-screen h-screen flex flex-col items-end justify-start gap-[18px] pr-[24px] pt-[24px] pointer-events-none">
-      <Card className="dashboard-card flex flex-col items-center bg-gradient-to-br from-zinc-900/85 to-zinc-800/85 border-white/30 rounded-2xl p-4 shadow-[0_4px_24px_rgba(0,0,0,0.4)] min-w-[280px] max-w-[480px] backdrop-blur-md">
+      <Card className="dashboard-card flex flex-col items-center bg-gradient-to-br from-zinc-900/85 to-zinc-800/85 border-white/30 rounded-2xl p-4 shadow-[0_4px_24px_rgba(0,0,0,0.4)] min-w-[252px] max-w-[420px] backdrop-blur-md">
         <CardContent className="p-0 w-full">
           {/* Location Section */}
           <LocationSection
