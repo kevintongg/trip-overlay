@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent } from './components/ui/card';
 import { useWeatherData } from './hooks/useWeatherData';
 import { useDashboardConfig } from './hooks/dashboard/useDashboardConfig';
@@ -51,6 +51,16 @@ const Dashboard: React.FC = () => {
 
   // Console commands (maintains exact API)
   useDashboardConsole(locationData, speedDisplay, timeDisplay, weatherData);
+
+  // Handle location hidden scenario - clear speed display like vanilla JS
+  useEffect(() => {
+    if (locationData.locationText === 'Location hidden') {
+      const isDemoMode = new URLSearchParams(window.location.search).get('demo') === 'true';
+      if (!isDemoMode) {
+        speedDisplay.clearSpeedDisplay();
+      }
+    }
+  }, [locationData.locationText, speedDisplay]);
 
   return (
     <div className="w-screen h-screen flex flex-col items-end justify-start gap-[18px] pr-[24px] pt-[24px] pointer-events-none">

@@ -34,9 +34,18 @@ export function useLocationData(): LocationData {
   /**
    * Get display text based on current state
    * Provides progressive user feedback during loading
+   * Handles "location hidden" scenario like vanilla JS
    */
   const getDisplayText = useCallback(
     (position: Coordinates | null, loading: boolean, known: string): string => {
+      // Check for location hidden scenario (RTIRL connected but no position data)
+      if (!position && rtirlConnected) {
+        const isDemoMode = new URLSearchParams(window.location.search).get('demo') === 'true';
+        if (!isDemoMode) {
+          return 'Location hidden';
+        }
+      }
+      
       if (!position) return 'Waiting for GPS...';
 
       // If we have GPS but no real location text yet, show loading message
@@ -52,7 +61,7 @@ export function useLocationData(): LocationData {
       // Normal case: show the known location
       return known;
     },
-    []
+    [rtirlConnected]
   );
 
   /**

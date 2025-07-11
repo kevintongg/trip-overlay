@@ -6,6 +6,7 @@ export interface SpeedDisplay {
   speedMph: string;
   currentSpeed: number;
   currentMode: string;
+  clearSpeedDisplay: () => void;
 }
 
 /**
@@ -33,6 +34,22 @@ export function useSpeedDisplay(): SpeedDisplay {
     },
     []
   );
+
+  // Clear speed display storage (like vanilla JS clearSpeedDisplayStorage)
+  const clearSpeedDisplay = useCallback(() => {
+    localStorage.removeItem('tripOverlaySpeed');
+    localStorage.removeItem('tripOverlayMode');
+    setCurrentSpeed(0);
+    setCurrentMode('STATIONARY');
+    setSpeedKmh('--');
+    setSpeedMph('--');
+    
+    throttledLog(
+      'speed',
+      3000,
+      '🚴 Dashboard: Speed display cleared (location hidden or offline)'
+    );
+  }, [throttledLog]);
 
   // Read speed from localStorage (extracted from original)
   const updateSpeedFromStorage = useCallback(() => {
@@ -105,5 +122,6 @@ export function useSpeedDisplay(): SpeedDisplay {
     speedMph,
     currentSpeed,
     currentMode,
+    clearSpeedDisplay, // Expose for location hidden scenarios
   };
 }

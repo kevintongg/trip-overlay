@@ -62,9 +62,7 @@ export function useGPSProcessor() {
     const MOVEMENT_MODES = CONFIG.movement.modes;
     
     let newMode: 'STATIONARY' | 'WALKING' | 'CYCLING' = 'STATIONARY';
-    if (speedKmh > MOVEMENT_MODES.CYCLING.maxSpeed) {
-      newMode = 'CYCLING';
-    } else if (speedKmh > MOVEMENT_MODES.WALKING.maxSpeed) {
+    if (speedKmh > MOVEMENT_MODES.WALKING.maxSpeed) {
       newMode = 'CYCLING';
     } else if (speedKmh > MOVEMENT_MODES.STATIONARY.maxSpeed) {
       newMode = 'WALKING';

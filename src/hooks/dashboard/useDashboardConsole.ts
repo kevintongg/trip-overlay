@@ -131,7 +131,7 @@ export function useDashboardConsole(
         delete (window as any)[key];
       });
     };
-  }, [consoleAPI]); // Include consoleAPI in dependency array
+  }, []); // Remove dependency to prevent spam - only run once on mount
 
   return consoleAPI;
 }
