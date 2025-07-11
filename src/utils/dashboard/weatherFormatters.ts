@@ -5,7 +5,7 @@
 
 import React from 'react';
 
-// Weather icon component (extracted from original Dashboard - uses OWM icons with emoji fallback)
+// Weather icon component with React-friendly error handling
 export function getWeatherIcon(weatherData: any): React.ReactElement | string {
   if (!weatherData?.current?.weather?.[0]?.icon) {
     return '🌍'; // Fallback icon when no data
@@ -14,49 +14,68 @@ export function getWeatherIcon(weatherData: any): React.ReactElement | string {
   const iconCode = weatherData.current.weather[0].icon;
   const { description } = weatherData.current.weather[0];
 
-  const iconUrl = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
+  // Emoji mapping for fallback (when image fails to load)
+  const emojiMap: { [key: string]: string } = {
+    '01d': '☀️', // clear sky day
+    '01n': '🌙', // clear sky night
+    '02d': '⛅', // few clouds day
+    '02n': '☁️', // few clouds night
+    '03d': '☁️', // scattered clouds day
+    '03n': '☁️', // scattered clouds night
+    '04d': '☁️', // broken clouds day
+    '04n': '☁️', // broken clouds night
+    '09d': '🌧️', // shower rain day
+    '09n': '🌧️', // shower rain night
+    '10d': '🌦️', // rain day
+    '10n': '🌧️', // rain night
+    '11d': '⛈️', // thunderstorm day
+    '11n': '⛈️', // thunderstorm night
+    '13d': '❄️', // snow day
+    '13n': '❄️', // snow night
+    '50d': '🌫️', // mist day
+    '50n': '🌫️', // mist night
+  };
 
-  // Return React img element with emoji fallback (matches original Dashboard exactly)
-  return React.createElement('img', {
-    key: iconCode, // Stable key to prevent flicker
-    src: iconUrl,
+  const emojiIcon = emojiMap[iconCode] || '🌤️';
+
+  // Create a component that handles image loading with state
+  return React.createElement(WeatherIconWithFallback, {
+    key: iconCode,
+    iconUrl: `https://openweathermap.org/img/wn/${iconCode}@2x.png`,
     alt: description,
+    fallbackEmoji: emojiIcon,
+  });
+}
+
+// React component that properly handles image loading state
+function WeatherIconWithFallback({ 
+  iconUrl, 
+  alt, 
+  fallbackEmoji 
+}: { 
+  iconUrl: string; 
+  alt: string; 
+  fallbackEmoji: string; 
+}) {
+  const [imageError, setImageError] = React.useState(false);
+
+  // Reset error state when iconUrl changes
+  React.useEffect(() => {
+    setImageError(false);
+  }, [iconUrl]);
+
+  if (imageError) {
+    return React.createElement('span', {
+      className: 'text-[1.8em] flex items-center leading-none mr-1 font-emoji drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)]'
+    }, fallbackEmoji);
+  }
+
+  return React.createElement('img', {
+    src: iconUrl,
+    alt: alt,
     className: 'w-[2.2em] h-[2.2em] object-contain flex-shrink-0',
-    onError: (e: React.SyntheticEvent<HTMLImageElement>) => {
-      // Fallback to emoji if image fails to load (Linux compatibility)
-      const target = e.target as HTMLImageElement;
-      target.style.display = 'none';
-
-      // Show emoji fallback - get parent and replace with emoji
-      const parent = target.parentElement;
-      if (parent) {
-        // Use emoji mapping for fallback
-        const emojiMap: { [key: string]: string } = {
-          '01d': '☀️', // clear sky day
-          '01n': '🌙', // clear sky night
-          '02d': '⛅', // few clouds day
-          '02n': '☁️', // few clouds night
-          '03d': '☁️', // scattered clouds day
-          '03n': '☁️', // scattered clouds night
-          '04d': '☁️', // broken clouds day
-          '04n': '☁️', // broken clouds night
-          '09d': '🌧️', // shower rain day
-          '09n': '🌧️', // shower rain night
-          '10d': '🌦️', // rain day
-          '10n': '🌧️', // rain night
-          '11d': '⛈️', // thunderstorm day
-          '11n': '⛈️', // thunderstorm night
-          '13d': '❄️', // snow day
-          '13n': '❄️', // snow night
-          '50d': '🌫️', // mist day
-          '50n': '🌫️', // mist night
-        };
-
-        parent.innerHTML = emojiMap[iconCode] || '🌤️';
-        parent.className =
-          'text-[2.2em] flex items-center leading-none mr-1 font-emoji';
-      }
-    },
+    onError: () => setImageError(true),
+    onLoad: () => setImageError(false),
   });
 }
 
