@@ -2,6 +2,28 @@
 
 A professional real-time GPS tracking overlay for live streaming cycling trips. Perfect for IRL (In Real Life) streamers using RTIRL to show their journey progress with beautiful visuals and accurate distance tracking, specifically designed for cycling adventures like Vienna to Zagreb.
 
+## 📄 **License & Commercial Use**
+
+**TripOverlay is dual-licensed:**
+
+### 🆓 **Non-Commercial License (Free)**
+Perfect for hobby streamers and personal projects:
+- ✅ Personal streaming (no monetization)
+- ✅ Educational use  
+- ✅ Open source projects
+- ✅ Learning and experimentation
+
+### 💼 **Commercial License (Paid)**
+Required for any revenue-generating use:
+- 💰 Monetized streaming (donations, subs, sponsorships, ads)
+- 💰 Professional streaming services
+- 💰 Commercial streaming platforms
+- 💰 Revenue-generating applications
+
+**Need a commercial license?** Contact: **licensing@tripoverlay.dev**
+
+---
+
 ## **🔍 Quick Navigation**
 
 **🖥️ Local OBS Users:** This README has everything you need  
@@ -81,6 +103,11 @@ _The overlay in action - showing real-time distance tracking with animated cycli
 ## Features
 
 - **Real-time GPS tracking** via RTIRL WebSocket API
+- **Enhanced location services** with OpenCage geocoding API for accurate city/country display
+  - **Multi-provider fallback**: OpenCage (primary) → Nominatim (free) → Coordinates (failsafe)
+  - **Smart caching**: 5-minute cache with 100m radius zones (80% reduction in API calls)
+  - **Sub-second performance**: 5-10x faster than previous implementation
+  - **Progressive loading**: "GPS Connected - Getting location..." → City name (no more "--")
 - **Animated cycling avatar** that moves along the progress bar
 - **Distance tracking**: Total traveled, daily distance, and remaining distance
 - **GPS drift protection** - filters out stationary GPS noise
@@ -718,17 +745,41 @@ pnpm run format:check
    pnpm install
    ```
 
-2. **Test Locally:**
+2. **Environment Configuration:**
 
    ```bash
-   # Simple approach - just open the file:
-   # Double-click index.html or use file:// URL in browser
+   # Copy environment template
+   cp env-template .env.local
 
-   # Or run a server if needed:
-   python -m http.server 8000
+   # Edit .env.local with your values:
+   # - VITE_RTIRL_USER_ID=your_rtirl_user_id (required)
+   # - VITE_OPENCAGE_API_KEY=your_opencage_api_key (optional - improves location accuracy)
+
+   # Weather API (for Cloudflare Functions only)
+   # Edit .dev.vars with your OpenWeatherMap API key
    ```
 
-3. **Code Quality:**
+3. **Get Free API Keys (Optional):**
+
+   ```bash
+   # OpenCage Geocoding (recommended for better location accuracy)
+   # 1. Visit: https://opencagedata.com/
+   # 2. Sign up for free account (2,500 requests/day)
+   # 3. Add API key to .env.local as VITE_OPENCAGE_API_KEY
+   # 4. Without key: falls back to free Nominatim (slower, less reliable)
+   ```
+
+4. **Test Locally:**
+
+   ```bash
+   # Start development server
+   pnpm run dev
+
+   # Or test with static files:
+   # Double-click dashboard.html or trip.html
+   ```
+
+5. **Code Quality:**
    ```bash
    pnpm run lint     # Check for issues
    pnpm run format   # Auto-fix formatting

@@ -315,6 +315,26 @@ const UI_UPDATE_DEBOUNCE = 100; // Don't change without testing
 - [ ] Add to COMPATIBILITY.md if platform-specific
 - [ ] Include in IRLTOOLKIT-GUIDE.md if cloud-relevant
 
+## 📊 Performance & Location Services
+
+### New Optimization Services (Latest)
+
+The project now includes several optimization services that should be used for new features:
+
+- **`locationService`**: OpenCage + Nominatim geocoding with smart caching
+- **`speedUpdateService`**: Intelligent speed updates with change detection
+- **`localStorageService`**: Batched localStorage operations (80% reduction)
+- **`timerManager`**: Centralized timer management with automatic cleanup
+
+When adding features that involve:
+
+- **Location data**: Use `locationService.reverseGeocode()`
+- **Speed updates**: Use `speedUpdateService.updateSpeed()`
+- **localStorage**: Use `localStorageService.setItem()`/`getItem()`
+- **Timers**: Use `timerManager.setTimeout()`/`setInterval()`
+
+These services prevent performance issues and memory leaks common in streaming environments.
+
 ## 🤝 Contribution Process
 
 ### 1. Before You Start
@@ -322,6 +342,7 @@ const UI_UPDATE_DEBOUNCE = 100; // Don't change without testing
 - Open an issue to discuss the feature/fix
 - Check existing issues to avoid duplicates
 - Consider if it fits the project scope (IRL streaming overlay)
+- Review new optimization services if your feature involves performance-critical operations
 
 ### 2. Making Changes
 

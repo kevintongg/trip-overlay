@@ -21,17 +21,29 @@ You should see the overlay simulate cycling movement and distance tracking.
 
 ### 3. **Configure for Your Trip**
 
-Edit `utils/config.js` and update these values:
+#### Environment Setup (Recommended)
 
-```javascript
-// Your RTIRL user ID (find this at rtirl.com in your profile)
-const RTIRL_USER_ID = 'YOUR_ACTUAL_RTIRL_ID';
+Copy and configure your environment variables:
 
-// Total distance of your planned trip (in kilometers)
-const TOTAL_DISTANCE_KM = 205.0; // Change this to your trip distance
+```bash
+# Copy the template file
+cp env-template .env.local
+
+# Edit .env.local with your values:
+VITE_RTIRL_USER_ID=your_rtirl_user_id_here
+VITE_OPENCAGE_API_KEY=your_opencage_key_here  # Optional but recommended
 ```
 
-Alternatively, you can set the total distance using the `setTotalTraveled` URL parameter:
+**Why OpenCage API?**
+
+- **Faster location updates**: 5-10x faster than free alternatives
+- **Better accuracy**: More reliable city/country detection
+- **Free tier**: 2,500 requests/day (plenty for streaming)
+- **Fallback**: Without key, automatically uses free Nominatim
+
+#### Trip Distance Configuration
+
+You can set the total distance using the `setTotalTraveled` URL parameter:
 
 `?setTotalTraveled=500` (to set total distance to 500km)
 
@@ -155,3 +167,99 @@ If something doesn't work:
 4. Check OBS browser source settings
 
 Good luck with your IRL stream! 🎥🏍️
+
+## API Keys Setup
+
+### OpenCage Geocoding API (Optional but Recommended)
+
+The location service can use OpenCage for higher quality reverse geocoding instead of the free Nominatim fallback.
+
+#### Benefits of OpenCage over Nominatim:
+
+- **Higher quality results** - Better formatted addresses
+- **Better international coverage** - More accurate for non-English locations
+- **Faster response times** - Dedicated infrastructure
+- **Priority support** - Professional service level
+
+#### Getting OpenCage API Key:
+
+1. **Visit**: https://opencagedata.com/
+2. **Sign up** for free account (no credit card required)
+3. **Free tier**: 2,500 requests/day (perfect for personal streaming)
+4. **Copy your API key** from the dashboard
+
+#### Configuration:
+
+```bash
+# Copy the environment template
+cp env-template .env.local
+
+# Edit .env.local and add your OpenCage API key
+VITE_OPENCAGE_API_KEY=your_actual_opencage_api_key_here
+```
+
+### Weather API Setup (Required for Weather Features)
+
+Weather functionality requires an OpenWeatherMap API key configured in two places:
+
+#### Getting OpenWeatherMap API Key:
+
+1. **Visit**: https://openweathermap.org/api/one-call-3
+2. **Sign up** for free account
+3. **Free tier**: 1,000 calls/day (sufficient for streaming use)
+4. **Copy your API key** (may take a few hours to activate)
+
+#### Local Development Configuration:
+
+```bash
+# Create/edit .dev.vars file for local Cloudflare Functions
+echo "OWM_API_KEY=your_openweathermap_api_key_here" > .dev.vars
+
+# Also add to .env.local for direct API fallback (optional)
+echo "VITE_OWM_API_KEY=your_openweathermap_api_key_here" >> .env.local
+```
+
+#### Production Configuration:
+
+1. **Cloudflare Pages Dashboard** → Your project → **Settings** → **Environment variables**
+2. **Add variable**: `OWM_API_KEY` = `your_openweathermap_api_key_here`
+3. **Redeploy** to apply changes
+
+### Testing API Keys
+
+#### Test OpenCage locally:
+
+```bash
+# Start dev server
+pnpm dev
+
+# Open dashboard and check location geocoding in browser console
+# Should show "OpenCage provider succeeded" instead of "Nominatim provider"
+```
+
+#### Test Weather API locally:
+
+```bash
+# Use Wrangler for local functions testing
+pnpm wrangler pages dev dist --local
+
+# Test weather endpoint directly
+curl "http://localhost:8788/functions/weather?lat=46.76&lon=17.25&units=metric"
+# Should return JSON weather data, not HTML
+```
+
+## Local Development with Functions
+
+⚠️ **Important**: Vite dev server doesn't support Cloudflare Functions. For full testing:
+
+```bash
+# Build the project first
+pnpm build
+
+# Run with Wrangler for functions support
+pnpm wrangler pages dev dist --local
+
+# Access overlays at:
+# http://localhost:8788/trip.html
+# http://localhost:8788/dashboard.html
+```

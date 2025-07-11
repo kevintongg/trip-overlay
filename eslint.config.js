@@ -1,80 +1,78 @@
 import js from '@eslint/js';
-import prettierConfig from 'eslint-config-prettier';
-import prettierPlugin from 'eslint-plugin-prettier';
+import globals from 'globals';
+import reactHooks from 'eslint-plugin-react-hooks';
+import reactRefresh from 'eslint-plugin-react-refresh';
+import tseslint from '@typescript-eslint/eslint-plugin';
+import tsParser from '@typescript-eslint/parser';
 
 export default [
-  js.configs.recommended,
-  prettierConfig,
   {
+    ignores: [
+      'dist',
+      'build',
+      'node_modules',
+      '**/*.d.ts',
+      '.wrangler/**',
+      'functions/**', // Cloudflare Workers
+      '.history/**', // VS Code history files
+      'js/**', // Legacy vanilla JS files
+      'utils/**', // Legacy utility files
+      'dev-functions.js', // Development script
+    ],
+  },
+  {
+    files: ['**/*.{js,mjs,cjs,ts,tsx}'],
     languageOptions: {
-      ecmaVersion: 2022,
-      sourceType: 'module',
+      ecmaVersion: 2020,
       globals: {
-        // Browser globals
-        window: 'readonly',
-        document: 'readonly',
-        console: 'readonly',
-        localStorage: 'readonly',
-        navigator: 'readonly',
-        fetch: 'readonly',
-        Response: 'readonly',
-        setTimeout: 'readonly',
-        clearTimeout: 'readonly',
-        setInterval: 'readonly',
-        clearInterval: 'readonly',
-        requestAnimationFrame: 'readonly',
-        Blob: 'readonly',
-        URL: 'readonly',
-        URLSearchParams: 'readonly',
-        AbortController: 'readonly',
-        confirm: 'readonly',
-        WebSocket: 'readonly',
-        RealtimeIRL: 'readonly',
-
-        // Custom globals
-        resetTripProgress: 'readonly',
-        resetAutoStartLocation: 'readonly',
-        resetTodayDistance: 'readonly',
-        exportTripData: 'readonly',
-        importTripData: 'readonly',
-        toggleControls: 'readonly',
+        ...globals.browser,
+        EventListener: 'readonly',
+      },
+      parser: tsParser,
+      parserOptions: {
+        ecmaVersion: 'latest',
+        ecmaFeatures: { jsx: true },
+        sourceType: 'module',
       },
     },
     plugins: {
-      prettier: prettierPlugin,
+      'react-hooks': reactHooks,
+      'react-refresh': reactRefresh,
+      '@typescript-eslint': tseslint,
     },
     rules: {
-      'no-console': 'off', // Allow console for debugging IRL streams
-      'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
-
-      // Enforce braces for all control statements
-      curly: ['error', 'all'],
-
-      eqeqeq: ['error', 'always'],
-      'no-eval': 'error',
-      'no-implied-eval': 'error',
-      'no-new-func': 'error',
-      'no-return-assign': 'error',
-      'no-sequences': 'error',
-      'no-throw-literal': 'error',
-      'no-with': 'error',
-      radix: 'error',
-      'wrap-iife': ['error', 'any'],
-
-      'no-delete-var': 'error',
-      'no-label-var': 'error',
-      'no-shadow': 'error',
-      'no-undef-init': 'error',
-
-      'arrow-spacing': 'error',
-      'no-duplicate-imports': 'error',
-      'no-var': 'error',
-      'prefer-const': 'error',
-      'prefer-template': 'error',
-
-      'prettier/prettier': 'error',
-
-      camelcase: ['error', { properties: 'never' }],
+      ...js.configs.recommended.rules,
+      ...tseslint.configs.recommended.rules,
+      ...reactHooks.configs.recommended.rules,
+      'react-refresh/only-export-components': [
+        'warn',
+        { allowConstantExport: true },
+      ],
+      // Reasonable adjustments for this project
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+        },
+      ],
+      'no-console': 'off', // Allow console for streaming/debugging
+      'no-case-declarations': 'off', // Allow let/const in case blocks
+    },
+  },
+  {
+    // shadcn/ui components can export utilities
+    files: ['src/components/ui/**/*.{ts,tsx}'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
+  {
+    // Node.js environment for config files
+    files: ['*.config.{js,ts}', 'vite.config.ts'],
+    languageOptions: {
+      globals: globals.node,
     },
   },
 ];

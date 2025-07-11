@@ -100,6 +100,23 @@ Displays a list of all available console commands.
 
 ---
 
+### Location & Debugging
+
+#### `debugLocationService()`
+
+**NEW:** Comprehensive debugging tool for location service issues.
+
+Tests the location geocoding service and displays:
+
+- Available providers (OpenCage, Nominatim, Fallback)
+- API key configuration status
+- Cache statistics
+- Live geocoding test
+
+**Example:** `debugLocationService()` or `debugLocationService(48.2082, 16.3738)` to test specific coordinates.
+
+---
+
 ## 🌐 URL Parameters
 
 URL parameters are the most flexible way to control the overlay, especially in cloud environments.

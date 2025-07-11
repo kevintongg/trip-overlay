@@ -1,0 +1,25 @@
+# Environment variables template - copy to .env.local and fill in your values
+
+# RTIRL Integration (Required)
+VITE_RTIRL_USER_ID=your_rtirl_user_id_here
+VITE_DEMO_MODE=false
+
+# Weather API (Required for weather features)
+# Get your free API key from: https://openweathermap.org/api/one-call-3
+VITE_OWM_API_KEY=your_openweathermap_api_key_here
+
+# Notes:
+# - Copy this file to .env.local (which is gitignored)
+# - Replace the placeholder values with your actual keys
+# - For production deployment, set environment variables in your hosting platform
+# - Geocoding (location lookup) is handled securely server-side via /geocode endpoint
+#   No client-side geocoding API keys needed - they're configured in server environment
+
+# Server-Side Environment Variables (for hosting platform):
+# - OWM_API_KEY: OpenWeatherMap API key (for weather function)
+# - OPENCAGE_API_KEY: OpenCage geocoding API key (optional, fallback to free Nominatim)
+#
+# For Cloudflare Pages deployment:
+# 1. Set OWM_API_KEY in Pages environment variables (required)
+# 2. Set OPENCAGE_API_KEY in Pages environment variables (optional but recommended)
+# 3. Use .dev.vars file for local development with server environment variables
