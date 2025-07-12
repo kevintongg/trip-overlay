@@ -5,6 +5,7 @@ export interface DashboardConfig {
   showTime: boolean;
   showWeather: boolean;
   showLocation: boolean;
+  showSpeed: boolean;
   use12Hour: boolean;
   timezoneOverride?: string;
 }
@@ -23,6 +24,7 @@ export function useDashboardConfig(): DashboardConfig {
       showTime: params.get('time') !== 'false', // Default true, only false if explicitly set
       showWeather: params.get('weather') !== 'false', // Default true, only false if explicitly set
       showLocation: params.get('location') !== 'false', // Default true, only false if explicitly set
+      showSpeed: params.get('speed') === 'true', // Default false, only true if explicitly set
       use12Hour: params.get('format') === '12',
       timezoneOverride: params.get('timezone') || undefined,
     };

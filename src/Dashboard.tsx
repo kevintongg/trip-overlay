@@ -89,6 +89,7 @@ const Dashboard: React.FC = () => {
             weatherData={weatherData}
             speedDisplay={speedDisplay}
             show={config.showWeather}
+            showSpeed={config.showSpeed}
             units={weatherUnits}
           />
 

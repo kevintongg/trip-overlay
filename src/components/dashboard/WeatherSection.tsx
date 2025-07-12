@@ -17,6 +17,7 @@ interface WeatherSectionProps {
   weatherData: WeatherResponse | null | undefined;
   speedDisplay: SpeedDisplay;
   show: boolean;
+  showSpeed: boolean;
   units?: string;
 }
 
@@ -29,6 +30,7 @@ export function WeatherSection({
   weatherData,
   speedDisplay,
   show,
+  showSpeed,
   units = 'metric',
 }: WeatherSectionProps) {
   if (!show) {
@@ -67,8 +69,8 @@ export function WeatherSection({
           {getWeatherDesc(weatherData)}
         </div>
 
-        {/* Speed Display - Only show when cycling */}
-        {speedDisplay.currentMode === 'CYCLING' && (
+        {/* Speed Display - Only show when cycling and speed is enabled */}
+        {showSpeed && speedDisplay.currentMode === 'CYCLING' && (
           <div
             key="speed-display"
             className="flex flex-col items-start ml-2 font-semibold"
